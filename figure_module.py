@@ -56,9 +56,9 @@ def defrcparams(grid_bool):
 	mpl.rc('ytick.minor',visible=True)
 
 # Saves figure
-def figsave_png(filename,res=200):
-    P.savefig('{}.png'.format(filename),bbox_inches = 'tight',pad_inches  = 0.05, dpi=res)
+def figsave_png(fig, filename,res=200):
+    fig.savefig('{}.png'.format(filename),bbox_inches = 'tight',pad_inches  = 0.05, dpi=res)
 
-def figsave_pdf(filename):
-    P.savefig('{}.pdf'.format(filename),bbox_inches = 'tight',pad_inches  = 0.05)
+def figsave_pdf(fig, filename):
+    fig.savefig('{}.pdf'.format(filename),bbox_inches = 'tight',pad_inches  = 0.05)
 
