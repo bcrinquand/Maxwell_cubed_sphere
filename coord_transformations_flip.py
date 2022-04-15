@@ -8,8 +8,8 @@ def coord_A_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_A(theta, phi):
-    eta = N.arctan(1.0 / N.tan(theta) / N.cos(phi))
     xi = N.arctan(N.tan(phi))
+    eta = N.arctan(1.0 / N.tan(theta) / N.cos(phi))
     return xi, eta
 
 def coord_B_to_sph(xi, eta):
@@ -20,8 +20,8 @@ def coord_B_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_B(theta, phi):
-    eta = N.arctan(1.0 / N.tan(theta) / N.cos(phi))
     xi  = N.arctan(- 1.0 / N.tan(phi))
+    eta = N.arctan(1.0 / N.tan(theta) / N.sin(phi))
     return xi, eta
 
 # Patch C is flipped as xi_C = eta, eta_C = -xi
@@ -36,8 +36,8 @@ def coord_C_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_C(theta, phi):
-    eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
     xi_flip  = N.arctan(N.tan(phi))
+    eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
     xi = eta_flip
     eta = - xi_flip
     return xi, eta
@@ -54,8 +54,8 @@ def coord_D_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_D(theta, phi):
-    eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
     xi_flip  = N.arctan(- 1.0 / N.tan(phi))
+    eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.sin(phi))
     xi = eta_flip
     eta = - xi_flip
     return xi, eta
@@ -79,8 +79,8 @@ def coord_N_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_N(theta, phi):
-    eta_flip = N.arctan(N.tan(theta) * N.sin(phi))
-    xi_flip  = N.arctan(- N.tan(theta) * N.cos(phi))
+    xi_flip  = N.arctan(N.tan(theta) * N.sin(phi))
+    eta_flip = N.arctan(- N.tan(theta) * N.cos(phi))
     xi = - eta_flip
     eta = xi_flip
     return xi, eta
@@ -100,6 +100,6 @@ def coord_S_to_sph(xi, eta):
     return theta, phi
 
 def coord_sph_to_S(theta, phi):
-    eta = N.arctan(- N.tan(theta) * N.sin(phi))
-    xi  = N.arctan(- N.tan(theta) * N.cos(phi))
+    xi  = N.arctan(- N.tan(theta) * N.sin(phi))
+    eta = N.arctan(- N.tan(theta) * N.cos(phi))
     return xi, eta
