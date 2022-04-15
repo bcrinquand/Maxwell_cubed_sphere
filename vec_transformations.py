@@ -84,7 +84,7 @@ def vec_sph_to_N(theta, phi, vth, vph):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth - \
           (Y / (C**2)) * vph
-    veta = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth - \
+    veta = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth + \
            (X / (D**2)) * vph
     return vxi, veta
 
@@ -96,8 +96,8 @@ def vec_S_to_sph(xi, eta, vxi, veta):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vth = - (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi \
           - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta
-    vph = (Y * C**2 / (delta**2 - 1.0)) * vxi - \
-          (X * D**2 / (delta**2 - 1.0)) * veta
+    vph = (Y * C**2 / (delta**2 - 1.0)) * vxi \
+        - (X * D**2 / (delta**2 - 1.0)) * veta
     return vth, vph
 
 def vec_sph_to_S(theta, phi, vth, vph):
@@ -107,7 +107,7 @@ def vec_sph_to_S(theta, phi, vth, vph):
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
-          - (Y / (C**2)) * vph
+          + (Y / (C**2)) * vph
     veta = - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
-           + (X / (D**2)) * vph
+           - (X / (D**2)) * vph
     return vxi, veta

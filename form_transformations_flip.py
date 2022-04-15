@@ -35,10 +35,10 @@ def form_sph_to_B(theta, phi, vth, vph):
 # Patch C is flipped as xi_C = eta, eta_C = -xi
 
 def form_C_to_sph(xi, eta, vxi, veta):
-    xi_flip  = - eta
-    eta_flip = xi
-    vxi_flip = veta
-    veta_flip = - vxi
+    xi_flip  = eta
+    eta_flip = - xi
+    vxi_flip = - veta
+    veta_flip = vxi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     C = N.sqrt(1.0 + X * X)
@@ -54,17 +54,17 @@ def form_sph_to_C(theta, phi, vth, vph):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi_flip = (C * X * Y / delta**2) * vth + vph
     veta_flip = - (C * D * D / delta**2) * vth
-    vxi = - veta_flip
-    veta = vxi_flip
+    vxi = veta_flip
+    veta = - vxi_flip
     return vxi, veta
 
 # Patch D is flipped as xi_D = eta, eta_D = -xi
 
 def form_D_to_sph(xi, eta, vxi, veta):
-    xi_flip  = - eta
-    eta_flip = xi
-    vxi_flip = veta
-    veta_flip = - vxi
+    xi_flip  = eta
+    eta_flip = - xi
+    vxi_flip = - veta
+    veta_flip = vxi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     C = N.sqrt(1.0 + X * X)
@@ -80,24 +80,24 @@ def form_sph_to_D(theta, phi, vth, vph):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi_flip = (C * X * Y / delta**2) * vth + vph
     veta_flip = - (C * D * D / delta**2) * vth
-    vxi = - veta_flip
-    veta = vxi_flip
+    vxi = veta_flip
+    veta = - vxi_flip
     return vxi, veta
 
 # Patch N is flipped as xi_N = - eta, eta_N = -xi
 
 def form_N_to_sph(xi, eta, vxi, veta):
-    xi_flip  = eta
-    eta_flip = - xi
-    vxi_flip = - veta
-    veta_flip = vxi
+    xi_flip  = - eta
+    eta_flip = xi
+    vxi_flip = veta
+    veta_flip = - vxi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vth = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vxi_flip + \
-          (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * veta_flip
+    vth = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vxi_flip \
+        + (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * veta_flip
     vph = - (Y / (C**2)) * vxi_flip \
           + (X / (D**2)) * veta_flip
     return vth, vph
@@ -108,12 +108,12 @@ def form_sph_to_N(theta, phi, vth, vph):
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vxi_flip = (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth - \
-          (Y * C**2 / (delta**2 - 1.0)) * vph
+    vxi_flip = (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth \
+             - (Y * C**2 / (delta**2 - 1.0)) * vph
     veta_flip = (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth \
-         + (X * D**2 / (delta**2 - 1.0)) * vph
-    vxi = veta_flip
-    veta = - vxi_flip
+              + (X * D**2 / (delta**2 - 1.0)) * vph
+    vxi = - veta_flip
+    veta = vxi_flip
     return vxi, veta
 
 def form_S_to_sph(xi, eta, vxi, veta):
@@ -124,8 +124,8 @@ def form_S_to_sph(xi, eta, vxi, veta):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vth = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vxi \
           - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * veta
-    vph = (Y / (C**2)) * vxi - \
-          (X / (D**2)) * veta
+    vph = (Y / (C**2)) * vxi \
+        - (X / (D**2)) * veta
     return vth, vph
 
 def form_sph_to_S(theta, phi, vth, vph):
@@ -136,6 +136,6 @@ def form_sph_to_S(theta, phi, vth, vph):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi = - (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth \
           + (Y * C**2 / (delta**2 - 1.0)) * vph
-    veta = - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth - \
+    veta = - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vth \
            - (X * D**2 / (delta**2 - 1.0)) * vph
     return vxi, veta

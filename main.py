@@ -23,7 +23,7 @@ class Sphere:
     S = 5
 
 # Parameters
-cfl = 0.4
+cfl = 0.6
 Nxi = 64
 Neta = 64
 NG = 1 # Number of ghosts zones
@@ -182,8 +182,7 @@ topology = N.array([
 # Generic coordinate transformation
 ########
 
-from coord_transformations import *
-# from coord_transformations_flip import *
+from coord_transformations_flip import *
 
 def transform_coords(patch0, patch1, xi0, eta0):
     fcoord0 = (globals()["coord_" + sphere[patch0] + "_to_sph"])
@@ -194,8 +193,7 @@ def transform_coords(patch0, patch1, xi0, eta0):
 # Generic vector transformation 
 ########
 
-from vec_transformations import *
-# from vec_transformations_flip import *
+from vec_transformations_flip import *
 
 def transform_vect(patch0, patch1, xi0, eta0, vxi0, veta0):
     fcoord0 = (globals()["coord_" + sphere[patch0] + "_to_sph"])
@@ -208,8 +206,7 @@ def transform_vect(patch0, patch1, xi0, eta0, vxi0, veta0):
 # Linear form transformations
 ########
 
-from form_transformations import *
-# from form_transformations_flip import *
+from form_transformations_flip import *
 
 def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
     fcoord0 = (globals()["coord_" + sphere[patch0] + "_to_sph"])
@@ -371,9 +368,9 @@ def communicate_B_patch(patch0, patch1):
             j1 = NG - 1 # First ghost cell on eta edge of patch1
             communicate_B_local(patch0, patch1, i0, k, j1, "a") 
 
-    #         #########
-    #         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
-    #         ########                
+            #########
+            # Communicate fields from eta left edge of patch1 to xi right edge of patch0
+            ########                
 
             i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
             j1 = NG  # First active cell of eta edge of patch1
@@ -544,16 +541,25 @@ def communicate_B_local(patch0, patch1, index0, index1, index2, loc):
 # Plotting fields on an unfolded sphere
 ########
 
+xi_grid_c, eta_grid_c = unflip_eq(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)])
+xi_grid_d, eta_grid_d = unflip_eq(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)])
+xi_grid_n, eta_grid_n = unflip_po(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)])
+
 def plot_fields_unfolded(it, field, fig, ax, vm):
 
     tab = (globals()[field])
 
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.A, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.B, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, tab[Sphere.S, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     
     figsave_png(fig, "snapshots/" + field + "_" + str(it))
 
@@ -643,7 +649,7 @@ def plot_fields_sphere(it, fig, ax, field, res, az):
 # Source current
 ########
 
-theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 0.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
+theta0, phi0 = 80.0 / 360.0 * 2.0 * N.pi, 110.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
 x0 = N.sin(theta0) * N.cos(phi0)
 y0 = N.sin(theta0) * N.sin(phi0)
 z0 = N.cos(theta0)
@@ -654,7 +660,7 @@ def shape_packet(x, y, z, width):
 w = 0.1 # Radius of wave packet
 omega = 20.0 # Frequency of current
 J0 = 1.0 # Current amplitude
-p0 = Sphere.A # Patch location of antenna
+p0 = Sphere.B # Patch location of antenna
 
 Jr_tot = N.zeros_like(Er)
 
@@ -710,7 +716,7 @@ for it in range(Nt):
     if ((it % FDUMP) == 0):
         # plot_fields_unfolded(idump, "Er", fig, ax, 0.5)
         plot_fields_unfolded(idump, "B1u", fig, ax, 0.5)
-        plot_fields_unfolded(idump, "B2u", fig, ax, 0.5)
+        # plot_fields_unfolded(idump, "B2u", fig, ax, 0.5)
 
         idump += 1
 

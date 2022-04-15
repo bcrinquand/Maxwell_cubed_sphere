@@ -27,8 +27,8 @@ def coord_sph_to_B(theta, phi):
 # Patch C is flipped as xi_C = eta, eta_C = -xi
 
 def coord_C_to_sph(xi, eta):
-    xi_flip  = - eta
-    eta_flip = xi
+    xi_flip  = eta
+    eta_flip = - xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     theta = 0.5 * N.pi - N.arctan(Y / N.sqrt(1.0 + X * X))
@@ -38,15 +38,15 @@ def coord_C_to_sph(xi, eta):
 def coord_sph_to_C(theta, phi):
     xi_flip  = N.arctan(N.tan(phi))
     eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
-    xi = eta_flip
-    eta = - xi_flip
+    xi = - eta_flip
+    eta = xi_flip
     return xi, eta
 
 # Patch D is flipped as xi_D = eta, eta_D = -xi
 
 def coord_D_to_sph(xi, eta):
-    xi_flip  = - eta
-    eta_flip = xi
+    xi_flip  = eta
+    eta_flip = - xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     theta = 0.5 * N.pi - N.arctan(Y / N.sqrt(1.0 + X * X))
@@ -56,8 +56,8 @@ def coord_D_to_sph(xi, eta):
 def coord_sph_to_D(theta, phi):
     xi_flip  = N.arctan(- 1.0 / N.tan(phi))
     eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.sin(phi))
-    xi = eta_flip
-    eta = - xi_flip
+    xi = - eta_flip
+    eta = xi_flip
     return xi, eta
 
 # Patch N is flipped as xi_N = - eta, eta_N = -xi
@@ -65,8 +65,8 @@ def coord_sph_to_D(theta, phi):
 def coord_N_to_sph(xi, eta):
     global theta
     global phi
-    xi_flip  = eta
-    eta_flip = - xi
+    xi_flip  = - eta
+    eta_flip = xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     delta = N.sqrt(X * X + Y * Y)
@@ -81,8 +81,8 @@ def coord_N_to_sph(xi, eta):
 def coord_sph_to_N(theta, phi):
     xi_flip  = N.arctan(N.tan(theta) * N.sin(phi))
     eta_flip = N.arctan(- N.tan(theta) * N.cos(phi))
-    xi = - eta_flip
-    eta = xi_flip
+    xi = eta_flip
+    eta = - xi_flip
     return xi, eta
 
 def coord_S_to_sph(xi, eta):
@@ -103,3 +103,8 @@ def coord_sph_to_S(theta, phi):
     xi  = N.arctan(- N.tan(theta) * N.sin(phi))
     eta = N.arctan(- N.tan(theta) * N.cos(phi))
     return xi, eta
+
+def unflip_eq(xi, eta):
+    return eta, - xi
+def unflip_po(xi, eta):
+    return - eta, xi
