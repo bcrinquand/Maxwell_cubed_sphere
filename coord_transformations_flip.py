@@ -27,8 +27,8 @@ def coord_sph_to_B(theta, phi):
 # Patch C is flipped as xi_C = eta, eta_C = -xi
 
 def coord_C_to_sph(xi, eta):
-    xi_flip  = eta
-    eta_flip = - xi
+    xi_flip  = - eta
+    eta_flip = xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     theta = 0.5 * N.pi - N.arctan(Y / N.sqrt(1.0 + X * X))
@@ -38,15 +38,15 @@ def coord_C_to_sph(xi, eta):
 def coord_sph_to_C(theta, phi):
     eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
     xi_flip  = N.arctan(N.tan(phi))
-    xi = - eta_flip
-    eta = xi_flip
+    xi = eta_flip
+    eta = - xi_flip
     return xi, eta
 
 # Patch D is flipped as xi_D = eta, eta_D = -xi
 
 def coord_D_to_sph(xi, eta):
-    xi_flip  = eta
-    eta_flip = - xi
+    xi_flip  = - eta
+    eta_flip = xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     theta = 0.5 * N.pi - N.arctan(Y / N.sqrt(1.0 + X * X))
@@ -56,35 +56,47 @@ def coord_D_to_sph(xi, eta):
 def coord_sph_to_D(theta, phi):
     eta_flip = N.arctan(- 1.0 / N.tan(theta) / N.cos(phi))
     xi_flip  = N.arctan(- 1.0 / N.tan(phi))
-    xi = - eta_flip
-    eta = xi_flip
+    xi = eta_flip
+    eta = - xi_flip
     return xi, eta
 
 # Patch N is flipped as xi_N = - eta, eta_N = -xi
 
 def coord_N_to_sph(xi, eta):
-    xi_flip  = - eta
-    eta_flip = xi
+    global theta
+    global phi
+    xi_flip  = eta
+    eta_flip = - xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     delta = N.sqrt(X * X + Y * Y)
-    theta = N.pi / 2.0 - N.arctan(1.0 / delta)
-    phi = N.arctan2(X / delta, - Y / delta)
+    if (delta > 0):
+        theta = N.pi / 2.0 - N.arctan(1.0 / delta)
+        phi = N.arctan2(X / delta, - Y / delta)
+    elif (delta == 0.0):
+        theta = 0.0
+        phi = 0.0
     return theta, phi
 
 def coord_sph_to_N(theta, phi):
     eta_flip = N.arctan(N.tan(theta) * N.sin(phi))
     xi_flip  = N.arctan(- N.tan(theta) * N.cos(phi))
-    xi = eta_flip
-    eta = - xi_flip
+    xi = - eta_flip
+    eta = xi_flip
     return xi, eta
 
 def coord_S_to_sph(xi, eta):
+    global theta
+    global phi
     X = N.tan(xi)
     Y = N.tan(eta)
     delta = N.sqrt(X * X + Y * Y)
-    theta = N.pi / 2.0 - N.arctan(-1.0 /  delta)
-    phi = N.arctan2(X / delta, Y / delta)
+    if (delta > 0):
+        theta = N.pi / 2.0 - N.arctan(- 1.0 /  delta)
+        phi = N.arctan2(X / delta, Y / delta)
+    elif (delta == 0.0):
+        theta == N.pi
+        phi = 0.0
     return theta, phi
 
 def coord_sph_to_S(theta, phi):
