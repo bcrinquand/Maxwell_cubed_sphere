@@ -109,9 +109,9 @@ def vec_sph_to_N(theta, phi, vth, vph):
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi_flip = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
-             - (Y / (C**2)) * vph
+             - (Y / C**2) * vph
     veta_flip = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
-              + (X / (D**2)) * vph
+              + (X / D**2) * vph
     vxi = veta_flip
     veta = - vxi_flip
     return vxi, veta
@@ -135,7 +135,12 @@ def vec_sph_to_S(theta, phi, vth, vph):
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
     vxi = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
-          + (Y / (C**2)) * vph
+          + (Y / C**2) * vph
     veta = - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
-           - (X / (D**2)) * vph
+           - (X / D**2) * vph
     return vxi, veta
+
+def unflip_vec_eq(vxi, veta):
+    return veta, - vxi
+def unflip_vec_po(vxi, veta):
+    return - veta, vxi
