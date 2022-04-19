@@ -24,7 +24,7 @@ class Sphere:
     S = 5
 
 # Parameters
-cfl = 0.6
+cfl = 0.8
 Nxi = 128
 Neta = 128
 NG = 1 # Number of ghosts zones
@@ -53,10 +53,9 @@ E2d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 B1d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 B2d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 
-# divB = N.zeros((6, 2 * Nxi + 2 * NG, Neta + 2 * NG))
-# divE = N.zeros((6, 2 * Nxi + 2 * NG, Neta + 2 * NG))
-
 Ar = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+# divB = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+# divE = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 
 ########
 # Define metric tensor
@@ -233,7 +232,7 @@ def transform_coords(patch0, patch1, xi0, eta0):
 # Generic vector transformation 
 ########
 
-from vec_transformations_flip2 import *
+from vec_transformations_flip import *
 
 def transform_vect(patch0, patch1, xi0, eta0, vxi0, veta0):
     fcoord0 = (globals()["coord_" + sphere[patch0] + "_to_sph"])
@@ -246,7 +245,7 @@ def transform_vect(patch0, patch1, xi0, eta0, vxi0, veta0):
 # Linear form transformations
 ########
 
-from form_transformations_flip2 import *
+from form_transformations_flip import *
 
 def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
     fcoord0 = (globals()["coord_" + sphere[patch0] + "_to_sph"])
@@ -573,12 +572,12 @@ def update_poles():
 
     Er_mean_1 = (Er[Sphere.B, Nxi + NG - 1, NG]  + Er[Sphere.C, Nxi + NG - 1, NG]  + Er[Sphere.S, Nxi + NG - 1, NG])  / 3.0
     Er_mean_2 = (Er[Sphere.A, NG, Neta + NG - 1] + Er[Sphere.D, NG, Neta + NG - 1] + Er[Sphere.N, NG, Neta + NG - 1]) / 3.0
-    Er[Sphere.A, Nxi + NG, NG] = Er_mean_2
-    Er[Sphere.B, Nxi + NG, NG] = Er_mean_1
-    Er[Sphere.C, Nxi + NG, NG] = Er_mean_1
-    Er[Sphere.D, Nxi + NG, NG] = Er_mean_2
-    Er[Sphere.N, Nxi + NG, NG] = Er_mean_2
-    Er[Sphere.S, Nxi + NG, NG] = Er_mean_1
+    Er[Sphere.A, NG, Neta + NG] = Er_mean_2
+    Er[Sphere.B, Nxi + NG, NG]  = Er_mean_1
+    Er[Sphere.C, Nxi + NG, NG]  = Er_mean_1
+    Er[Sphere.D, NG, Neta + NG] = Er_mean_2
+    Er[Sphere.N, NG, Neta + NG] = Er_mean_2
+    Er[Sphere.S, Nxi + NG, NG]  = Er_mean_1
 
 ########
 # Plotting fields on an unfolded sphere
@@ -591,15 +590,10 @@ xi_grid_n, eta_grid_n = unflip_po(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_gr
 def plot_fields_unfolded(it, field, fig, ax, vm):
 
     tab = (globals()[field])
-    tab2 = tab
 
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.A, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.B, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, tab[Sphere.S, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-
-    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    # ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
 
     if (field == "B1u"):
         ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, B2u[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
@@ -621,18 +615,6 @@ def plot_fields_unfolded(it, field, fig, ax, vm):
         ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
         ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
         ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    
-    # Need to compute Ar potential before plotting this
-
-    # contours_a = find_contours(Ar,  0.001)
-    # contours_b = find_contours(Ar, -0.001)
-    # contours = contours_a + contours_b
-    # if (len(contours) > 0):
-    #     for ind in range(len(contours)):
-    #         xy = contours[ind]
-    #         xi_c, eta_c = xy.T
-
-    #         ax.plot(xi_c, eta_c, color = 'black', zorder = 10)
     
     figsave_png(fig, "snapshots/" + field + "_" + str(it))
 
@@ -730,10 +712,10 @@ z0 = N.cos(theta0)
 def shape_packet(x, y, z, width):
     return N.exp(- y * y / (width * width)) * N.exp(- x * x / (width * width)) * N.exp(- z * z / (width * width)) 
 
-w = 0.1 # Radius of wave packet
-omega = 20.0 # Frequency of current
-J0 = 1.0 # Current amplitude
-p0 = Sphere.B # Patch location of antenna
+w = 0.1         # Radius of wave packet
+omega = 20.0    # Frequency of current
+J0 = 1.0        # Current amplitude
+p0 = Sphere.B   # Patch location of antenna
 
 Jr_tot = N.zeros_like(Er)
 
@@ -749,11 +731,9 @@ for patch in range(6):
      
             Jr_tot[patch, i, j] = J0 * shape_packet(x - x0, y - y0, z - z0, w) * int(patch == p0)
 
-# def Jr(it, patch, i0, i1, j0, j1):
-#     return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it)
-
 def Jr(it, patch, i0, i1, j0, j1):
     return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it) * (1 + N.tanh(40 - it/5.))/2.
+#    return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it)
 
 ########
 # Initialization
@@ -765,24 +745,24 @@ for p in range(6):
 iter = 0
 idump = 0
 
-Nt = 700 # Number of iterations
-FDUMP = 10 # Dump frequency
+Nt = 2500 # Number of iterations
+FDUMP = 20 # Dump frequency
 
 # Figure parameters
 scale, aspect = 2.0, 0.7
 vm = 0.2
 ratio = 2.0
+fig_size=deffigsize(scale, aspect)
+style = '2d' 
 
 # Define figure
-
-# fig_size=deffigsize(scale, aspect)
-# fig, ax = P.subplots(subplot_kw={"projection": "3d"}, figsize = fig_size, facecolor = 'w')
-# ax.view_init(elev=10, azim=45)
-# ax.plot_surface(x_s, y_s, z_s, rstride=1, cstride=1, shade=False, color = 'grey', zorder = 0)
-
-fig_size=deffigsize(scale, aspect)
-fig = P.figure(1, facecolor='w')
-ax = P.subplot(111)
+if (style == '2d'):
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
+elif (style == '3d'):
+    fig, ax = P.subplots(subplot_kw={"projection": "3d"}, figsize = fig_size, facecolor = 'w')
+    ax.view_init(elev=10, azim=45)
+    ax.plot_surface(x_s, y_s, z_s, rstride=1, cstride=1, shade=False, color = 'grey', zorder = 0)
 
 ########
 # Main routine
@@ -791,37 +771,63 @@ ax = P.subplot(111)
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields_unfolded(idump, "Er", fig, ax, 0.2)
-        # plot_fields_unfolded(idump, "B1u", fig, ax, 0.5)
-        # plot_fields_unfolded(idump, "B2u", fig, ax, 0.5)
-
         idump += 1
 
     # print(it)
     iter += 1
 
+    # for p in range(6):
+    #     contra_to_cov_E(p)
+    #     push_B(p)
+
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_B_patch(p0, p1)
+
+    # for p in range(6):
+    #     contra_to_cov_B(p)
+    #     push_E(it, p)
+
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_E_patch(p0, p1)
+    
+    
     for p in range(6):
         contra_to_cov_E(p)
+
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_E_patch(p0, p1)
+
+    for p in range(6):
         push_B(p)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
-        communicate_B_patch(p0, p1)
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_B_patch(p0, p1)
 
     for p in range(6):
         contra_to_cov_B(p)
+
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_B_patch(p0, p1)
+
+    for p in range(6):
         push_E(it, p)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
-        communicate_E_patch(p0, p1)
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     communicate_E_patch(p0, p1)
+    
     
     update_poles()
-    
-    # for p0 in range(6):
-    #     for p1 in range(6):
-    #         communicate_E_patch(p0, p1)
             
 #     compute_potential()
 
 
+    # for p0 in range(6):
+    #     for p1 in range(6):
+    #         communicate_E_patch(p0, p1)
 
