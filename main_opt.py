@@ -252,22 +252,31 @@ def interp(arr, x0, x):
 ########
 
 def communicate_E_patch_contra(patch0, patch1):
-    communicate_E_patch(patch0, patch1, "contra")
+    communicate_E_patch(patch0, patch1, "vect")
 
 def communicate_E_patch_cov(patch0, patch1):
-    communicate_E_patch(patch0, patch1, "cov")
+    communicate_E_patch(patch0, patch1, "form")
 
 def communicate_B_patch_contra(patch0, patch1):
-    communicate_B_patch(patch0, patch1, "contra")
+    communicate_B_patch(patch0, patch1, "vect")
 
 def communicate_B_patch_cov(patch0, patch1):
-    communicate_B_patch(patch0, patch1, "cov")
+    communicate_B_patch(patch0, patch1, "form")
 
 ########
 # Communication of covariant or contravariant E
 ########
 
 def communicate_E_patch(patch0, patch1, typ):
+
+    if typ == "vect":
+        field1 = E1u
+        field2 = E2u
+    if typ == "form":
+        field1 = E1d
+        field2 = E2d
+
+    transform = (globals()["transform_" + typ])
         
     top = topology[patch0, patch1]
     if (top == 0):
@@ -282,8 +291,26 @@ def communicate_E_patch(patch0, patch1, typ):
         
         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
         i1 = NG - 1 # First ghost cell of xi edge of patch1   
-        # communicate_E_local(patch0, patch1, i0, i1, k, "x", typ)
-        communicate_E_local(patch0, patch1, i0, i1, k, "x", typ)
+
+        ert =  Er[patch0, i0, :]
+        e1t = field1[patch0, i0, :]
+        e2t = field2[patch0, i0, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta[k])
+        Er[patch1, i1, k] = interp(ert, eta0, eta)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        E1_int = interp(e1t, eta0, eta)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
+        E2_int = interp(e2t, eta0, eta_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        field1[patch1, i1, k], field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)
         
         #########
         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
@@ -291,9 +318,27 @@ def communicate_E_patch(patch0, patch1, typ):
         
         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
         i1 = NG  # First active cell of xi edge of patch1   
-        # communicate_E_local(patch1, patch0, i1, i0, k, "x", typ)
-        communicate_E_local(patch1, patch0, i1, i0, k, "x", typ)
 
+        ert =  Er[patch1, i1, :]
+        e1t = field1[patch1, i1, :]
+        e2t = field2[patch1, i1, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta[k])
+        Er[patch0, i0, k] = interp(ert, eta0, eta)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        E1_int = interp(e1t, eta0, eta)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
+        E2_int = interp(e2t, eta0, eta_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        field1[patch0, i0, k], field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)
+    
     elif (top == 'xy'):
 
         k = range(NG, Neta + NG)   
@@ -304,18 +349,54 @@ def communicate_E_patch(patch0, patch1, typ):
         
         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
         j1 = NG - 1 # First ghost cell on eta edge of patch1 
-        # communicate_E_local(patch0, patch1, i0, k, j1, "x", typ) 
-        communicate_E_local(patch0, patch1, i0, k, j1, "x", typ) 
+
+        ert =  Er[patch0, i0, :]
+        e1t = field1[patch0, i0, :]
+        e2t = field2[patch0, i0, :]
         
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta[j1])
+        Er[patch1, k, j1] = interp(ert, eta0, eta)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        E1_int = interp(e1t, eta0, eta)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
+        E2_int = interp(e2t, eta0, eta_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        field1[patch1, k, j1], field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)
+                
         #########
         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
         ########     
         
         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
         j1 = NG  # First active cell of eta edge of patch1   
-        # communicate_E_local(patch1, patch0, j1, i0, k, "y", typ) 
-        communicate_E_local(patch1, patch0, j1, i0, k, "y", typ) 
-  
+
+        ert =  Er[patch1, :, j1]
+        e1t = field1[patch1, :, j1]
+        e2t = field2[patch1, :, j1]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta[k])
+        Er[patch0, i0, k] = interp(ert, xi0, xi)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        E1_int = interp(e1t, xi0, xi_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
+        E2_int = interp(e2t, xi0, xi)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        field1[patch0, i0, k], field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)
+      
     elif (top == 'yy'):
 
         k = range(NG, Nxi + NG)       
@@ -326,8 +407,26 @@ def communicate_E_patch(patch0, patch1, typ):
                             
         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
         j1 = NG - 1 # First ghost cell of eta edge of patch1
-        # communicate_E_local(patch0, patch1, j0, k, j1, "y", typ) 
-        communicate_E_local(patch0, patch1, j0, k, j1, "y", typ) 
+
+        ert =  Er[patch0, :, j0]
+        e1t = field1[patch0, :, j0]
+        e2t = field2[patch0, :, j0]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta[j1])
+        Er[patch1, k, j1] = interp(ert, xi0, xi)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        E1_int = interp(e1t, xi0, xi_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
+        E2_int = interp(e2t, xi0, xi)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        field1[patch1, k, j1], field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)
         
         #########
         # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
@@ -335,9 +434,27 @@ def communicate_E_patch(patch0, patch1, typ):
           
         j0 = Neta + NG # Last ghost cell of eta edge of patch0
         j1 = NG # First active cell of eta edge of patch1
-        # communicate_E_local(patch1, patch0, j1, k, j0, "y", typ) 
-        communicate_E_local(patch1, patch0, j1, k, j0, "y", typ) 
-    
+
+        ert =  Er[patch1, :, j1]
+        e1t = field1[patch1, :, j1]
+        e2t = field2[patch1, :, j1]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta[j0])
+        Er[patch0, k, j0] = interp(ert, xi0, xi)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        E1_int = interp(e1t, xi0, xi_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
+        E2_int = interp(e2t, xi0, xi)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        field1[patch0, k, j0], field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)
+
     elif (top == 'yx'):
 
         k = range(NG, Nxi + NG)       
@@ -348,8 +465,26 @@ def communicate_E_patch(patch0, patch1, typ):
                 
         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
         i1 = NG - 1 # First ghost cell on xi edge of patch1
-        # communicate_E_local(patch0, patch1, j0, i1, k, "y", typ)
-        communicate_E_local(patch0, patch1, j0, i1, k, "y", typ)
+
+        ert =  Er[patch0, :, j0]
+        e1t = field1[patch0, :, j0]
+        e2t = field2[patch0, :, j0]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta[k])
+        Er[patch1, i1, k] = interp(ert, xi0, xi)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        E1_int = interp(e1t, xi0, xi_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
+        E2_int = interp(e2t, xi0, xi)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        field1[patch1, i1, k], field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)
         
         #########
         # Communicate fields from xi bottom edge of patch1 to eta top edge of patch0
@@ -357,14 +492,41 @@ def communicate_E_patch(patch0, patch1, typ):
         
         j0 = Neta + NG # Last ghost cell of eta edge of patch0
         i1 = NG # First active cell of xi edge of patch1
-        # communicate_E_local(patch1, patch0, i1, k, j0, "x", typ)
-        communicate_E_local(patch1, patch0, i1, k, j0, "x", typ)
+
+        ert =  Er[patch1, i1, :]
+        e1t = field1[patch1, i1, :]
+        e2t = field2[patch1, i1, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta[j0])
+        Er[patch0, k, j0] = interp(ert, eta0, eta)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        E1_int = interp(e1t, eta0, eta)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
+        E2_int = interp(e2t, eta0, eta_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        field1[patch0, k, j0], field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)
 
 ########
 # Communication of covariant or contravariant B
 ########
 
 def communicate_B_patch(patch0, patch1, typ):
+
+    if typ == "vect":
+        field1 = B1u
+        field2 = B2u
+    if typ == "form":
+        field1 = B1d
+        field2 = B2d
+
+    transform = (globals()["transform_" + typ])
         
     top = topology[patch0, patch1]
     if (top == 0):
@@ -379,18 +541,54 @@ def communicate_B_patch(patch0, patch1, typ):
         
         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
         i1 = NG - 1 # First ghost cell of xi edge of patch1   
-        # communicate_B_local(patch0, patch1, i0, i1, k, "x", typ)  
-        communicate_B_local(patch0, patch1, i0, i1, k, "x", typ)  
-                   
+
+        brt =  Br[patch0, i0, :]
+        b1t = field1[patch0, i0, :]
+        b2t = field2[patch0, i0, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta_yee[k])
+        Br[patch1, i1, k] = interp(brt, eta0, eta_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
+        B1_int = interp(b1t, eta0, eta_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        B2_int = interp(b2t, eta0, eta)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        field1[patch1, i1, k], field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)
+        
         #########
         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
         ########
         
         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
         i1 = NG  # First active cell of xi edge of patch1   
-        # communicate_B_local(patch1, patch0, i1, i0, k, "x", typ)
-        communicate_B_local(patch1, patch0, i1, i0, k, "x", typ)
-         
+
+        brt = Br[patch1, i1, :]
+        b1t = field1[patch1, i1, :]
+        b2t = field2[patch1, i1, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta_yee[k])
+        Br[patch0, i0, k] = interp(brt, eta0, eta_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
+        B1_int = interp(b1t, eta0, eta_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        B2_int = interp(b2t, eta0, eta)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        field1[patch0, i0, k], field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)
+    
     elif (top == 'xy'):
 
         k = range(NG, Neta + NG)   
@@ -401,18 +599,54 @@ def communicate_B_patch(patch0, patch1, typ):
         
         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
         j1 = NG - 1 # First ghost cell on eta edge of patch1 
-        # communicate_B_local(patch0, patch1, i0, k, j1, "x", typ)
-        communicate_B_local(patch0, patch1, i0, k, j1, "x", typ)
-         
+
+        brt = Br[patch0, i0, :]
+        b1t = field1[patch0, i0, :]
+        b2t = field2[patch0, i0, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta_yee[j1])
+        Br[patch1, k, j1] = interp(brt, eta0, eta_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
+        B1_int = interp(b1t, eta0, eta_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        B2_int = interp(b2t, eta0, eta)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        field1[patch1, k, j1], field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)
+                
         #########
         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
         ########     
         
         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
         j1 = NG  # First active cell of eta edge of patch1   
-        # communicate_B_local(patch1, patch0, j1, i0, k, "y", typ)
-        communicate_B_local(patch1, patch0, j1, i0, k, "y", typ)
 
+        brt = Br[patch1, :, j1]
+        b1t = field1[patch1, :, j1]
+        b2t = field2[patch1, :, j1]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta_yee[k])
+        Br[patch0, i0, k] = interp(brt, xi0, xi_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
+        B1_int = interp(b1t, xi0, xi)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        B2_int = interp(b2t, xi0, xi_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        field1[patch0, i0, k], field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)
+      
     elif (top == 'yy'):
 
         k = range(NG, Nxi + NG)       
@@ -423,17 +657,53 @@ def communicate_B_patch(patch0, patch1, typ):
                             
         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
         j1 = NG - 1 # First ghost cell of eta edge of patch1
-        # communicate_B_local(patch0, patch1, j0, k, j1, "y", typ)
-        communicate_B_local(patch0, patch1, j0, k, j1, "y", typ)
+
+        brt = Br[patch0, :, j0]
+        b1t = field1[patch0, :, j0]
+        b2t = field2[patch0, :, j0]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta_yee[j1])
+        Br[patch1, k, j1] = interp(brt, xi0, xi_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
+        B1_int = interp(b1t, xi0, xi)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        B2_int = interp(b2t, xi0, xi_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        field1[patch1, k, j1], field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)
         
         #########
         # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
-        ########     
-
+        ########   
+          
         j0 = Neta + NG # Last ghost cell of eta edge of patch0
-        j1 = NG # First active cell of eta edge of patch1 
-        # communicate_B_local(patch1, patch0, j1, k, j0, "y", typ)
-        communicate_B_local(patch1, patch0, j1, k, j0, "y", typ)
+        j1 = NG # First active cell of eta edge of patch1
+
+        brt = Br[patch1, :, j1]
+        b1t = field1[patch1, :, j1]
+        b2t = field2[patch1, :, j1]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta_yee[j0])
+        Br[patch0, k, j0] = interp(brt, xi0, xi_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
+        B1_int = interp(b1t, xi0, xi_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        B2_int = interp(b2t, xi0, xi_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        field1[patch0, k, j0], field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)
 
     elif (top == 'yx'):
 
@@ -441,12 +711,30 @@ def communicate_B_patch(patch0, patch1, typ):
             
         #########
         # Communicate fields from eta top edge of patch0 to xi bottom edge of patch1
-        ########             
-        
+        ########     
+                
         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
         i1 = NG - 1 # First ghost cell on xi edge of patch1
-        # communicate_B_local(patch0, patch1, j0, i1, k, "y", typ)
-        communicate_B_local(patch0, patch1, j0, i1, k, "y", typ)
+
+        brt = Br[patch0, :, j0]
+        b1t = field1[patch0, :, j0]
+        b2t = field2[patch0, :, j0]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta_yee[k])
+        Br[patch1, i1, k] = interp(brt, xi0, xi_yee)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
+        B1_int = interp(b1t, xi0, xi)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        B2_int = interp(b2t, xi0, xi_yee)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        field1[patch1, i1, k], field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)
         
         #########
         # Communicate fields from xi bottom edge of patch1 to eta top edge of patch0
@@ -454,291 +742,30 @@ def communicate_B_patch(patch0, patch1, typ):
         
         j0 = Neta + NG # Last ghost cell of eta edge of patch0
         i1 = NG # First active cell of xi edge of patch1
-        # communicate_B_local(patch1, patch0, i1, k, j0, "x", typ)
-        communicate_B_local(patch1, patch0, i1, k, j0, "x", typ)
 
-#######
-# Communication of a single value
+        brt = Br[patch1, i1, :]
+        b1t = field1[patch1, i1, :]
+        b2t = field2[patch1, i1, :]
+        
+        # Interpolate E^r       
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta_yee[j0])
+        Br[patch0, k, j0] = interp(brt, eta0, eta)
+
+        # Interpolate E^xi and E_xi     
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
+        B1_int = interp(b1t, eta0, eta_yee)
+
+        # Interpolate E^eta and E_eta     
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        B2_int = interp(b2t, eta0, eta)
+
+        # Convert from patch0 to patch1 coordinates
+        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        field1[patch0, k, j0], field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)
+
 ########
- 
-# index0 is the index of the cell that is being communicated
-# index1, index2 label the location of the point where the field is computed
-
-# def communicate_E_local(patch0, patch1, index0, index1, index2, loc, typ):
-    
-#     if typ == "contra":
-#         field1 = E1u
-#         field2 = E2u
-#     if typ == "cov":
-#         field1 = E1d
-#         field2 = E2d
-            
-#     if (loc == 0):
-#         ert =  Er[patch0, index0, :]
-#         e1t = field1[patch0, index0, :]
-#         e2t = 0.5 * (field2[patch0, index0, :] + field2[patch0, index0 + 1, :]) 
-#     elif (loc == 1):
-#         ert =  Er[patch0, index0, :]
-#         e1t = 0.5 * (field1[patch0, index0, :] + field1[patch0, index0 - 1, :])
-#         e2t = field2[patch0, index0, :] 
-#     elif (loc == 2):
-#         ert =  Er[patch0, index0, :]
-#         e1t = field1[patch0, index0, :]
-#         e2t = 0.5 * (field2[patch0, index0, :] + field2[patch0, index0 + 1, :]) 
-#     elif (loc == 3):
-#         ert =  Er[patch0, :, index0]
-#         e1t = field1[patch0, :, index0]
-#         e2t = 0.5 * (field2[patch0, :, index0] + field2[patch0, :, index0 - 1]) 
-#     elif (loc == 4):
-#         ert =  Er[patch0, :, index0]
-#         e1t = 0.5 * (E1d[patch0, :, index0] + E1d[patch0, :, index0 + 1]) 
-#         e2t = E2d[patch0, :, index0]
-#     elif (loc == 5):
-#         ert =  Er[patch0, :, index0]
-#         e1t = E1d[patch0, :, index0]
-#         e2t = 0.5 * (E2d[patch0, :, index0] + E2d[patch0, :, index0 - 1]) 
-#     elif (loc == 6):
-#         ert =  Er[patch0, :, index0]
-#         e1t = 0.5 * (E1d[patch0, :, index0] + E1d[patch0, :, index0 + 1]) 
-#         e2t = E2d[patch0, :, index0]
-#     elif (loc == 7):
-#         ert =  Er[patch0, index0, :]
-#         e1t = 0.5 * (field1[patch0, index0, :] + field1[patch0, index0 - 1, :])
-#         e2t = field2[patch0, index0, :] 
-
-#     # Interpolate E^r       
-#     xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi
-#     Er[patch1, index1, index2] = interp(ert, tab0, tab)
-    
-#     # Interpolate E^xi and E_xi     
-#     xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi_yee
-#     E1_int = interp(e1t, tab0, tab)
-
-#     # Interpolate E^eta and E_eta     
-#     xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta_yee[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta_yee
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi
-#     E2_int = interp(e2t, tab0, tab)
-
-#     xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-    
-#     # Convert from patch0 to patch1 coordinates
-#     if (typ == "contra"):
-#         field1[patch1, index1, index2], field2[patch1, index1, index2] = transform_vect(patch0, patch1, xi0, eta0, E1_int, E2_int)
-#     elif (typ == "cov"):        
-#         field1[patch1, index1, index2], field2[patch1, index1, index2] = transform_form(patch0, patch1, xi0, eta0, E1_int, E2_int)
-
-def communicate_E_local(patch0, patch1, index0, index1, index2, loc, typ):
-    
-    if ((loc == "x") and (typ == "contra")):
-        ert =  Er[patch0, index0, :]
-        e1t = E1u[patch0, index0, :]
-        e2t = E2u[patch0, index0, :]
-    elif ((loc == "y") and (typ == "contra")):
-        ert =  Er[patch0, :, index0]
-        e1t = E1u[patch0, :, index0]
-        e2t = E2u[patch0, :, index0]
-    if ((loc == "x") and (typ == "cov")):
-        ert =  Er[patch0, index0, :]
-        e1t = E1d[patch0, index0, :]
-        e2t = E2d[patch0, index0, :]
-    elif ((loc == "y") and (typ == "cov")):
-        ert =  Er[patch0, :, index0]
-        e1t = E1d[patch0, :, index0]
-        e2t = E2d[patch0, :, index0]
-    
-    # Interpolate E^r       
-    xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi
-    Er[patch1, index1, index2] = interp(ert, tab0, tab)
-    
-    # Interpolate E^xi and E_xi     
-    xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi_yee
-    E1_int = interp(e1t, tab0, tab)
-
-    # Interpolate E^eta and E_eta     
-    xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta_yee[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta_yee
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi
-    E2_int = interp(e2t, tab0, tab)
-
-    xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-    
-    # Convert from patch0 to patch1 coordinates
-    if (typ == "contra"):
-        E1u[patch1, index1, index2], E2u[patch1, index1, index2] = transform_vect(patch0, patch1, xi0, eta0, E1_int, E2_int)
-    elif (typ == "cov"):        
-        E1d[patch1, index1, index2], E2d[patch1, index1, index2] = transform_form(patch0, patch1, xi0, eta0, E1_int, E2_int)
-
-
-# def communicate_B_local(patch0, patch1, index0, index1, index2, loc, typ):
-    
-#     if typ == "contra":
-#         field1 = B1u
-#         field2 = B2u
-#     if typ == "cov":
-#         field1 = B1d
-#         field2 = B2d
-            
-#     if (loc == 0):
-#         brt =  Br[patch0, index0, :]
-#         b1t = field1[patch0, index0, :]
-#         b2t = 0.5 * (field2[patch0, index0, :] + field2[patch0, index0 + 1, :]) 
-#     elif (loc == 1):
-#         brt =  Br[patch0, index0, :]
-#         b1t = 0.5 * (field1[patch0, index0, :] + field1[patch0, index0 - 1, :])
-#         b2t = field2[patch0, index0, :] 
-#     elif (loc == 2):
-#         brt =  Br[patch0, index0, :]
-#         b1t = field1[patch0, index0, :]
-#         b2t = 0.5 * (field2[patch0, index0, :] + field2[patch0, index0 + 1, :]) 
-#     elif (loc == 3):
-#         brt =  Br[patch0, :, index0]
-#         b1t = field1[patch0, :, index0]
-#         b2t = 0.5 * (field2[patch0, :, index0] + field2[patch0, :, index0 - 1]) 
-#     elif (loc == 4):
-#         brt =  Br[patch0, :, index0]
-#         b1t = 0.5 * (E1d[patch0, :, index0] + E1d[patch0, :, index0 + 1]) 
-#         b2t = E2d[patch0, :, index0]
-#     elif (loc == 5):
-#         brt =  Br[patch0, :, index0]
-#         b1t = E1d[patch0, :, index0]
-#         b2t = 0.5 * (E2d[patch0, :, index0] + E2d[patch0, :, index0 - 1]) 
-#     elif (loc == 6):
-#         brt =  Br[patch0, :, index0]
-#         b1t = 0.5 * (E1d[patch0, :, index0] + E1d[patch0, :, index0 + 1]) 
-#         b2t = E2d[patch0, :, index0]
-#     elif (loc == 7):
-#         brt =  Br[patch0, index0, :]
-#         b1t = 0.5 * (field1[patch0, index0, :] + field1[patch0, index0 - 1, :])
-#         b2t = field2[patch0, index0, :] 
-
-#     # Interpolate B^r       
-#     xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta_yee[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta_yee
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi_yee
-#     Br[patch1, index1, index2] = interp(brt, tab0, tab)
-
-#     # Interpolate B^xi and B_xi     
-#     xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta_yee[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta_yee
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi
-#     B1_int = interp(b1t, tab0, tab)
-
-#     # Interpolate B^eta and B_eta     
-#     xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-#     if (loc == "x"):
-#         tab0 = eta0
-#         tab = eta
-#     elif (loc == "y"):
-#         tab0 = xi0
-#         tab = xi_yee
-#     B2_int = interp(b2t, tab0, tab)
-
-#     xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-
-#     # Convert from patch0 to patch1 coordinates
-#     if (typ == "contra"):
-#         B1u[patch1, index1, index2], B2u[patch1, index1, index2] = transform_vect(patch0, patch1, xi0, eta0, B1_int, B2_int)
-#     elif (typ == "cov"):        
-#         B1d[patch1, index1, index2], B2d[patch1, index1, index2] = transform_form(patch0, patch1, xi0, eta0, B1_int, B2_int)
-
-def communicate_B_local(patch0, patch1, index0, index1, index2, loc, typ):
-
-    if ((loc == "x") and (typ == "contra")):
-        brt =  Br[patch0, index0, :]
-        b1t = B1u[patch0, index0, :]
-        b2t = B2u[patch0, index0, :]
-    elif ((loc == "y") and (typ == "contra")):
-        brt =  Br[patch0, :, index0]
-        b1t = B1u[patch0, :, index0]
-        b2t = B2u[patch0, :, index0]
-    if ((loc == "x") and (typ == "cov")):
-        brt =  Br[patch0, index0, :]
-        b1t = B1d[patch0, index0, :]
-        b2t = B2d[patch0, index0, :]
-    elif ((loc == "y") and (typ == "cov")):
-        brt =  Br[patch0, :, index0]
-        b1t = B1d[patch0, :, index0]
-        b2t = B2d[patch0, :, index0]
-    
-    # Interpolate B^r       
-    xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta_yee[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta_yee
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi_yee
-    Br[patch1, index1, index2] = interp(brt, tab0, tab)
-
-    # Interpolate B^xi and B_xi     
-    xi0, eta0 = transform_coords(patch1, patch0, xi[index1], eta_yee[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta_yee
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi
-    B1_int = interp(b1t, tab0, tab)
-
-    # Interpolate B^eta and B_eta     
-    xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-    if (loc == "x"):
-        tab0 = eta0
-        tab = eta
-    elif (loc == "y"):
-        tab0 = xi0
-        tab = xi_yee
-    B2_int = interp(b2t, tab0, tab)
-
-    xi0, eta0 = transform_coords(patch1, patch0, xi_yee[index1], eta[index2])
-
-    # Convert from patch0 to patch1 coordinates
-    if (typ == "contra"):
-        B1u[patch1, index1, index2], B2u[patch1, index1, index2] = transform_vect(patch0, patch1, xi0, eta0, B1_int, B2_int)
-    elif (typ == "cov"):        
-        B1d[patch1, index1, index2], B2d[patch1, index1, index2] = transform_form(patch0, patch1, xi0, eta0, B1_int, B2_int)
-
+# Special treatment of two triple points
+########
 
 def update_poles():
 
