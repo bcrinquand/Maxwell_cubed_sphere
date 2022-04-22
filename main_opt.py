@@ -165,11 +165,16 @@ def push_E(it, patch):
     E2u[patch, i0:i1, j0:j1] -= ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 2]
 
 # Compute A_r
-def compute_potential(patch):
+def push_potential(patch):
+
+    i0, i1 = NG, Nxi + NG
+    j0, j1 = NG, Neta + NG
     
-    Ar[Sphere.A, :, NG - 1] = Ar[Sphere.S, :, Neta + NG]
-    for j in range(NG + 1, Neta + NG): 
-        Ar[Sphere.A, :(Nxi + NG), j] = spi.simps(sqrt_det_g[:(Nxi + NG), NG:j, 2] * B1u[Sphere.A, :(Nxi + NG), NG:j], axis = 2, x = eta[NG:j], dx = deta)               
+    # Ar[Sphere.A, :, NG - 1] = Ar[Sphere.S, :, Neta + NG]
+    # for j in range(NG + 1, Neta + NG): 
+    #     Ar[Sphere.A, :(Nxi + NG), j] = spi.simps(sqrt_det_g[:(Nxi + NG), NG:j, 2] * B1u[Sphere.A, :(Nxi + NG), NG:j], axis = 2, x = eta[NG:j], dx = deta)               
+    
+    Ar[patch, i0:i1, j0:j1] -= dt * Er[patch, i0:i1, j0:j1]
 
 ########
 # Topology of the patches
@@ -308,6 +313,8 @@ def communicate_E_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
         field1[patch1, i1, k]= transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[0]
+
+        # field2[patch1, i1, k]= transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[1]
         
         #########
         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
@@ -337,6 +344,8 @@ def communicate_E_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
         field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[1]
+
+        # field1[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[0]
     
     elif (top == 'xy'):
 
@@ -365,6 +374,8 @@ def communicate_E_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
         field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[1]
+
+        # field1[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[0]
                 
         #########
         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
@@ -376,6 +387,7 @@ def communicate_E_patch(patch0, patch1, typ):
         ert =  Er[patch1, :, j1]
         e1t = field1[patch1, :, j1]
         e2t = field2[patch1, :, j1]
+        # e2t = 0.5 * (field2[patch1, :, j1] + N.roll(field2[patch1, :, j1 - 1], - 1))
 
         if (typ == "vect"):
             # Interpolate E^r       
@@ -393,6 +405,8 @@ def communicate_E_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
         field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[1]
+
+        # field1[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[0]
       
     elif (top == 'yy'):
 
@@ -407,6 +421,7 @@ def communicate_E_patch(patch0, patch1, typ):
 
         ert =  Er[patch0, :, j0]
         e1t = field1[patch0, :, j0]
+        # e1t = 0.5 * (field1[patch0, :, j0] + N.roll(field1[patch0, :, j0 + 1], 1))
         e2t = field2[patch0, :, j0]
 
         # Interpolate E^xi    
@@ -418,8 +433,10 @@ def communicate_E_patch(patch0, patch1, typ):
         E2_int = interp(e2t, xi0, xi)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
         field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[1]
+
+        # field1[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[0]
         
         #########
         # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
@@ -431,6 +448,7 @@ def communicate_E_patch(patch0, patch1, typ):
         ert =  Er[patch1, :, j1]
         e1t = field1[patch1, :, j1]
         e2t = field2[patch1, :, j1]
+        # e2t = 0.5 * (field2[patch1, :, j1] + N.roll(field2[patch1, :, j1 - 1], -1))
     
         if (typ == "vect"):
             # Interpolate E^r       
@@ -449,6 +467,8 @@ def communicate_E_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
         field1[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[0]
 
+        # field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[1]
+
     elif (top == 'yx'):
 
         k = range(NG, Nxi + NG)       
@@ -462,6 +482,7 @@ def communicate_E_patch(patch0, patch1, typ):
 
         ert =  Er[patch0, :, j0]
         e1t = field1[patch0, :, j0]
+        # e1t = 0.5 * (field1[patch0, :, j0] + N.roll(field1[patch0, :, j0 + 1], 1))
         e2t = field2[patch0, :, j0]
 
         # Interpolate E^xi    
@@ -473,9 +494,11 @@ def communicate_E_patch(patch0, patch1, typ):
         E2_int = interp(e2t, xi0, xi)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
         field1[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[0]
         
+        # field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, E1_int, E2_int)[1]
+
         #########
         # Communicate fields from xi bottom edge of patch1 to eta top edge of patch0
         ########   
@@ -485,6 +508,7 @@ def communicate_E_patch(patch0, patch1, typ):
 
         ert =  Er[patch1, i1, :]
         e1t = field1[patch1, i1, :]
+        # e1t = 0.5 * (field1[patch1, i1, :] + N.roll(field1[patch1, i1 - 1, :], -1))
         e2t = field2[patch1, i1, :]
 
         if (typ == "vect"):
@@ -501,8 +525,10 @@ def communicate_E_patch(patch0, patch1, typ):
         E2_int = interp(e2t, eta0, eta_yee)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
         field1[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[0]
+
+        # field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[1]
 
 ########
 # Communication of covariant or contravariant B
@@ -535,6 +561,7 @@ def communicate_B_patch(patch0, patch1, typ):
 
         brt =  Br[patch0, i0, :]
         b1t = field1[patch0, i0, :]
+        # b1t = 0.5 * (field1[patch0, i0, :] + N.roll(field1[patch0, i0 + 1, :], 1))
         b2t = field2[patch0, i0, :]
 
         if (typ == "vect"):
@@ -553,6 +580,8 @@ def communicate_B_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
         field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[1]
+
+        # field1[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[0]
         
         #########
         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
@@ -564,6 +593,7 @@ def communicate_B_patch(patch0, patch1, typ):
         brt = Br[patch1, i1, :]
         b1t = field1[patch1, i1, :]
         b2t = field2[patch1, i1, :]
+        b2t = 0.5 * (field2[patch1, i1, :] + N.roll(field2[patch1, i1 - 1, :], -1))
 
         # Interpolate B^xi     
         xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
@@ -574,8 +604,10 @@ def communicate_B_patch(patch0, patch1, typ):
         B2_int = interp(b2t, eta0, eta)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
         field1[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[0]
+
+        # field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[1]
     
     elif (top == 'xy'):
 
@@ -590,6 +622,7 @@ def communicate_B_patch(patch0, patch1, typ):
 
         brt = Br[patch0, i0, :]
         b1t = field1[patch0, i0, :]
+        # b1t = 0.5 * (field1[patch0, i0, :] + N.roll(field1[patch0, i0 + 1, :], 1))
         b2t = field2[patch0, i0, :]
 
         if (typ == "vect"):
@@ -609,6 +642,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
         field1[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[0]
                 
+        # field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[1]
+
         #########
         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
         ########     
@@ -618,6 +653,7 @@ def communicate_B_patch(patch0, patch1, typ):
 
         brt = Br[patch1, :, j1]
         b1t = field1[patch1, :, j1]
+        # b1t = 0.5 * (field1[patch1, :, j1] + N.roll(field1[patch1, :, j1 - 1], -1))
         b2t = field2[patch1, :, j1]
 
         # Interpolate B^xi     
@@ -632,6 +668,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
         field1[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[0]
       
+        # field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[1]
+
     elif (top == 'yy'):
 
         k = range(NG, Nxi + NG)       
@@ -646,6 +684,7 @@ def communicate_B_patch(patch0, patch1, typ):
         brt = Br[patch0, :, j0]
         b1t = field1[patch0, :, j0]
         b2t = field2[patch0, :, j0]
+        # b2t = 0.5 * (field2[patch0, :, j0] + N.roll(field2[patch0, :, j0 + 1], 1))
 
         if (typ == "vect"):
             # Interpolate B^r
@@ -661,9 +700,11 @@ def communicate_B_patch(patch0, patch1, typ):
         B2_int = interp(b2t, xi0, xi_yee)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
+        xi0, eta0 = transform_coords(patch1, patch0, xi[k], eta_yee[j1])
         field1[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[0]
         
+        # field2[patch1, k, j1] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[1]
+
         #########
         # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
         ########   
@@ -673,6 +714,7 @@ def communicate_B_patch(patch0, patch1, typ):
 
         brt = Br[patch1, :, j1]
         b1t = field1[patch1, :, j1]
+        # b1t = 0.5 * (field1[patch1, :, j1] + N.roll(field1[patch1, :, j1 - 1], -1))
         b2t = field2[patch1, :, j1]
 
         # Interpolate B^xi     
@@ -686,6 +728,8 @@ def communicate_B_patch(patch0, patch1, typ):
         # Convert from patch0 to patch1 coordinates
         xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
         field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[1]
+
+        # field1[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[0]
 
     elif (top == 'yx'):
 
@@ -701,7 +745,8 @@ def communicate_B_patch(patch0, patch1, typ):
         brt = Br[patch0, :, j0]
         b1t = field1[patch0, :, j0]
         b2t = field2[patch0, :, j0]
-
+        # b2t = 0.5 * (field2[patch0, :, j0] + N.roll(field2[patch0, :, j0 + 1], 1))
+        
         if (typ == "vect"):
             # Interpolate B^r 
             xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta_yee[k])
@@ -716,9 +761,11 @@ def communicate_B_patch(patch0, patch1, typ):
         B2_int = interp(b2t, xi0, xi_yee)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
+        xi0, eta0 = transform_coords(patch1, patch0, xi[i1], eta_yee[k])
         field2[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[1]
         
+        # field1[patch1, i1, k] = transform(patch0, patch1, xi0, eta0, B1_int, B2_int)[0]
+
         #########
         # Communicate fields from xi bottom edge of patch1 to eta top edge of patch0
         ########   
@@ -729,6 +776,7 @@ def communicate_B_patch(patch0, patch1, typ):
         brt = Br[patch1, i1, :]
         b1t = field1[patch1, i1, :]
         b2t = field2[patch1, i1, :]
+        # b2t = 0.5 * (field2[patch1, i1, :] + N.roll(field2[patch1, i1 - 1, :], -1))
         
         # Interpolate B^xi     
         xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
@@ -739,8 +787,10 @@ def communicate_B_patch(patch0, patch1, typ):
         B2_int = interp(b2t, eta0, eta)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[k], eta[j0])
+        xi0, eta0 = transform_coords(patch0, patch1, xi[k], eta_yee[j0])
         field2[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[1]
+
+        # field1[patch0, k, j0] = transform(patch1, patch0, xi0, eta0, B1_int, B2_int)[0]
 
 ########
 # Special treatment of two triple points
@@ -1012,6 +1062,9 @@ for it in tqdm(range(Nt), "Progression"):
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         communicate_E_patch_contra(p0, p1)
+
+    for p in range(6):
+        push_potential(p)
 
     energy = (Er * Er + B1d * B1u + B2d * B2u) * sqrt_det_g[:, :, 0]
     
