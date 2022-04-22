@@ -642,7 +642,7 @@ def BC_E_metal_rmin(patch):
     E2u[patch, NG, :, :] = E2_surf[patch, :, :]
     
 def BC_B_metal_rmin(patch):
-    Br[patch, NG, :, :] = Br_surf[patch, :, :]in(patch):
+    Br[patch, NG, :, :] = Br_surf[patch, :, :]
     Br[patch, NG, :, :] = Br_surf[patch, :, :]
 
 ########

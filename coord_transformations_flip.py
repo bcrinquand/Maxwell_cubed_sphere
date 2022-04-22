@@ -70,12 +70,16 @@ def coord_N_to_sph(xi, eta):
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     delta = N.sqrt(X * X + Y * Y)
-    if (delta > 0):
+    if N.isscalar(delta):
+        if (delta > 0):
+            theta = N.pi / 2.0 - N.arctan(1.0 / delta)
+            phi = N.arctan2(X / delta, - Y / delta)
+        elif (delta == 0.0):
+            theta = 0.0
+            phi = 0.0
+    else:
         theta = N.pi / 2.0 - N.arctan(1.0 / delta)
         phi = N.arctan2(X / delta, - Y / delta)
-    elif (delta == 0.0):
-        theta = 0.0
-        phi = 0.0
     return theta, phi
 
 def coord_sph_to_N(theta, phi):
@@ -91,12 +95,16 @@ def coord_S_to_sph(xi, eta):
     X = N.tan(xi)
     Y = N.tan(eta)
     delta = N.sqrt(X * X + Y * Y)
-    if (delta > 0):
-        theta = N.pi / 2.0 - N.arctan(- 1.0 /  delta)
+    if N.isscalar(delta):
+        if (delta > 0):
+            theta = N.pi / 2.0 - N.arctan(- 1.0 /  delta)
+            phi = N.arctan2(X / delta, Y / delta)
+        elif (delta == 0.0):
+            theta == N.pi
+            phi = 0.0
+    else:
+        theta = N.pi / 2.0 - N.arctan(- 1.0 / delta)
         phi = N.arctan2(X / delta, Y / delta)
-    elif (delta == 0.0):
-        theta == N.pi
-        phi = 0.0
     return theta, phi
 
 def coord_sph_to_S(theta, phi):
