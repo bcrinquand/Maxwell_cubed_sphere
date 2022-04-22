@@ -295,6 +295,7 @@ def communicate_E_patch(patch0, patch1, typ):
         ert =  Er[patch0, i0, :]
         e1t = field1[patch0, i0, :]
         e2t = field2[patch0, i0, :]
+        # e2t = 0.5 * (field2[patch0, i0, :] + N.roll(field2[patch0, i0 + 1, :], 1))
 
         # Interpolate E^xi    
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[i1], eta[k])
@@ -317,6 +318,7 @@ def communicate_E_patch(patch0, patch1, typ):
 
         ert =  Er[patch1, i1, :]
         e1t = field1[patch1, i1, :]
+        # e1t = 0.5 * (field1[patch1, i1, :] + N.roll(field1[patch1, i1 - 1, :], -1))
         e2t = field2[patch1, i1, :]
 
         if (typ == "vect"):
@@ -333,7 +335,7 @@ def communicate_E_patch(patch0, patch1, typ):
         E2_int = interp(e2t, eta0, eta_yee)
 
         # Convert from patch0 to patch1 coordinates
-        xi0, eta0 = transform_coords(patch0, patch1, xi_yee[i0], eta[k])
+        xi0, eta0 = transform_coords(patch0, patch1, xi[i0], eta_yee[k])
         field2[patch0, i0, k] = transform(patch1, patch0, xi0, eta0, E1_int, E2_int)[1]
     
     elif (top == 'xy'):
@@ -350,6 +352,7 @@ def communicate_E_patch(patch0, patch1, typ):
         ert =  Er[patch0, i0, :]
         e1t = field1[patch0, i0, :]
         e2t = field2[patch0, i0, :]
+        # e2t = 0.5 * (field2[patch0, i0, :] + N.roll(field2[patch0, i0 + 1, :], 1))
 
         # Interpolate E^xi    
         xi0, eta0 = transform_coords(patch1, patch0, xi_yee[k], eta[j1])
@@ -883,7 +886,7 @@ def plot_fields_sphere(it, field, res):
 # Source current
 ########
 
-theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 90.0 / 360.0 * 2.0 * N.pi # Center of the wave packet
+theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 0.0 / 360.0 * 2.0 * N.pi # Center of the wave packet
 x0 = N.sin(theta0) * N.cos(phi0) 
 y0 = N.sin(theta0) * N.sin(phi0)
 z0 = N.cos(theta0)
@@ -894,7 +897,7 @@ def shape_packet(x, y, z, width):
 w = 0.1         # Radius of wave packet
 omega = 20.0    # Frequency of current
 J0 = 1.0        # Current amplitude
-p0 = Sphere.B   # Patch location of antenna
+p0 = Sphere.A   # Patch location of antenna
 
 Jr_tot = N.zeros_like(Er)
 
@@ -911,7 +914,7 @@ for patch in range(6):
             Jr_tot[patch, i, j] = J0 * shape_packet(x - x0, y - y0, z - z0, w) * int(patch == p0)
 
 def Jr(it, patch, i0, i1, j0, j1):
-    return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it) * (1 + N.tanh(40 - it/5.))/2.
+    return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it) * (1 + N.tanh(20 - it/5.))/2.
 #    return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it)
 
 ########
@@ -921,11 +924,32 @@ def Jr(it, patch, i0, i1, j0, j1):
 for p in range(6):
     pass # All fields to zero
 
+pinit = Sphere.A
+
+for i in range(Nxi + 2 * NG):
+    for j in range(Neta + 2 * NG):
+
+        fcoord0 = (globals()["coord_" + sphere[pinit] + "_to_sph"])
+        th, ph = fcoord0(xi_grid[i, j], eta_grid[i, j])
+        x = N.sin(th) * N.cos(ph)
+        y = N.sin(th) * N.sin(ph)
+        z = N.cos(th)  
+        
+        x0 = N.sin(theta0) * N.cos(phi0)
+        y0 = N.sin(theta0) * N.sin(phi0)
+        z0 = N.cos(theta0)
+        
+        Er[Sphere.A, i, j] = 0.0 #shape_packet(x - x0, y - y0, z - z0, w) 
+        B2u[Sphere.A, i, j] = 0.0 #- shape_packet(x - x0, y - y0, z - z0, w)
+
 iter = 0
 idump = 0
 
 Nt = 2500 # Number of iterations
 FDUMP = 10 # Dump frequency
+
+time = dt * N.arange(Nt)
+int_energy = N.zeros((6, Nt))
 
 # Figure parameters
 scale, aspect = 2.0, 0.7
@@ -936,7 +960,7 @@ style = '2d'
 
 # Define figure
 if (style == '2d'):
-    fig = P.figure(1, facecolor='w')
+    fig = P.figure(1, figsize = fig_size, facecolor='w')
     ax = P.subplot(111)
 elif (style == '3d'):
     fig, ax = P.subplots(subplot_kw={"projection": "3d"}, figsize = fig_size, facecolor = 'w')
@@ -951,6 +975,8 @@ elif (style == '3d'):
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields_unfolded(idump, "Er", fig, ax, 0.2)
+        # plot_fields_unfolded(idump, "B1u", fig, ax, 0.2)
+        # plot_fields_unfolded(idump, "B2u", fig, ax, 0.2)
         # plot_fields_sphere(idump, "Er", 2)
         idump += 1
 
@@ -986,3 +1012,43 @@ for it in tqdm(range(Nt), "Progression"):
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         communicate_E_patch_contra(p0, p1)
+
+    energy = (Er * Er + B1d * B1u + B2d * B2u) * sqrt_det_g[:, :, 0]
+    
+    int_energy[:, it] = N.array([spi.simps(spi.simps(energy[p, :, :], axis = 1, dx = dxi)) for p in range(6)])
+
+# Figure parameters
+scale, aspect = 1.0, 0.7
+ratio = 2.0
+fig_size=deffigsize(scale, aspect)
+
+fig = P.figure(2, figsize = fig_size, facecolor='w')
+ax = P.subplot(111)
+
+for p in range(6):
+    P.plot(time, int_energy[p, :], label = r"Patch {}".format(sphere[p]))
+
+P.xlabel(r"$t$")
+P.ylabel(r"Electromagnetic energy")
+
+P.legend(loc = "upper right", ncol = 1)
+
+P.grid(True, ls='--')
+
+figsave_png(fig, "./total_energy")
+
+fig = P.figure(3, figsize = fig_size, facecolor='w')
+ax = P.subplot(111)
+
+for p in range(6):
+    P.semilogy(time, int_energy[p, :], label = r"Patch {}".format(sphere[p]))
+
+P.xlabel(r"$t$")
+P.ylabel(r"Electromagnetic energy")
+P.ylim((1e-5, 5.0))
+
+P.legend(loc = "lower right", ncol = 1)
+
+P.grid(True, ls='--')
+
+figsave_png(fig, "./total_energy_log")

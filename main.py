@@ -944,6 +944,8 @@ elif (style == '3d'):
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields_unfolded(idump, "Er", fig, ax, 0.2)
+        plot_fields_unfolded(idump, "B2u", fig, ax, 0.2)
+        plot_fields_unfolded(idump, "B1u", fig, ax, 0.2)
         # plot_fields_sphere(idump, "Er", 2)
         idump += 1
 
