@@ -1,18 +1,22 @@
+# %%
 # Import modules
 import numpy as N
 import matplotlib.pyplot as P
 import matplotlib
-import time
-import scipy.integrate as spi
-from scipy import interpolate
 from skimage.measure import find_contours
 from math import *
-import sys
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from scipy import interpolate
 
 # Import my figure routines
 from figure_module import *
 
+import warnings
+import matplotlib.cbook
+warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
+
+# %%
 # Connect patch indices and names
 sphere = {0: "A", 1: "B", 2: "C", 3: "D", 4: "N", 5: "S"}
 
@@ -25,132 +29,97 @@ class Sphere:
     S = 5
 
 # Parameters
-cfl = 0.6
-Nr = 64
-Nxi = 128
-Neta = 128
+cfl = 0.7
+Nxi = 256
+Neta = 256
 NG = 1 # Number of ghosts zones
-r_min, r_max = 1.0, 10.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
-dr = (r_max - r_min) / Nr
 dxi = (xi_max - xi_min) / Nxi
 deta = (eta_max - eta_min) / Neta
 
+# %%
 # Define grids
-r = N.linspace(r_min, r_max, Nr + 2 * NG)
 xi  = N.arange(- NG - int(Nxi / 2), NG + int(Nxi / 2), 1) * dxi
 eta = N.arange(- NG - int(Neta / 2), NG + int(Neta / 2), 1) * deta
 eta_grid, xi_grid = N.meshgrid(eta, xi)
-r_yee = r + 0.5 * dr
 xi_yee  = xi  + 0.5 * dxi
 eta_yee = eta + 0.5 * deta
 
-# Initialize fields
-Er  = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-E1u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-E2u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-Br  = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-B1u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-B2u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+# Define fields
+Er  = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+E1u = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+E2u = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+Br  = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+B1u = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+B2u = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 
-E1d = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG))
-E2d = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG))
-B1d = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG))
-B2d = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG))
+E1d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+E2d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+B1d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
+B2d = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 
-Ar = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
-
-########
+# %%
 # Define metric tensor
 ########
 
-g11d = N.empty((Nr, Nxi + 2 * NG, Neta + 2 * NG, 4))
-g12d = N.empty((Nr, Nxi + 2 * NG, Neta + 2 * NG, 4))
-g22d = N.empty((Nr, Nxi + 2 * NG, Neta + 2 * NG, 4))
+g11d = N.empty((Nxi + 2 * NG, Neta + 2 * NG, 4))
+g12d = N.empty((Nxi + 2 * NG, Neta + 2 * NG, 4))
+g22d = N.empty((Nxi + 2 * NG, Neta + 2 * NG, 4))
 
 for i in range(Nxi + 2 * NG):
     for j in range(Neta + 2 * NG):
-        for k in range(Nr):
-            
-            # 0 at (k, i + 1/2, j)
-            r0 = r[k]
-            X = N.tan(xi_yee[i])
-            Y = N.tan(eta[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 0] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 0] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 0] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
-            
-            # 1 at (k, i, j + 1/2)
-            r0 = r[k]
-            X = N.tan(xi[i])
-            Y = N.tan(eta_yee[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 1] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 1] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 1] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
-            
-            # 2 at (k, i + 1/2, j + 1/2)
-            r0 = r[k]
-            X = N.tan(xi_yee[i])
-            Y = N.tan(eta_yee[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 2] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 2] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 2] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
+        
+        # 0 at (i, j)
+        X = N.tan(xi[i])
+        Y = N.tan(eta[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d[i, j, 0] = (C * C * D / (delta * delta))**2
+        g22d[i, j, 0] = (C * D * D / (delta * delta))**2
+        g12d[i, j, 0] = - X * Y * C * C * D * D / (delta)**4
+        
+        # 1 at (i + 1/2, j)
+        X = N.tan(xi_yee[i])
+        Y = N.tan(eta[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d[i, j, 1] = (C * C * D / (delta * delta))**2
+        g22d[i, j, 1] = (C * D * D / (delta * delta))**2
+        g12d[i, j, 1] = - X * Y * C * C * D * D / (delta)**4
+        
+        # 2 at (i, j + 1/2)
+        X = N.tan(xi[i])
+        Y = N.tan(eta_yee[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d[i, j, 2] = (C * C * D / (delta * delta))**2
+        g22d[i, j, 2] = (C * D * D / (delta * delta))**2
+        g12d[i, j, 2] = - X * Y * C * C * D * D / (delta)**4
 
-            # 3 at (k + 1/2, i, j)
-            r0 = r_yee[k]
-            X = N.tan(xi[i])
-            Y = N.tan(eta[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 3] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 3] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 3] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
-
-            # 4 at (k + 1/2, i, j + 1/2)
-            r0 = r_yee[k]
-            X = N.tan(xi[i])
-            Y = N.tan(eta_yee[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 4] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 4] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 4] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
-
-            # 5 at (k + 1/2, i + 1/2, j)
-            r0 = r_yee[k]
-            X = N.tan(xi_yee[i])
-            Y = N.tan(eta[j])
-            C = N.sqrt(1.0 + X * X)
-            D = N.sqrt(1.0 + Y * Y)
-            delta = N.sqrt(1.0 + X * X + Y * Y)
-            
-            g11d[k, i, j, 5] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 5] = (r0 * r0 * C * D * D / (delta * delta))**2
-            g12d[k, i, j, 5] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
+        # 3 at (i + 1/2, j + 1/2)
+        X = N.tan(xi_yee[i])
+        Y = N.tan(eta_yee[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d[i, j, 3] = (C * C * D / (delta * delta))**2
+        g22d[i, j, 3] = (C * D * D / (delta * delta))**2
+        g12d[i, j, 3] = - X * Y * C * C * D * D / (delta)**4
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
 
-dt = cfl * N.min(1.0 / N.sqrt(1.0 / (dr * dr) + g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
+dt = cfl * N.min(1.0 / N.sqrt(g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
 print("delta t = {}".format(dt))
 
-########
+# %%
 # Single-patch push routines
 ########
 
@@ -159,52 +128,44 @@ def contra_to_cov_E(patch):
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
              
-    E1d[patch, :, i0:i1, j0:j1] = g11d[:, i0:i1, j0:j1, 0] * E1u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 0] * (E2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1])
-    E2d[patch, :, i0:i1, j0:j1] = g22d[:, i0:i1, j0:j1, 1] * E2u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 1] * (E1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1])
+    E1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 1] * E1u[patch, i0:i1, j0:j1] + \
+                         0.5 * g12d[i0:i1, j0:j1, 1] * (E2u[patch, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
+    E2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 2] * E2u[patch, i0:i1, j0:j1] + \
+                         0.5 * g12d[i0:i1, j0:j1, 2] * (E1u[patch, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])
 
 def contra_to_cov_B(patch):
 
     i0, i1 = NG, Nxi + NG 
     j0, j1 = NG, Neta + NG
     
-    B1d[patch, :, i0:i1, j0:j1] = g11d[:, i0:i1, j0:j1, 4] * B1u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 4] * (B2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1])            
-    B2d[patch, :, i0:i1, j0:j1] = g22d[:, i0:i1, j0:j1, 5] * B2u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 5] * (B1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1])
+    B1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 2] * B1u[patch, i0:i1, j0:j1] + \
+                         0.5 * g12d[i0:i1, j0:j1, 2] * (B2u[patch, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])            
+    B2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 1] * B2u[patch, i0:i1, j0:j1] + \
+                         0.5 * g12d[i0:i1, j0:j1, 1] * (B1u[patch, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
 
 def push_B(patch):
     
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
     
-    Br[patch, :, i0:i1, j0:j1]  -= ((N.roll(E2d, -1, axis = 2)[patch, :, i0:i1, j0:j1] - E2d[patch, :, i0:i1, j0:j1]) / dxi \
-                                  - (N.roll(E1d, -1, axis = 3)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / deta) \
-                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 2]
-    B1u[patch, :, i0:i1, j0:j1] -= ((N.roll(Er, -1, axis = 3)[patch, :, i0:i1, j0:j1] - Er[patch, :, i0:i1, j0:j1]) / deta \
-                                 - (N.roll(E2d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E2d[patch, :, i0:i1, j0:j1]) / dr) \
-                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 4]
-    B2u[patch, :, i0:i1, j0:j1] += ((N.roll(Er, -1, axis = 2)[patch, :, i0:i1, j0:j1] - Er[patch, :, i0:i1, j0:j1]) / dxi \
-                                 - (N.roll(E1d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / dr) \
-                                  * dt / sqrt_det_g[i0:i1, j0:j1, 5]
+    Br[patch, i0:i1, j0:j1]  -= ((N.roll(E2d, -1, axis = 1)[patch, i0:i1, j0:j1] - E2d[patch, i0:i1, j0:j1]) / dxi - \
+                                 (N.roll(E1d, -1, axis = 2)[patch, i0:i1, j0:j1] - E1d[patch, i0:i1, j0:j1]) / deta) \
+                                * dt / sqrt_det_g[i0:i1, j0:j1, 3]
+    B1u[patch, i0:i1, j0:j1] -= ((N.roll(Er, -1, axis = 2)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 2]
+    B2u[patch, i0:i1, j0:j1] += ((N.roll(Er, -1, axis = 1)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 1]
 
-def push_E(patch):
+def push_E(it, patch):
     
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
     
-    Er[patch, :, i0:i1, j0:j1]  += ((B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi \
-                                 - (B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta) \
-                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 3] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
-    E1u[patch, :, i0:i1, j0:j1] += ((Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta \
-                                 - (B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
-                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 0]
-    E2u[patch, :, i0:i1, j0:j1] -= ((Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi \
-                                 - (B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
-                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 1]
+    Er[patch, i0:i1, j0:j1] += ((B2d[patch, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi - \
+                                (B1d[patch, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) \
+                               * dt / sqrt_det_g[i0:i1, j0:j1, 0] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
+    E1u[patch, i0:i1, j0:j1] += ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 1]
+    E2u[patch, i0:i1, j0:j1] -= ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 2]
 
-########
+# %%
 # Topology of the patches
 ########
 
@@ -235,7 +196,7 @@ topology[Sphere.S, Sphere.A] = 'yy'
 index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
-########
+# %%
 # Generic coordinate transformation
 ########
 
@@ -246,7 +207,6 @@ def transform_coords(patch0, patch1, xi0, eta0):
     fcoord1 = (globals()["coord_sph_to_" + sphere[patch1]])
     return fcoord1(*fcoord0(xi0, eta0))
 
-########
 # Generic vector transformation 
 ########
 
@@ -259,7 +219,6 @@ def transform_vect(patch0, patch1, xi0, eta0, vxi0, veta0):
     fvec1 = (globals()["vec_sph_to_" + sphere[patch1]])
     return fvec1(theta0, phi0, *fvec0(xi0, eta0, vxi0, veta0))
 
-########
 # Linear form transformations
 ########
 
@@ -272,7 +231,7 @@ def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
     fform1 = (globals()["form_sph_to_" + sphere[patch1]])
     return fform1(theta0, phi0, *fform0(xi0, eta0, vxi0, veta0))
 
-########
+# %%
 # Interpolation routines
 ########
 
@@ -296,9 +255,8 @@ def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
 #         return (w1 * arr[i_max] + w2 * arr[i_min]) / (w1 + w2)
 
 def interp(arr_in, xA, xB):
-    f = interpolate.interp1d(xA, arr_in, kind='linear', fill_value=(0,0), bounds_error=False)
+    f = interpolate.interp1d(xA, arr_in, kind='linear', fill_value="extrapolate", bounds_error=False)
     return f(xB)
-
 
 # %%
 # Communication between two patches
@@ -769,76 +727,8 @@ def update_poles():
     Er[Sphere.N, NG, Neta + NG] = Er_mean_2
     Er[Sphere.S, Nxi + NG, NG]  = Er_mean_1        
 
-########
-# Boundary conditions at r_min
-########
 
-alpha = 30.0 * N.pi / 180.0 # Dipole inclination
-omega = 0.1 # Angular velocity of the conductor at r_min
-
-E1_surf = N.zeros_like(Er)
-E2_surf = N.zeros_like(Er)
-Br_surf = N.zeros_like(Er)
-
-for patch in range(6):
-    
-    fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
-    for i in range(Nxi + 2 * NG):
-        for j in range(Neta + 2 * NG):
-            th0, ph0 = fcoord(xi_grid[i, j], eta_grid[i, j])  
-            cth = N.cos(th0)
-            sth = N.sin(th0)
-            cph = N.cos(ph0) 
-
-            # Incined rotating dipole in the frame of the neutron star
-            E1_surf[patch, i, j] = omega * ((2.0 / 3.0) * N.cos(alpha) + N.cos(alpha) * (1.0 - 3.0 * cth**2)) - 3.0 * N.sin(alpha) * sth * cth * cph)
-            E2_surf[patch, i, j] = omega * (- 2.0 * N.cos(alpha) * sth * cth + N.sin(alpha) - 2.0 * sth**2 * cph)
-            Br_surf[patch, i, j] = 2.0 * (N.cos(alpha) * cth + N.sin(alpha) * sth * cph)
-
-def BC_E_metal_rmin(patch):
-    E1u[patch, NG, :, :] = E1_surf[patch, :, :]
-    E2u[patch, NG, :, :] = E2_surf[patch, :, :]
-    
-def BC_B_metal_rmin(patch):
-    Br[patch, NG, :, :] = Br_surf[patch, :, :]
-    Br[patch, NG, :, :] = Br_surf[patch, :, :]
-
-########
-# Absorbing boundary conditions at r_max
-######## 
-
-i_abs = 5 # Thickness of absorbing layer in number of cells
-r_abs = r[Nr - i_abs]
-delta = ((r - r_abs) / (r_max - r_abs)) * N.heaviside(r - r_abs, 0.0)
-sigma = N.exp(- 10.0 * delta**3)
-
-delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
-sigma_yee = N.exp(- 10.0 * delta**3)
-
-def BC_B_absorb():
-    Br[:, :]  *= sigma[:, :]
-    B1u[:, :] *= sigma_yee[:, :]
-    B2u[:, :] *= sigma_yee[:, :]
-           
-def BC_E_absorb():
-    Er[:, :]  *= sigma_yee[:, :]
-    E1u[:, :] *= sigma[:, :]
-    E2u[:, :] *= sigma[:, :]
-
-########
-# Boundary conditions at r_max
-########
-
-def BC_E_metal_rmax(patch):
-    for j in range(Nr + NG, Nr + 2 * NG):
-        E1u[patch, j, :, :] = 0.0
-        E2u[patch, j, :, :] = 0.0
-    
-def BC_B_metal_rmax(patch):
-    for j in range(Nr + NG, Nr + 2 * NG):
-        Br[patch, j, :, :] = 0.0
-           
-########
+# %%
 # Plotting fields on an unfolded sphere
 ########
 
@@ -854,19 +744,85 @@ def plot_fields_unfolded(it, field, fig, ax, vm):
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.B, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, tab[Sphere.S, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
 
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)] - N.pi / 2.0, eta_grid[NG:(Nxi + NG), NG:(Neta + NG)], tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)] + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, tab[Sphere.C, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     
     figsave_png(fig, "snapshots/" + field + "_" + str(it))
 
     ax.cla()
 
+# %%
+# Plotting fields on a sphere
 ########
+
+vmi = 0.2
+xf = N.zeros_like(Er)
+yf = N.zeros_like(Er)
+zf = N.zeros_like(Er)
+
+th0 = N.zeros_like(xi_grid)
+ph0 = N.zeros_like(xi_grid)
+
+phi_s = N.linspace(0, N.pi, 2*50)
+theta_s = N.linspace(0, 2*N.pi, 2*50)
+theta_s, phi_s = N.meshgrid(theta_s, phi_s)
+x_s = 0.95 * N.sin(phi_s) * N.cos(theta_s)
+y_s = 0.95 * N.sin(phi_s) * N.sin(theta_s)
+z_s = 0.95 * N.cos(phi_s)
+
+cmap_plot="RdBu_r"
+norm_plot = matplotlib.colors.Normalize(vmin = - vmi, vmax = vmi)
+m = matplotlib.cm.ScalarMappable(cmap = cmap_plot, norm = norm_plot)
+m.set_array([])
+
+for patch in range(6):
+    
+    fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
+    for i in range(Nxi + 2 * NG):
+        for j in range(Neta + 2 * NG):
+            th0[i, j], ph0[i, j] = fcoord(xi_grid[i, j], eta_grid[i, j])  
+    xf[patch, :, :] = N.sin(th0) * N.cos(ph0)
+    yf[patch, :, :] = N.sin(th0) * N.sin(ph0)
+    zf[patch, :, :] = N.cos(th0)
+        
+def plot_fields_sphere(it, field, res, vmi):
+
+    tab = (globals()[field])
+
+    fig, ax = P.subplots(1,2, subplot_kw={"projection": "3d"}, figsize = fig_size, facecolor = 'w')
+    
+    for patch in range(6):
+        for axs in ax:
+
+            fcolors = m.to_rgba(tab[patch, NG:(Nxi + NG), NG:(Neta + NG)]) 
+            axs.plot_surface(x_s, y_s, z_s, rstride=res, cstride=res, shade=False, color = 'black', zorder = 0)
+            sf = axs.plot_surface(xf[patch, NG:(Nxi + NG), NG:(Neta + NG)], yf[patch, NG:(Nxi + NG), NG:(Neta + NG)],
+                    zf[patch, NG:(Nxi + NG), NG:(Neta + NG)],
+                    rstride = res, cstride = res, shade = False,
+                    facecolors = fcolors, norm = norm_plot, zorder = 2)
+            sf = axs.plot_surface(xf[patch, NG:(Nxi + NG), NG:(Neta + NG)], yf[patch, NG:(Nxi + NG), NG:(Neta + NG)],
+                    zf[patch, NG:(Nxi + NG), NG:(Neta + NG)],
+                    rstride = res, cstride = res, shade = False,
+                    facecolors = fcolors, norm = norm_plot, zorder = 2)
+            
+    ax[0].set_box_aspect((1,1,1))
+    ax[0].view_init(elev=40, azim=45)
+    
+    ax[1].set_box_aspect((1,1,1))
+    ax[1].view_init(elev=-40, azim=180+45)
+    
+    fig.tight_layout(pad=1.0)
+        
+    figsave_png(fig, "snapshots/sphere_" + field + "_" + str(it))
+
+    P.close("all")
+
+# %%
 # Source current
 ########
 
-theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 0.0 / 360.0 * 2.0 * N.pi # Center of the wave packet
+theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 0.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
 x0 = N.sin(theta0) * N.cos(phi0)
 y0 = N.sin(theta0) * N.sin(phi0)
 z0 = N.cos(theta0)
@@ -874,10 +830,10 @@ z0 = N.cos(theta0)
 def shape_packet(x, y, z, width):
     return N.exp(- y * y / (width * width)) * N.exp(- x * x / (width * width)) * N.exp(- z * z / (width * width)) 
 
-w = 0.1         # Radius of wave packet
-omega = 20.0    # Frequency of current
-J0 = 1.0        # Current amplitude
-p0 = Sphere.A   # Patch location of antenna
+w = 0.1        # Radius of wave packet
+omega = 20.0   # Frequency of current
+J0 = 1.0       # Current amplitude
+p0 = Sphere.A  # Patch location of antenna
 
 Jr_tot = N.zeros_like(Er)
 
@@ -896,32 +852,40 @@ for patch in range(6):
 def Jr(it, patch, i0, i1, j0, j1):
     return Jr_tot[patch, i0:i1, j0:j1] * N.sin(omega * dt * it) * (1 + N.tanh(20 - it/5.))/2.
 
-########
+
+# %%
 # Initialization
 ########
 
 for p in range(6):
     pass # All fields to zero
 
-iter = 0
 idump = 0
 
-Nt = 700 # Number of iterations
-FDUMP = 10 # Dump frequency
+Nt = 50000 # Number of iterations
+FDUMP = 1000 # Dump frequency
 
 # Figure parameters
 scale, aspect = 2.0, 0.7
 vm = 0.2
 ratio = 2.0
 fig_size=deffigsize(scale, aspect)
+style = '2d' 
 
 # Define figure
-fig = P.figure(1, facecolor='w')
-ax = P.subplot(111)
+if (style == '2d'):
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
+elif (style == '3d'):
+    fig, ax = P.subplots(subplot_kw={"projection": "3d"}, figsize = fig_size, facecolor = 'w')
+    ax.view_init(elev=45, azim=45)
+    ax.plot_surface(x_s, y_s, z_s, rstride=1, cstride=1, shade=False, color = 'grey', zorder = 0)
 
-########
+# %%
 # Main routine
 ########
+
+int_energy = N.zeros((6, Nt))
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
@@ -934,9 +898,7 @@ for it in tqdm(range(Nt), "Progression"):
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         communicate_E_patch_cov(p0, p1)
-
-    # update_poles()
-            
+         
     for p in range(6):        
         push_B(p)
 
@@ -960,5 +922,28 @@ for it in tqdm(range(Nt), "Progression"):
         p0, p1 = index_row[i], index_col[i]
         communicate_E_patch_contra(p0, p1)
 
+# %%
+# Energy diagnostic
+########
 
+time = dt * N.arange(Nt)
 
+# Figure parameters
+scale, aspect = 1.0, 0.7
+ratio = 2.0
+fig_size=deffigsize(scale, aspect)
+
+fig = P.figure(2, figsize = fig_size, facecolor='w')
+ax = P.subplot(111)
+
+for p in range(6):
+    P.plot(time, int_energy[p, :], label = r"Patch {}".format(sphere[p]))
+
+P.xlabel(r"$t$")
+P.ylabel(r"Electromagnetic energy")
+
+P.legend(loc = "upper right", ncol = 1)
+
+P.grid(True, ls='--')
+
+figsave_png(fig, "./total_energy")
