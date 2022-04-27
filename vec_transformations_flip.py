@@ -124,10 +124,25 @@ def vec_N_to_sph(xi, eta, vxi, veta):
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vth = (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi_flip + \
-          (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta_flip
-    vph = - (Y * C**2 / (delta**2 - 1.0)) * vxi_flip \
-          + (X * D**2 / (delta**2 - 1.0)) * veta_flip
+    
+    if N.isscalar(delta):
+        if (delta > 1.0):
+            vth = (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi_flip + \
+                (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta_flip
+            vph = - (Y * C**2 / (delta**2 - 1.0)) * vxi_flip \
+                + (X * D**2 / (delta**2 - 1.0)) * veta_flip
+        elif (delta == 1.0):
+            vth = 0.0
+            vph = 0.0
+    else:
+        vth = (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi_flip + \
+              (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta_flip
+        vph = - (Y * C**2 / (delta**2 - 1.0)) * vxi_flip \
+              + (X * D**2 / (delta**2 - 1.0)) * veta_flip
+        ma = N.broadcast_to(delta == 1.0, vxi.shape)
+        vth[ma] = 0.0
+        vph[ma] = 0.0
+        
     return vth, vph
 
 def vec_sph_to_N(theta, phi, vth, vph):
@@ -136,10 +151,25 @@ def vec_sph_to_N(theta, phi, vth, vph):
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vxi_flip = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
-             - (Y / C**2) * vph
-    veta_flip = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
-              + (X / D**2) * vph
+    
+    if N.isscalar(delta):
+        if (delta > 1.0):
+            vxi_flip = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                    - (Y / C**2) * vph
+            veta_flip = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                    + (X / D**2) * vph
+        elif (delta == 1.0):
+            vxi_flip = 0.0
+            veta_flip = 0.0
+    else:
+        vxi_flip = (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                - (Y / C**2) * vph
+        veta_flip = (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                + (X / D**2) * vph
+        ma = N.broadcast_to(delta == 1.0, vth.shape)
+        vxi_flip[ma] = 0.0
+        veta_flip[ma] = 0.0
+    
     vxi = veta_flip
     veta = - vxi_flip
     return vxi, veta
@@ -150,10 +180,25 @@ def vec_S_to_sph(xi, eta, vxi, veta):
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vth = - (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi \
-          - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta
-    vph = (Y * C**2 / (delta**2 - 1.0)) * vxi \
-        - (X * D**2 / (delta**2 - 1.0)) * veta
+    
+    if N.isscalar(delta):
+        if (delta > 1.0):
+            vth = - (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi \
+                  - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta
+            vph = (Y * C**2 / (delta**2 - 1.0)) * vxi \
+                - (X * D**2 / (delta**2 - 1.0)) * veta
+        elif (delta == 1.0):
+            vth = 0.0
+            vph = 0.0
+    else:
+        vth = - (X * C**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * vxi \
+              - (Y * D**2 / (delta**2 * N.sqrt(delta**2 - 1.0))) * veta
+        vph = (Y * C**2 / (delta**2 - 1.0)) * vxi \
+            - (X * D**2 / (delta**2 - 1.0)) * veta
+        ma = N.broadcast_to(delta == 1.0, vxi.shape)
+        vth[ma] = 0.0
+        vph[ma] = 0.0
+        
     return vth, vph
 
 def vec_sph_to_S(theta, phi, vth, vph):
@@ -162,10 +207,25 @@ def vec_sph_to_S(theta, phi, vth, vph):
     C = N.sqrt(1.0 + X * X)
     D = N.sqrt(1.0 + Y * Y)
     delta = N.sqrt(1.0 + X * X + Y * Y)
-    vxi = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
-          + (Y / C**2) * vph
-    veta = - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
-           - (X / D**2) * vph
+
+    if N.isscalar(delta):
+        if (delta > 1.0):
+            vxi = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                  + (Y / C**2) * vph
+            veta = - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
+                   - (X / D**2) * vph
+        elif (delta == 1.0):
+            vxi = 0.0
+            veta = 0.0
+    else:
+        vxi = - (X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0))) * vth \
+              + (Y / C**2) * vph
+        veta = - (Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0))) * vth \
+               - (X / D**2) * vph
+        ma = N.broadcast_to(delta == 1.0, vth.shape)
+        vxi[ma] = 0.0
+        veta[ma] = 0.0
+        
     return vxi, veta
 
 def unflip_vec_eq(vxi, veta):

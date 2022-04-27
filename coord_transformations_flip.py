@@ -83,13 +83,12 @@ def coord_sph_to_D(theta, phi):
 # Patch N is flipped as xi_N = - eta, eta_N = -xi
 
 def coord_N_to_sph(xi, eta):
-    global theta
-    global phi
     xi_flip  = - eta
     eta_flip = xi
     X = N.tan(xi_flip)
     Y = N.tan(eta_flip)
     delta = N.sqrt(X * X + Y * Y)
+    
     if N.isscalar(delta):
         if (delta > 0):
             theta = N.pi / 2.0 - N.arctan(1.0 / delta)
@@ -100,6 +99,9 @@ def coord_N_to_sph(xi, eta):
     else:
         theta = N.pi / 2.0 - N.arctan(1.0 / delta)
         phi = N.arctan2(X / delta, - Y / delta)
+        theta[delta == 0.0] = 0.0
+        phi[delta == 0.0] = 0.0
+        
     return theta, phi
 
 def coord_sph_to_N(theta, phi):
@@ -110,21 +112,23 @@ def coord_sph_to_N(theta, phi):
     return xi, eta
 
 def coord_S_to_sph(xi, eta):
-    global theta
-    global phi
     X = N.tan(xi)
     Y = N.tan(eta)
     delta = N.sqrt(X * X + Y * Y)
+    
     if N.isscalar(delta):
         if (delta > 0):
             theta = N.pi / 2.0 - N.arctan(- 1.0 /  delta)
             phi = N.arctan2(X / delta, Y / delta)
         elif (delta == 0.0):
-            theta == N.pi
+            theta = N.pi
             phi = 0.0
     else:
         theta = N.pi / 2.0 - N.arctan(- 1.0 / delta)
         phi = N.arctan2(X / delta, Y / delta)
+        theta[delta == 0.0] = N.pi
+        phi[delta == 0.0] = 0.0
+        
     return theta, phi
 
 def coord_sph_to_S(theta, phi):
