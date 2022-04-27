@@ -1,5 +1,25 @@
 import numpy as N
 
+########
+# Spherical <-> Cartesian
+########
+
+def coord_cart_to_sph(x, y, z):
+    r = N.sqrt(x * x + y * y + z * z)
+    theta = N.arccos(z / r)
+    phi = N.arctan2(y, x)
+    return r, theta, phi
+
+def coord_sph_to_cart(r, theta, phi):
+    x = r * N.sin(theta) * N.cos(phi)
+    y = r * N.sin(theta) * N.sin(phi)
+    z = r * N.cos(theta)
+    return x, y, z
+
+########
+# Spherical <-> Patches
+########
+
 def coord_A_to_sph(xi, eta):
     X = N.tan(xi)
     Y = N.tan(eta)

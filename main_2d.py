@@ -30,8 +30,8 @@ class Sphere:
 
 # Parameters
 cfl = 0.7
-Nxi = 256
-Neta = 256
+Nxi = 128
+Neta = 128
 NG = 1 # Number of ghosts zones
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
@@ -143,14 +143,14 @@ def contra_to_cov_B(patch):
     B2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 1] * B2u[patch, i0:i1, j0:j1] + \
                          0.5 * g12d[i0:i1, j0:j1, 1] * (B1u[patch, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
 
-def push_B(patch):
+def push_B(it, patch):
     
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
     
     Br[patch, i0:i1, j0:j1]  -= ((N.roll(E2d, -1, axis = 1)[patch, i0:i1, j0:j1] - E2d[patch, i0:i1, j0:j1]) / dxi - \
                                  (N.roll(E1d, -1, axis = 2)[patch, i0:i1, j0:j1] - E1d[patch, i0:i1, j0:j1]) / deta) \
-                                * dt / sqrt_det_g[i0:i1, j0:j1, 3]
+                                * dt / sqrt_det_g[i0:i1, j0:j1, 3]  - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
     B1u[patch, i0:i1, j0:j1] -= ((N.roll(Er, -1, axis = 2)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 2]
     B2u[patch, i0:i1, j0:j1] += ((N.roll(Er, -1, axis = 1)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 1]
 
@@ -161,7 +161,7 @@ def push_E(it, patch):
     
     Er[patch, i0:i1, j0:j1] += ((B2d[patch, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi - \
                                 (B1d[patch, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) \
-                               * dt / sqrt_det_g[i0:i1, j0:j1, 0] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
+                               * dt / sqrt_det_g[i0:i1, j0:j1, 0] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
     E1u[patch, i0:i1, j0:j1] += ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 1]
     E2u[patch, i0:i1, j0:j1] -= ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 2]
 
@@ -307,8 +307,8 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
-        # E1 = interp(field1[patch1, i1, :], eta, eta1)
-        E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
+        E1 = interp(field1[patch1, i1, :], eta, eta1)
+        # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
         
         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
@@ -339,11 +339,11 @@ def communicate_E_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
         E1 = interp(field1[patch0, i0, :], eta, eta0)
-        # E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-        E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
+        E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
         
-        field1[patch1, i1, NG:Nxi+NG] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG)]
-                
+        field1[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG)]
+
     elif (top == 'xy'):
             
         #########
@@ -359,8 +359,8 @@ def communicate_E_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
-        # E2 = interp(field2[patch1, :, j1], xi, xi1)
-        E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch0, :, j1 - 1]), xi, xi1)
+        E2 = interp(field2[patch1, :, j1], xi, xi1)
+        # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch0, :, j1 - 1]), xi, xi1)
 
         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
 
@@ -390,11 +390,11 @@ def communicate_E_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
     
         E1 = interp(field1[patch0, i0, :], eta, eta0)
-        # E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-        E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
+        E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
     
         field2[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG + 1)]
-            
+
     elif (top == 'yy'):
     
         #########
@@ -410,8 +410,8 @@ def communicate_E_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
-        # E2 = interp(field2[patch1, :, j1], xi, xi1)
-        E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch1, :, j1 - 1]), xi, xi1)
+        E2 = interp(field2[patch1, :, j1], xi, xi1)
+        # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch1, :, j1 - 1]), xi, xi1)
         
         field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
 
@@ -440,11 +440,11 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        # E1 = (interp(field1[patch0, :, j0], xi_yee, xi0)+interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-        E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
+        E1 = (interp(field1[patch0, :, j0], xi_yee, xi0)+interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
         E2 = interp(field2[patch0, :, j0], xi, xi0)
         
-        field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]
+        field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]            
         
     elif (top == 'yx'):
 
@@ -460,11 +460,11 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
-        # E1 = interp(field1[patch1, i1, :], eta, eta1)
-        E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
+        E1 = interp(field1[patch1, i1, :], eta, eta1)
+        # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
         
-        field1[patch0, NG:(Nxi + NG), j0] = transform_vect(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
+        field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
 
         if (typ == "vect"):
     
@@ -491,12 +491,12 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        # E1 = (interp(field1[patch0, :, j0], xi_yee, xi0) + interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-        E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
+        E1 = (interp(field1[patch0, :, j0], xi_yee, xi0) + interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
         E2 = interp(field2[patch0, :, j0], xi, xi0)
 
-        field1[patch1, i1, NG:(Nxi + NG + 1)] = transform_vect(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG + 1)]
-        
+        field1[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG + 1)]
+
     else:
         return
             
@@ -534,8 +534,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         B1 = interp(field1[patch1, i1, :], eta_yee, eta1)
-        # B2 = interp(field2[patch1, i1, :], eta, eta1)
-        B2 = interp(0.5 * (field2[patch1, i1, :] + field2[patch1, i1 - 1, :]), eta, eta1)
+        B2 = interp(field2[patch1, i1, :], eta, eta1)
+        # B2 = interp(0.5 * (field2[patch1, i1, :] + field2[patch1, i1 - 1, :]), eta, eta1)
         
         field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B1, B2)[0][NG:(Nxi + NG)]
         
@@ -551,8 +551,8 @@ def communicate_B_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        # B1 = (interp(field1[patch0, i0, :], eta_yee, eta0) + interp(field1[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-        B1 = interp(0.5 * (field1[patch0, i0, :] + field1[patch0, i0 + 1, :]), eta_yee, eta0)
+        B1 = (interp(field1[patch0, i0, :], eta_yee, eta0) + interp(field1[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # B1 = interp(0.5 * (field1[patch0, i0, :] + field1[patch0, i0 + 1, :]), eta_yee, eta0)
         B2 = interp(field2[patch0, i0, :], eta, eta0)
 
         field2[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][NG:(Nxi + NG)]
@@ -584,8 +584,8 @@ def communicate_B_patch(patch0, patch1, typ):
         
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
-        # B1 = interp(field1[patch1, :, j1], xi, xi1)
-        B1 = interp(0.5 * (field1[patch1, :, j1] + field1[patch1, :, j1 - 1]), xi, xi1)
+        B1 = interp(field1[patch1, :, j1], xi, xi1)
+        # B1 = interp(0.5 * (field1[patch1, :, j1] + field1[patch1, :, j1 - 1]), xi, xi1)
         B2 = interp(field2[patch1, :, j1], xi_yee, xi1)
         
         field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B1, B2)[0][NG:(Nxi + NG)]
@@ -602,8 +602,8 @@ def communicate_B_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        # B1 = (interp(field1[patch0, i0, :], eta_yee, eta0) + interp(field1[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-        B1 = interp(field1[patch0, i0, :] + field1[patch0, i0 + 1, :], eta_yee, eta0)
+        B1 = (interp(field1[patch0, i0, :], eta_yee, eta0) + interp(field1[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # B1 = interp(0.5 * (field1[patch0, i0, :] + field1[patch0, i0 + 1, :]), eta_yee, eta0)
         B2 = interp(field2[patch0, i0, :], eta, eta0)
         
         field1[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][NG:(Nxi + NG + 1)]
@@ -635,8 +635,8 @@ def communicate_B_patch(patch0, patch1, typ):
         
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
-        # B1 = interp(field1[patch1, :, j1], xi, xi1)
-        B1 = interp(0.5 * (field1[patch1, :, j1] + field1[patch1, :, j1 - 1]), xi, xi1)
+        B1 = interp(field1[patch1, :, j1], xi, xi1)
+        # B1 = interp(0.5 * (field1[patch1, :, j1] + field1[patch1, :, j1 - 1]), xi, xi1)
         B2 = interp(field2[patch1, :, j1], xi_yee, xi1)
         
         field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B1, B2)[1][NG:(Nxi + NG)]
@@ -654,8 +654,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
         B1 =  interp(field1[patch0, :, j0], xi, xi0)
-        # B2 = (interp(field2[patch0, :, j0], xi_yee, xi0) + interp(field2[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-        B2 = interp(0.5 * (field2[patch0, :, j0] + field2[patch0, :, j0 + 1]), xi_yee, xi0)
+        B2 = (interp(field2[patch0, :, j0], xi_yee, xi0) + interp(field2[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # B2 = interp(0.5 * (field2[patch0, :, j0] + field2[patch0, :, j0 + 1]), xi_yee, xi0)
         
         field1[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][NG:(Nxi + NG)]
         
@@ -687,8 +687,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         B1 = interp(field1[patch1, i1, :], eta_yee, eta1)
-        # B2 = interp(field2[patch1, i1, :], eta, eta1)
-        B2 = interp(0.5 * (field2[patch1, i1, :] + field2[patch1, i1 - 1, :]), eta, eta1)
+        B2 = interp(field2[patch1, i1, :], eta, eta1)
+        # B2 = interp(0.5 * (field2[patch1, i1, :] + field2[patch1, i1 - 1, :]), eta, eta1)
         
         field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B1, B2)[1][NG:(Nxi + NG)]
         
@@ -705,8 +705,8 @@ def communicate_B_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
         B1 =  interp(field1[patch0, :, j0], xi, xi0)
-        # B2 = (interp(field2[patch0, :, j0], xi_yee, xi0) + interp(field2[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-        B2 = interp(0.5 * (field2[patch0, :, j0] + field2[patch0, :, j0 + 1]), xi_yee, xi0)
+        B2 = (interp(field2[patch0, :, j0], xi_yee, xi0) + interp(field2[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # B2 = interp(0.5 * (field2[patch0, :, j0] + field2[patch0, :, j0 + 1]), xi_yee, xi0)
         
         field2[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][NG:(Nxi + NG + 1)]
         
@@ -752,7 +752,10 @@ xi_grid_c, eta_grid_c = unflip_eq(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_gr
 xi_grid_d, eta_grid_d = unflip_eq(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)])
 xi_grid_n, eta_grid_n = unflip_po(xi_grid[NG:(Nxi + NG), NG:(Neta + NG)], eta_grid[NG:(Nxi + NG), NG:(Neta + NG)])
 
-def plot_fields_unfolded(it, field, fig, ax, vm):
+def plot_fields_unfolded(it, field, vm):
+
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
 
     tab = (globals()[field])
 
@@ -764,9 +767,10 @@ def plot_fields_unfolded(it, field, fig, ax, vm):
     ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, tab[Sphere.D, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, tab[Sphere.N, NG:(Nxi + NG), NG:(Neta + NG)], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     
-    figsave_png(fig, "snapshots/" + field + "_" + str(it))
+    figsave_png(fig, "snapshots_2d/" + field + "_" + str(it))
 
-    ax.cla()
+    P.close('all')
+    # ax.cla()
 
 # %%
 # Plotting fields on a sphere
@@ -830,7 +834,7 @@ def plot_fields_sphere(it, field, res, vmi):
     
     fig.tight_layout(pad=1.0)
         
-    figsave_png(fig, "snapshots/sphere_" + field + "_" + str(it))
+    figsave_png(fig, "snapshots_2d/sphere_" + field + "_" + str(it))
 
     P.close("all")
 
@@ -838,7 +842,7 @@ def plot_fields_sphere(it, field, res, vmi):
 # Source current
 ########
 
-theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 0.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
+theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 180.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
 x0 = N.sin(theta0) * N.cos(phi0)
 y0 = N.sin(theta0) * N.sin(phi0)
 z0 = N.cos(theta0)
@@ -849,7 +853,7 @@ def shape_packet(x, y, z, width):
 w = 0.1        # Radius of wave packet
 omega = 20.0   # Frequency of current
 J0 = 1.0       # Current amplitude
-p0 = Sphere.A  # Patch location of antenna
+p0 = Sphere.C  # Patch location of antenna
 
 Jr_tot = N.zeros_like(Er)
 
@@ -879,7 +883,7 @@ for p in range(6):
 idump = 0
 
 Nt = 50000 # Number of iterations
-FDUMP = 1000 # Dump frequency
+FDUMP = 50 # Dump frequency
 
 # Figure parameters
 scale, aspect = 2.0, 0.7
@@ -905,7 +909,7 @@ int_energy = N.zeros((6, Nt))
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded(idump, "Er", fig, ax, 0.2)
+        plot_fields_unfolded(idump, "Br", 0.2)
         idump += 1
     
     for p in range(6):
@@ -916,7 +920,7 @@ for it in tqdm(range(Nt), "Progression"):
         communicate_E_patch_cov(p0, p1)
          
     for p in range(6):        
-        push_B(p)
+        push_B(it, p)
 
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]

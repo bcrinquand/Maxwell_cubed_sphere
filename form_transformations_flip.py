@@ -1,5 +1,34 @@
 import numpy as N
 
+from coord_transformations_flip import coord_cart_to_sph, coord_sph_to_cart
+
+########
+# Spherical <-> Cartesian
+########
+
+def form_cart_to_sph(x, y, z, vx, vy, vz):
+    r, theta, phi = coord_sph_to_cart(x, y, z)
+    vr = N.sin(theta) * N.cos(phi) * vx + N.sin(theta) * N.sin(phi) * vy + N.cos(theta) * vz
+    vth = r * (N.cos(theta) * N.cos(phi) * vx + N.cos(theta) * N.sin(phi) * vy  - N.sin(theta) * vz)
+    vph = r * N.sin(theta) * (- N.sin(phi) * vx + N.cos(phi) * vy)
+    return vr, vth, vph
+
+def form_sph_to_cart(r, theta, phi, vr, vth, vph):
+    x, y, z = coord_sph_to_cart(r, theta, phi)
+    rho = N.sqrt(x * x + y * y)
+    if (rho > 0.0):
+        vx = (x / r) * vr + (x * z / (rho * r**2)) * vth - (y / rho**2) * vph
+        vy = (y / r) * vr + (y * z / (rho * r**2)) * vth + (x / rho**2) * vph
+    else:
+        vx = 0.0
+        vy = 0.0
+    vz = (z / r) * vr - (rho / r**2) * vth
+    return vx, vy, vz
+
+########
+# Spherical <-> Patches
+########
+
 def form_A_to_sph(xi, eta, vxi, veta):
     X = N.tan(xi)
     Y = N.tan(eta)
