@@ -8,6 +8,7 @@ from scipy import interpolate
 from skimage.measure import find_contours
 from math import *
 import sys
+import h5py
 from tqdm import tqdm
 
 # Import my figure routines
@@ -108,7 +109,7 @@ def WriteFieldsHDF5(it, field):
     h5f = h5py.File(outdir+field+'.'+ str(it).rjust(5, '0') +'.h5', 'w')
 
     for patch in range(6):
-        h5f.create_dataset(field, data=outvec[patch, :, :, :])
+        h5f.create_dataset(field+str(patch), data=outvec[patch, :, :, :])
 
     h5f.close()
 
@@ -937,7 +938,8 @@ idump = 0
 Nt = 700 # Number of iterations
 FDUMP = 10 # Dump frequency
 
-# InitialData()
+InitialData()
+WriteCoordsHDF5()
 
 ########
 # Main routine
@@ -945,7 +947,8 @@ FDUMP = 10 # Dump frequency
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded(idump, "Br", 0.2, 10)
+        plot_fields_unfolded(idump, "B2u", 0.05, 10)
+        WriteFieldsHDF5(idump, "Br")
         idump += 1
 
     for p in range(6):
