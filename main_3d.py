@@ -103,7 +103,7 @@ def InitialData():
 # Dump HDF5 output
 ########
 
-def WriteFieldsHDF5(it, field):
+def WriteFieldHDF5(it, field):
 
     outvec = (globals()[field])
     h5f = h5py.File(outdir+field+'.'+ str(it).rjust(5, '0') +'.h5', 'w')
@@ -112,6 +112,15 @@ def WriteFieldsHDF5(it, field):
         h5f.create_dataset(field+str(patch), data=outvec[patch, :, :, :])
 
     h5f.close()
+
+def WriteAllFieldsHDF5(idump):
+
+    WriteFieldHDF5(idump, "Br")
+    WriteFieldHDF5(idump, "B1u")
+    WriteFieldHDF5(idump, "B2u")
+    WriteFieldHDF5(idump, "Er")
+    WriteFieldHDF5(idump, "E1u")
+    WriteFieldHDF5(idump, "E2u")
 
 def WriteCoordsHDF5():
 
@@ -948,7 +957,7 @@ WriteCoordsHDF5()
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields_unfolded(idump, "B2u", 0.05, 10)
-        WriteFieldsHDF5(idump, "Br")
+        WriteAllFieldsHDF5(idump)
         idump += 1
 
     for p in range(6):
