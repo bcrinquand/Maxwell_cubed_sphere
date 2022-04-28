@@ -824,7 +824,7 @@ def update_poles():
 # Boundary conditions at r_min
 ########
 
-omega = 0.1 # Angular velocity of the conductor at r_min
+omega = 0.0 # Angular velocity of the conductor at r_min
 
 # Fields at r_min
 E1_surf = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
@@ -945,7 +945,7 @@ iter = 0
 idump = 0
 
 Nt = 700 # Number of iterations
-FDUMP = 10 # Dump frequency
+FDUMP = 100 # Dump frequency
 
 InitialData()
 WriteCoordsHDF5()
