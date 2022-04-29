@@ -67,10 +67,9 @@ Ar = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 ########
 # Define initial data
 ########
+B0 = 1.0
 
 def InitialData():
-
-    B0 = 1.0
 
     for patch in range(6):
 
@@ -845,7 +844,7 @@ for patch in range(6):
             omega_sph = vec_cart_to_sph(x0, y0, z0, 0.0, 0.0, omega)
             omega_patch = fvec(th0, ph0, omega_sph[1], omega_sph[2])
 
-            Br_surf[patch, i, j] = 1.0 / (r[0]**2) # 2.0 * N.cos(th0) / (r[0]**3)
+            Br_surf[patch, i, j] = 2.0 * (cos(th0)+cos(-th0))/2.0 / ((r0**3.0)) * B0 # 2.0 * N.cos(th0) / (r[0]**3)
             E1_surf[patch, i, j] = - omega_patch[0] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 0]
             E2_surf[patch, i, j] =   omega_patch[1] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 1]
 
@@ -853,7 +852,7 @@ for patch in range(6):
             # Initial nonzero field
             ########
 
-            Br[patch, :, i, j] = 1.0 / (r**2)
+            # Br[patch, :, i, j] = 1.0 / (r**2)
 
 ##### WARNING: what was just defined is actually covariant E, not contravariant
 ##### TO DO: switch from covariant to contravariant before assigning!
