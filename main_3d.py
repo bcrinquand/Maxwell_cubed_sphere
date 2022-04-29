@@ -83,6 +83,10 @@ def InitialData():
                     r0 = r[h]
                     th0, ph0 = fcoord(xi_grid[i, j], eta_grid[i, j])
 
+                    # BrTMP = 1.0 / r0**2
+                    # BtTMP = 0.0
+                    # BpTMP = 0.0
+
                     BrTMP = 2.0 * (cos(th0)+cos(-th0))/2.0 / ((r0**3.0)) * B0
                     BtTMP = (sin(th0)-sin(-th0))/2.0 / ((r0**4.0)) * B0
                     BpTMP = 0.0
@@ -259,19 +263,19 @@ def push_B(patch):
                                  - (N.roll(E1d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / dr) \
                                   * dt / sqrt_det_g[:, i0:i1, j0:j1, 5]
 
-def push_E(patch):
+def push_E(patch, it):
 
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
 
     Er[patch, :, i0:i1, j0:j1]  += ((B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi \
                                  - (B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta) \
-                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 3] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1)
+                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 3] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1)
     E1u[patch, :, i0:i1, j0:j1] += ((Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta \
                                  - (B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 0]
     E2u[patch, :, i0:i1, j0:j1] -= ((Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi \
-                                 - (B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
+                                 - (B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 1]
 
 ########
@@ -432,7 +436,7 @@ def communicate_E_patch(patch0, patch1, typ):
         E1 =  interp(field1[patch0, :, i0, :], eta, eta0)
         E2 = (interp(field2[patch0, :, i0, :], eta_yee, eta0) + interp(field2[patch0, :, i0 + 1, :], eta_yee, eta0)) / 2.0
 
-        field1[patch1, :, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][:, NG:(Nxi + NG)]
+        field1[patch1, :, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][:, NG:(Nxi + NG + 1)]
 
     elif (top == 'xy'):
 
@@ -530,7 +534,7 @@ def communicate_E_patch(patch0, patch1, typ):
         E1 = (interp(field1[patch0, :, :, j0], xi_yee, xi0)+interp(field1[patch0, :, :, j0 + 1], xi_yee, xi0)) / 2.0
         E2 =  interp(field2[patch0, :, :, j0], xi, xi0)
 
-        field2[patch1, :, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][:, NG:(Nxi + NG)]
+        field2[patch1, :, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][:, NG:(Nxi + NG + 1)]
 
     elif (top == 'yx'):
 
@@ -637,7 +641,7 @@ def communicate_B_patch(patch0, patch1, typ):
         B1 = (interp(field1[patch0, :, i0, :], eta_yee, eta0) + interp(field1[patch0, :, i0 + 1, :], eta_yee, eta0)) / 2.0
         B2 =  interp(field2[patch0, :, i0, :], eta, eta0)
 
-        field2[patch1, :, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][:, NG:(Nxi + NG)]
+        field2[patch1, :, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][:, NG:(Nxi + NG + 1)]
 
         if (typ == "vect"):
 
@@ -735,7 +739,7 @@ def communicate_B_patch(patch0, patch1, typ):
         B1 =  interp(field1[patch0, :, :, j0], xi, xi0)
         B2 = (interp(field2[patch0, :, :, j0], xi_yee, xi0) + interp(field2[patch0, :, :, j0 + 1], xi_yee, xi0)) / 2.0
 
-        field1[patch1, :, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][:, NG:(Nxi + NG)]
+        field1[patch1, :, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][:, NG:(Nxi + NG + 1)]
 
         if (typ == "vect"):
 
@@ -844,7 +848,7 @@ for patch in range(6):
             omega_sph = vec_cart_to_sph(x0, y0, z0, 0.0, 0.0, omega)
             omega_patch = fvec(th0, ph0, omega_sph[1], omega_sph[2])
 
-            Br_surf[patch, i, j] = 2.0 * (cos(th0)+cos(-th0))/2.0 / ((r0**3.0)) * B0 # 2.0 * N.cos(th0) / (r[0]**3)
+            Br_surf[patch, i, j] = Br[patch, 0, i, j]
             E1_surf[patch, i, j] = - omega_patch[0] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 0]
             E2_surf[patch, i, j] =   omega_patch[1] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 1]
 
@@ -933,6 +937,41 @@ def plot_fields_unfolded(it, field, vm, index):
 
     P.close("all")
 
+
+# %%
+# Source current
+########
+
+theta0, phi0 = 90.0 / 360.0 * 2.0 * N.pi, 180.0 / 360.0 * 2.0 * N.pi # Center of the wave packet !60
+x0 = N.sin(theta0) * N.cos(phi0)
+y0 = N.sin(theta0) * N.sin(phi0)
+z0 = N.cos(theta0)
+
+def shape_packet(x, y, z, width):
+    return N.exp(- y * y / (width * width)) * N.exp(- x * x / (width * width)) * N.exp(- z * z / (width * width))
+
+w = 0.1        # Radius of wave packet
+omega = 20.0   # Frequency of current
+J0 = 1.0       # Current amplitude
+p0 = Sphere.C  # Patch location of antenna
+
+Jr_tot = N.zeros_like(Er)
+
+for patch in range(6):
+
+    fcoord0 = (globals()["coord_" + sphere[patch] + "_to_sph"])
+    for i in range(Nxi + 2 * NG):
+        for j in range(Neta + 2 * NG):
+            th, ph = fcoord0(xi_grid[i, j], eta_grid[i, j])
+            x = N.sin(th) * N.cos(ph)
+            y = N.sin(th) * N.sin(ph)
+            z = N.cos(th)
+
+            Jr_tot[patch, :, i, j] = J0 * shape_packet(x - x0, y - y0, z - z0, w) * int(patch == p0)
+
+def Jr(it, patch, i0, i1, j0, j1):
+    return Jr_tot[patch, :, i0:i1, j0:j1] * N.sin(omega * dt * it) * (1 + N.tanh(20 - it/5.))/2.
+
 ########
 # Initialization
 ########
@@ -943,10 +982,10 @@ for p in range(6):
 iter = 0
 idump = 0
 
-Nt = 700 # Number of iterations
+Nt = 1001 # Number of iterations
 FDUMP = 100 # Dump frequency
 
-InitialData()
+# InitialData()
 WriteCoordsHDF5()
 
 ########
@@ -955,8 +994,13 @@ WriteCoordsHDF5()
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
+        plot_fields_unfolded(idump, "Br", 0.05, 10)
         plot_fields_unfolded(idump, "B2u", 0.05, 10)
-        WriteAllFieldsHDF5(idump)
+        plot_fields_unfolded(idump, "B1u", 0.05, 10)
+        plot_fields_unfolded(idump, "Er", 0.05, 10)
+        plot_fields_unfolded(idump, "E2u", 0.05, 10)
+        plot_fields_unfolded(idump, "E1u", 0.05, 10)
+        # WriteAllFieldsHDF5(idump)
         idump += 1
 
     for p in range(6):
@@ -986,7 +1030,7 @@ for it in tqdm(range(Nt), "Progression"):
         communicate_B_patch_cov(p0, p1)
 
     for p in range(6):
-        push_E(p)
+        push_E(p, it)
 
     for p in range(6):
         BC_E_metal_rmin(p)
