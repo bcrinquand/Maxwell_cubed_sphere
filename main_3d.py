@@ -1,6 +1,7 @@
 ## BIG CHANGES
 ## - Change r-sweeps of pusher to obey curlB
 ## - Change power of r in the diagonal metric components to r**2 instead of r**4
+## - Output and initial data wrappers
 
 # Import modules
 import numpy as N
@@ -33,11 +34,11 @@ class Sphere:
 
 # Parameters
 cfl = 0.6
-Nr = 1
+Nr = 70
 Nxi = 64
 Neta = 64
 NG = 1 # Number of ghosts zones
-r_min, r_max = 1.0, 2.0
+r_min, r_max = 1.0, 10.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
 dr = (r_max - r_min) / Nr
@@ -225,8 +226,7 @@ for i in range(Nxi + 2 * NG):
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
 
-# dt = cfl * N.min(1.0 / N.sqrt(1.0 / (dr * dr) + g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
-dt = cfl * N.min(1.0 / N.sqrt(g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
+dt = cfl * N.min(1.0 / N.sqrt(1.0 / (dr * dr) + g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
 print("delta t = {}".format(dt))
 
 ########
@@ -262,9 +262,9 @@ def push_B(patch):
                                   - (N.roll(E1d, -1, axis = 3)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / deta) \
                                   * dt / sqrt_det_g[:, i0:i1, j0:j1, 2]
     B1u[patch, :, i0:i1, j0:j1] -= ((N.roll(Er, -1, axis = 3)[patch, :, i0:i1, j0:j1] - Er[patch, :, i0:i1, j0:j1]) / deta \
-                                 - 0.0*(N.roll(E2d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E2d[patch, :, i0:i1, j0:j1]) / dr) \
+                                 - (N.roll(E2d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E2d[patch, :, i0:i1, j0:j1]) / dr) \
                                   * dt / sqrt_det_g[:, i0:i1, j0:j1, 4]
-    B2u[patch, :, i0:i1, j0:j1] -= (0.0*(N.roll(E1d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / dr \
+    B2u[patch, :, i0:i1, j0:j1] -= ((N.roll(E1d, -1, axis = 1)[patch, :, i0:i1, j0:j1] - E1d[patch, :, i0:i1, j0:j1]) / dr \
                                  - (N.roll(Er, -1, axis = 2)[patch, :, i0:i1, j0:j1] - Er[patch, :, i0:i1, j0:j1]) / dxi) \
                                   * dt / sqrt_det_g[:, i0:i1, j0:j1, 5]
 
@@ -275,11 +275,11 @@ def push_E(patch, it):
 
     Er[patch, :, i0:i1, j0:j1]  += ((B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi \
                                  - (B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta) \
-                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 3] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1)
+                                 * dt / sqrt_det_g[:, i0:i1, j0:j1, 3] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1)
     E1u[patch, :, i0:i1, j0:j1] += ((Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 3)[patch, :, i0:i1, j0:j1]) / deta \
-                                 - 0.0*(B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
+                                 - (B2d[patch, :, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr) \
                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 0]
-    E2u[patch, :, i0:i1, j0:j1] += (0.0*(B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr \
+    E2u[patch, :, i0:i1, j0:j1] += ((B1d[patch, :, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 1)[patch, :, i0:i1, j0:j1]) / dr \
                                  - (Br[patch, :, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, :, i0:i1, j0:j1]) / dxi) \
                                  * dt / sqrt_det_g[:, i0:i1, j0:j1, 1]
 
@@ -878,25 +878,25 @@ def BC_B_metal_rmin(patch):
 # Absorbing boundary conditions at r_max
 ########
 
-# i_abs = 5 # Thickness of absorbing layer in number of cells
-# r_abs = r[Nr - i_abs]
-# delta = ((r - r_abs) / (r_max - r_abs)) * N.heaviside(r - r_abs, 0.0)
-# sigma = N.exp(- 10.0 * delta**3)
-#
-# delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
-# sigma_yee = N.exp(- 10.0 * delta**3)
-#
-# def BC_B_absorb(patch):
-#     for k in range(Nr - i_abs, Nr):
-#         Br[patch, k, :, :]   *= sigma[k]
-#         B1u[patch, k, :, :] *= sigma_yee[k]
-#         B2u[patch, k, :, :] *= sigma_yee[k]
-#
-# def BC_E_absorb(patch):
-#     for k in range(Nr - i_abs, Nr):
-#         Er[patch, k, :, :]  *= sigma_yee[k]
-#         E1u[patch, k, :, :] *= sigma[k]
-#         E2u[patch, k, :, :] *= sigma[k]
+i_abs = 5 # Thickness of absorbing layer in number of cells
+r_abs = r[Nr - i_abs]
+delta = ((r - r_abs) / (r_max - r_abs)) * N.heaviside(r - r_abs, 0.0)
+sigma = N.exp(- 10.0 * delta**3)
+
+delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
+sigma_yee = N.exp(- 10.0 * delta**3)
+
+def BC_B_absorb(patch):
+    for k in range(Nr - i_abs, Nr):
+        Br[patch, k, :, :]   *= sigma[k]
+        B1u[patch, k, :, :] *= sigma_yee[k]
+        B2u[patch, k, :, :] *= sigma_yee[k]
+
+def BC_E_absorb(patch):
+    for k in range(Nr - i_abs, Nr):
+        Er[patch, k, :, :]  *= sigma_yee[k]
+        E1u[patch, k, :, :] *= sigma[k]
+        E2u[patch, k, :, :] *= sigma[k]
 
 ########
 # Boundary conditions at r_max
@@ -987,10 +987,10 @@ for p in range(6):
 iter = 0
 idump = 0
 
-Nt = 1001 # Number of iterations
-FDUMP = 100 # Dump frequency
+Nt = 10001 # Number of iterations
+FDUMP = 1000 # Dump frequency
 
-# InitialData()
+InitialData()
 WriteCoordsHDF5()
 
 ########
@@ -999,12 +999,12 @@ WriteCoordsHDF5()
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded(idump, "Br", 0.05, 0)
-        plot_fields_unfolded(idump, "B2u", 0.05, 0)
-        plot_fields_unfolded(idump, "B1u", 0.05, 0)
-        plot_fields_unfolded(idump, "Er", 0.05, 0)
-        plot_fields_unfolded(idump, "E2u", 0.05, 0)
-        plot_fields_unfolded(idump, "E1u", 0.05, 0)
+        plot_fields_unfolded(idump, "Br", 0.05, 10)
+        plot_fields_unfolded(idump, "B2u", 0.05, 10)
+        plot_fields_unfolded(idump, "B1u", 0.05, 10)
+        plot_fields_unfolded(idump, "Er", 0.05, 10)
+        plot_fields_unfolded(idump, "E2u", 0.05, 10)
+        plot_fields_unfolded(idump, "E1u", 0.05, 10)
         # WriteAllFieldsHDF5(idump)
         idump += 1
 
@@ -1018,10 +1018,10 @@ for it in tqdm(range(Nt), "Progression"):
     for p in range(6):
         push_B(p)
 
-    # for p in range(6):
-    #     BC_B_metal_rmin(p)
-    #     BC_B_metal_rmax(p)
-    #     BC_B_absorb(p)
+    for p in range(6):
+        BC_B_metal_rmin(p)
+        BC_B_metal_rmax(p)
+        BC_B_absorb(p)
 
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
@@ -1037,10 +1037,10 @@ for it in tqdm(range(Nt), "Progression"):
     for p in range(6):
         push_E(p, it)
 
-    # for p in range(6):
-    #     BC_E_metal_rmin(p)
-    #     BC_E_metal_rmax(p)
-    #     BC_E_absorb(p)
+    for p in range(6):
+        BC_E_metal_rmin(p)
+        BC_E_metal_rmax(p)
+        BC_E_absorb(p)
 
     update_poles()
 
