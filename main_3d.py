@@ -33,7 +33,7 @@ Nr = 1
 Nxi = 64
 Neta = 64
 NG = 1 # Number of ghosts zones
-r_min, r_max = 1.0, 10.0
+r_min, r_max = 1.0, 2.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
 dr = (r_max - r_min) / Nr
@@ -221,7 +221,8 @@ for i in range(Nxi + 2 * NG):
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
 
-dt = cfl * N.min(1.0 / N.sqrt(1.0 / (dr * dr) + g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
+# dt = cfl * N.min(1.0 / N.sqrt(1.0 / (dr * dr) + g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
+dt = cfl * N.min(1.0 / N.sqrt(g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
 print("delta t = {}".format(dt))
 
 ########
