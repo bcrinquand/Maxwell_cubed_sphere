@@ -1,3 +1,7 @@
+## BIG CHANGES
+## - Change r-sweeps of pusher to obey curlB
+## - Change power of r in the diagonal metric components to r**2 instead of r**4
+
 # Import modules
 import numpy as N
 import matplotlib.pyplot as P
@@ -155,8 +159,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 0] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 0] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 0] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 0] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 0] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
             # 1 at (k, i, j + 1/2)
@@ -167,8 +171,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 1] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 1] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 1] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 1] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 1] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
             # 2 at (k, i + 1/2, j + 1/2)
@@ -179,8 +183,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 2] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 2] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 2] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 2] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 2] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
             # 3 at (k + 1/2, i, j)
@@ -191,8 +195,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 3] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 3] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 3] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 3] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 3] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
             # 4 at (k + 1/2, i, j + 1/2)
@@ -203,8 +207,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 4] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 4] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 4] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 4] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 4] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
             # 5 at (k + 1/2, i + 1/2, j)
@@ -215,8 +219,8 @@ for i in range(Nxi + 2 * NG):
             D = N.sqrt(1.0 + Y * Y)
             delta = N.sqrt(1.0 + X * X + Y * Y)
 
-            g11d[k, i, j, 5] = (r0 * r0 * C * C * D / (delta * delta))**2
-            g22d[k, i, j, 5] = (r0 * r0 * C * D * D / (delta * delta))**2
+            g11d[k, i, j, 5] = (r0 * C * C * D / (delta * delta))**2
+            g22d[k, i, j, 5] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 5] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
