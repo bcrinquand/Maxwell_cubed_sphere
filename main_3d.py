@@ -1,7 +1,8 @@
 ## BIG CHANGES
-## - Change r-sweeps of pusher to obey curlB
+## - Change r-sweeps of pusher to reproduce curls
 ## - Change power of r in the diagonal metric components to r**2 instead of r**4
 ## - Output and initial data wrappers
+## - Fixing electric field on the surface to reproduce aligned rotator profiles
 
 # Import modules
 import numpy as N
@@ -832,7 +833,10 @@ def update_poles():
 # Boundary conditions at r_min
 ########
 
-omega = 0.0 # Angular velocity of the conductor at r_min
+InitialData()
+
+omega = 0.1 # Angular velocity of the conductor at r_min
+tilt = 0.0/180.0 * N.pi
 
 # Fields at r_min
 E1_surf = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
@@ -849,13 +853,15 @@ for patch in range(6):
 
             r0 = r[0]
             th0, ph0 = fcoord(xi_grid[i, j], eta_grid[i, j])
-            x0, y0, z0 = coord_sph_to_cart(r0, th0, ph0)
-            omega_sph = vec_cart_to_sph(x0, y0, z0, 0.0, 0.0, omega)
-            omega_patch = fvec(th0, ph0, omega_sph[1], omega_sph[2])
+
+            EtTMP = - omega * Br[patch, 0, i, j] * N.sin(th0)
+            EpTMP = 0.0
+
+            omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
 
             Br_surf[patch, i, j] = Br[patch, 0, i, j]
-            E1_surf[patch, i, j] = - omega_patch[0] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 0]
-            E2_surf[patch, i, j] =   omega_patch[1] * Br_surf[patch, i, j] / sqrt_det_g[0, i, j, 1]
+            E1_surf[patch, i, j] = omega_patch[0]
+            E2_surf[patch, i, j] = omega_patch[1]
 
             ########
             # Initial nonzero field
@@ -871,7 +877,6 @@ def BC_E_metal_rmin(patch):
     E2u[patch, 0, :, :] = E2_surf[patch, :, :]
 
 def BC_B_metal_rmin(patch):
-    Br[patch, 0, :, :] = Br_surf[patch, :, :]
     Br[patch, 0, :, :] = Br_surf[patch, :, :]
 
 ########
@@ -987,10 +992,9 @@ for p in range(6):
 iter = 0
 idump = 0
 
-Nt = 10001 # Number of iterations
-FDUMP = 1000 # Dump frequency
+Nt = 5001 # Number of iterations
+FDUMP = 100 # Dump frequency
 
-InitialData()
 WriteCoordsHDF5()
 
 ########
@@ -1002,9 +1006,9 @@ for it in tqdm(range(Nt), "Progression"):
         plot_fields_unfolded(idump, "Br", 0.05, 10)
         plot_fields_unfolded(idump, "B2u", 0.05, 10)
         plot_fields_unfolded(idump, "B1u", 0.05, 10)
-        plot_fields_unfolded(idump, "Er", 0.05, 10)
-        plot_fields_unfolded(idump, "E2u", 0.05, 10)
-        plot_fields_unfolded(idump, "E1u", 0.05, 10)
+        plot_fields_unfolded(idump, "Er", 0.01, 10)
+        plot_fields_unfolded(idump, "E2u", 0.01, 10)
+        plot_fields_unfolded(idump, "E1u", 0.01, 10)
         # WriteAllFieldsHDF5(idump)
         idump += 1
 
