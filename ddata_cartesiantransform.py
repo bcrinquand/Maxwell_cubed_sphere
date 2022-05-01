@@ -62,9 +62,9 @@ xi_yee  = xi  + 0.5 * dxi
 eta_yee = eta + 0.5 * deta
 
 # Initialize fields
-Br  = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-B1u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
-B2u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+Er  = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+E1u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+E2u = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
 
 Ot = N.linspace(0, N.pi, ONt)
 Op = N.linspace(- N.pi, N.pi, ONp, endpoint=False)
@@ -89,9 +89,9 @@ def ReadFieldHDF5(it, field):
 # Read some fields in cubed sphere coordinetas
 ########
 
-ReadFieldHDF5(5, "Br")
-ReadFieldHDF5(5, "B1u")
-ReadFieldHDF5(5, "B2u")
+ReadFieldHDF5(5, "Er")
+ReadFieldHDF5(5, "E1u")
+ReadFieldHDF5(5, "E2u")
 
 ########
 # Interpolate Br from CS to Spherical positions
@@ -123,7 +123,7 @@ for h in tqdm(range(Nr-1)):
         for i in range(NG, Nxi + 1*NG):
             for j in range(NG, Neta + 1*NG):
 
-                    PB1D.append((Br[patch, h, i, j]+Br[patch, h+1, i, j])/2.0)
+                    PB1D.append((Er[patch, h, i, j]+Er[patch, h+1, i, j])/2.0)
 
     PB1D = N.array(PB1D)
 
@@ -146,8 +146,8 @@ for h in tqdm(range(Nr-1)):
         for i in range(NG, Nxi + 1*NG):
             for j in range(NG, Neta + 1*NG):
 
-                    B1uC = (B1u[patch, h, i, j] + B1u[patch, h, i+1, j])/2.0
-                    B2uC = (B2u[patch, h, i, j] + B2u[patch, h, i, j+1])/2.0
+                    B1uC = (E1u[patch, h, i, j] + E1u[patch, h, i+1, j])/2.0
+                    B2uC = (E2u[patch, h, i, j] + E2u[patch, h, i, j+1])/2.0
 
                     Btu, Bpu = fvec(xi_grid[i, j] + 0.5 * dxi, eta_grid[i, j] + 0.5 * dxi, B1uC, B2uC)
 
@@ -227,13 +227,13 @@ for i in tqdm(range(0, N.shape(datax_out)[0])):
             datat_out[i,j,k] = my_interpolating_function_t([rtmp,thetatmp,phitmp])
             datap_out[i,j,k] = my_interpolating_function_p([rtmp,thetatmp,phitmp])
 
-h5f = h5py.File(outdir+'CARTBfield'+'.'+ str(0).rjust(5, '0') +'.h5', 'w')
-h5f.create_dataset('bx', data=datax_out)
-h5f.create_dataset('by', data=datay_out)
-h5f.create_dataset('bz', data=dataz_out)
-h5f.create_dataset('br', data=datar_out)
-h5f.create_dataset('bt', data=datat_out)
-h5f.create_dataset('bp', data=datap_out)
+h5f = h5py.File(outdir+'CARTEfield'+'.'+ str(0).rjust(5, '0') +'.h5', 'w')
+h5f.create_dataset('ex', data=datax_out)
+h5f.create_dataset('ey', data=datay_out)
+h5f.create_dataset('ez', data=dataz_out)
+h5f.create_dataset('er', data=datar_out)
+h5f.create_dataset('et', data=datat_out)
+h5f.create_dataset('ep', data=datap_out)
 h5f.create_dataset('xpos', data=xv)
 h5f.create_dataset('ypos', data=yv)
 h5f.create_dataset('zpos', data=zv)

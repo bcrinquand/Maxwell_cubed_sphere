@@ -3,6 +3,10 @@
 ## - Change power of r in the diagonal metric components to r**2 instead of r**4
 ## - Output and initial data wrappers
 ## - Fixing electric field on the surface to reproduce aligned rotator profiles
+## - Outer boundary damp to dipole
+
+## TODO:
+## - Outer and inner boundary to inclined dipole
 
 # Import modules
 import numpy as N
@@ -70,10 +74,15 @@ B2d = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG))
 
 Ar = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
 
+Br0  = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+B1u0 = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+B2u0 = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
+
 ########
 # Define initial data
 ########
 B0 = 1.0
+tilt = 30.0/180.0*N.pi
 
 def InitialData():
 
@@ -93,15 +102,25 @@ def InitialData():
                     # BtTMP = 0.0
                     # BpTMP = 0.0
 
-                    BrTMP = 2.0 * (cos(th0)+cos(-th0))/2.0 / ((r0**3.0)) * B0
-                    BtTMP = (sin(th0)-sin(-th0))/2.0 / ((r0**4.0)) * B0
+                    BrTMP = (2.*B0*(N.cos(th0)*N.cos(tilt) + N.sin(th0)*N.sin(ph0)*N.sin(tilt)))/r0**3
+
+                    r0 = r[h] + 0.5 * dr
+                    th0, ph0 = fcoord(xi_grid[i, j], eta_grid[i, j])
+
+                    BtTMP = (B0*(N.cos(tilt)*N.sin(th0) - 1.*N.cos(th0)*N.sin(ph0)*N.sin(tilt)))/r0**4
                     BpTMP = 0.0
+                    if(abs(N.sin(th0))>0.0):
+                        BpTMP = (-1.*B0*N.cos(ph0)*1.0/N.sin(th0)*N.sin(tilt))/r0**4
 
                     BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
 
                     Br[patch, h, i, j] = BrTMP
                     B1u[patch, h, i, j] = BCStmp[0]
                     B2u[patch, h, i, j] = BCStmp[1]
+
+                    Br0[patch, h, i, j] = BrTMP
+                    B1u0[patch, h, i, j] = BCStmp[0]
+                    B2u0[patch, h, i, j] = BCStmp[1]
 
                     Er[patch, h, i, j] = 0.0
                     E1u[patch, h, i, j] = 0.0
@@ -836,7 +855,6 @@ def update_poles():
 InitialData()
 
 omega = 0.1 # Angular velocity of the conductor at r_min
-tilt = 0.0/180.0 * N.pi
 
 # Fields at r_min
 E1_surf = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
@@ -893,9 +911,9 @@ sigma_yee = N.exp(- 10.0 * delta**3)
 
 def BC_B_absorb(patch):
     for k in range(Nr - i_abs, Nr):
-        Br[patch, k, :, :]   *= sigma[k]
-        B1u[patch, k, :, :] *= sigma_yee[k]
-        B2u[patch, k, :, :] *= sigma_yee[k]
+        Br[patch, k, :, :]  = Br0[patch, k, :, :] + (Br[patch, k, :, :] - Br0[patch, k, :, :]) * sigma[k]
+        B1u[patch, k, :, :] = B1u0[patch, k, :, :] + (B1u[patch, k, :, :] - B1u0[patch, k, :, :]) * sigma_yee[k]
+        B2u[patch, k, :, :] = B2u0[patch, k, :, :] + (B2u[patch, k, :, :] - B2u0[patch, k, :, :]) * sigma_yee[k]
 
 def BC_E_absorb(patch):
     for k in range(Nr - i_abs, Nr):
@@ -912,7 +930,7 @@ def BC_E_metal_rmax(patch):
     E2u[patch, -1, :, :] = 0.0
 
 def BC_B_metal_rmax(patch):
-    Br[patch, -1, :, :] = 0.0
+    Br[patch, -1, :, :] = Br0[patch, -1, :, :]
 
 ########
 # Plotting fields on an unfolded sphere
@@ -993,7 +1011,7 @@ iter = 0
 idump = 0
 
 Nt = 5001 # Number of iterations
-FDUMP = 100 # Dump frequency
+FDUMP = 1000 # Dump frequency
 
 WriteCoordsHDF5()
 
@@ -1009,7 +1027,7 @@ for it in tqdm(range(Nt), "Progression"):
         plot_fields_unfolded(idump, "Er", 0.01, 10)
         plot_fields_unfolded(idump, "E2u", 0.01, 10)
         plot_fields_unfolded(idump, "E1u", 0.01, 10)
-        # WriteAllFieldsHDF5(idump)
+        WriteAllFieldsHDF5(idump)
         idump += 1
 
     for p in range(6):
