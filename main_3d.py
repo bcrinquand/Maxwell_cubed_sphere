@@ -82,7 +82,7 @@ B2u0 = N.zeros((6, Nr, Nxi + 2 * NG, Neta + 2 * NG,))
 # Define initial data
 ########
 B0 = 1.0
-tilt = 30.0/180.0*N.pi
+tilt = 0.0/180.0*N.pi
 
 def InitialData():
 
@@ -259,9 +259,11 @@ def contra_to_cov_E(patch):
     j0, j1 = NG, Neta + NG
 
     E1d[patch, :, i0:i1, j0:j1] = g11d[:, i0:i1, j0:j1, 0] * E1u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 0] * (E2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1])
+                         0.25 * g12d[:, i0:i1, j0:j1, 0] * (E2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1]
+                         + N.roll(E2u, 1, axis = 3)[patch, :, i0:i1, j0:j1] + N.roll(E2u, -1, axis = 2)[patch, :, i0:i1, j0:j1])
     E2d[patch, :, i0:i1, j0:j1] = g22d[:, i0:i1, j0:j1, 1] * E2u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 1] * (E1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1])
+                         0.25 * g12d[:, i0:i1, j0:j1, 1] * (E1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1]
+                         + N.roll(E1u, -1, axis = 3)[patch, :, i0:i1, j0:j1] + N.roll(E1u, 1, axis = 2)[patch, :, i0:i1, j0:j1])
 
 def contra_to_cov_B(patch):
 
@@ -269,9 +271,11 @@ def contra_to_cov_B(patch):
     j0, j1 = NG, Neta + NG
 
     B1d[patch, :, i0:i1, j0:j1] = g11d[:, i0:i1, j0:j1, 4] * B1u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 4] * (B2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1])
+                         0.25 * g12d[:, i0:i1, j0:j1, 4] * (B2u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 2), -1, axis = 3)[patch, :, i0:i1, j0:j1]
+                         + N.roll(B2u, -1, axis = 3)[patch, :, i0:i1, j0:j1] + N.roll(B2u, 1, axis = 2)[patch, :, i0:i1, j0:j1])
     B2d[patch, :, i0:i1, j0:j1] = g22d[:, i0:i1, j0:j1, 5] * B2u[patch, :, i0:i1, j0:j1] + \
-                         0.5 * g12d[:, i0:i1, j0:j1, 5] * (B1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1])
+                         0.25 * g12d[:, i0:i1, j0:j1, 5] * (B1u[patch, :, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 2), 1, axis = 3)[patch, :, i0:i1, j0:j1]
+                         + N.roll(B1u, 1, axis = 3)[patch, :, i0:i1, j0:j1] + N.roll(B1u, -1, axis = 2)[patch, :, i0:i1, j0:j1])
 
 def push_B(patch):
 
@@ -854,7 +858,7 @@ def update_poles():
 
 InitialData()
 
-omega = 0.1 # Angular velocity of the conductor at r_min
+omega = 0.0 # Angular velocity of the conductor at r_min
 
 # Fields at r_min
 E1_surf = N.zeros((6, Nxi + 2 * NG, Neta + 2 * NG))
@@ -1010,7 +1014,7 @@ for p in range(6):
 iter = 0
 idump = 0
 
-Nt = 5001 # Number of iterations
+Nt = 10001 # Number of iterations
 FDUMP = 1000 # Dump frequency
 
 WriteCoordsHDF5()
