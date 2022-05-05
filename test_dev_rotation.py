@@ -29,7 +29,7 @@ class Sphere:
     S = 5
 
 # Parameters
-cfl = 0.5
+cfl = 0.7
 Nxi = 64
 Neta = 64
 NG = 1 # Number of ghosts zones
@@ -154,7 +154,7 @@ def push_B(it, patch):
     
     Br[patch, i0:i1, j0:j1]  -= ((N.roll(E2d, -1, axis = 1)[patch, i0:i1, j0:j1] - E2d[patch, i0:i1, j0:j1]) / dxi - \
                                  (N.roll(E1d, -1, axis = 2)[patch, i0:i1, j0:j1] - E1d[patch, i0:i1, j0:j1]) / deta) \
-                                * dt / sqrt_det_g[i0:i1, j0:j1, 3] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
+                                * dt / sqrt_det_g[i0:i1, j0:j1, 3] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
     B1u[patch, i0:i1, j0:j1] -= ((N.roll(Er, -1, axis = 2)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 2]
     B2u[patch, i0:i1, j0:j1] += ((N.roll(Er, -1, axis = 1)[patch, i0:i1, j0:j1] - Er[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 1]
 
@@ -165,7 +165,7 @@ def push_E(it, patch):
     
     Er[patch, i0:i1, j0:j1] += ((B2d[patch, i0:i1, j0:j1] - N.roll(B2d, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi - \
                                 (B1d[patch, i0:i1, j0:j1] - N.roll(B1d, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) \
-                               * dt / sqrt_det_g[i0:i1, j0:j1, 0] # - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
+                               * dt / sqrt_det_g[i0:i1, j0:j1, 0] - 4.0 * N.pi * dt * Jr(it, patch, i0, i1, j0, j1) 
     E1u[patch, i0:i1, j0:j1] += ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 2)[patch, i0:i1, j0:j1]) / deta) * dt / sqrt_det_g[i0:i1, j0:j1, 1]
     E2u[patch, i0:i1, j0:j1] -= ((Br[patch, i0:i1, j0:j1] - N.roll(Br, 1, axis = 1)[patch, i0:i1, j0:j1]) / dxi)  * dt / sqrt_det_g[i0:i1, j0:j1, 2]
 
@@ -252,7 +252,9 @@ def jacob(patch0, patch1, xi0, eta0):
     # J1 = J1.reshape(Nxi + 2 * NG, 2, 2)
     # res = N.sum(N.transpose(J0,(0,2,1)).reshape(Nxi + 2 * NG,2,2,1)*J1.reshape(Nxi + 2 * NG,2,1,2),-3)
 
-    res = N.array([N.matmul(J0[:, :, i], J1[:, :, i]) for i in range(Nxi + 2 * NG)])
+    res = N.array([N.matmul(J1[:, :, i], J0[:, :, i]) for i in range(Nxi + 2 * NG)])
+
+    # res = N.array([N.matmul(J0[:, :, i], J1[:, :, i]) for i in range(Nxi + 2 * NG)])
     return res
 
 from jacob_inv_transformations_flip import *
@@ -269,7 +271,9 @@ def jacob_inv(patch0, patch1, xi0, eta0):
     # J1 = J1.reshape(Nxi + 2 * NG, 2, 2)
     # res = N.sum(N.transpose(J0,(0,2,1)).reshape(Nxi + 2 * NG,2,2,1)*J1.reshape(Nxi + 2 * NG,2,1,2),-3)
 
-    res = N.array([N.matmul(J0[:, :, i], J1[:, :, i]) for i in range(Nxi + 2 * NG)])
+    res = N.array([N.matmul(J1[:, :, i], J0[:, :, i]) for i in range(Nxi + 2 * NG)])
+
+    # res = N.array([N.matmul(J0[:, :, i], J1[:, :, i]) for i in range(Nxi + 2 * NG)])
     return res
 
 # %%
@@ -277,7 +281,7 @@ def jacob_inv(patch0, patch1, xi0, eta0):
 ########
 
 # def interp(arr_in, xA, xB):
-#     f = interpolate.interp1d(xA, arr_in, kind='linear', fill_value="extrapolate", bounds_error=False)
+#     f = interpolate.interp1d(xA, arr_in, kind='quadratic', fill_value="extrapolate", bounds_error=False)
 #     return f(xB)
 
 def interp(arr_in, xA, xB):
@@ -303,25 +307,22 @@ def communicate_B_patch_cov(patch0, patch1):
 # Compute auxiliary E edge fields
 ########
 
-def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
-    
-    if (typ == "vect"):
-        jac = jacob
-    elif (typ == "form"):
-        jac = jacob_inv
+def compute_E_edge(p0, p1, jac, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
     
     if (top == 'xx'):
 
         # E_eta_a at Nxi + NG - 1/2, j + 1/2        
         J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
-        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[Nxi + NG, :], eta_grid[Nxi + NG, :] + 0.5 * deta)
+        J_1to0 = jac(p1, p0, xi1, eta1)
         denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]      
         
         E_edge_0 = (2.0 * E_eta_0 + 2.0 * J_1to0[:, 1, 1] * E_eta_1 + J_1to0[:,1, 0] * (E_xi_1 + J_0to1[:, 0, 0] * E_xi_0)) / denom
 
         # E_xi_b at NG, j 
-        J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :])
-        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[Nxi + NG - 1, :])
+        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[NG, :])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[NG - 1, :] + 0.5 * dxi, eta_grid[NG - 1, :])
+        J_0to1 = jac(p0, p1, xi0, eta0)
         denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]      
         
         E_edge_1 = (2.0 * E_xi_1 + 2.0 * J_0to1[:, 0, 0] * E_xi_0 + J_0to1[:, 0, 1] * (E_eta_0 + J_1to0[:, 1, 1] * E_eta_1)) / denom
@@ -332,14 +333,16 @@ def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
                 
         # E_eta_a at Nxi + NG - 1/2, j + 1/2        
         J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
-        J_1to0 = jac(p1, p0, xi_grid[:, NG] + 0.5 * dxi, eta_grid[:, NG])
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[Nxi + NG, :], eta_grid[Nxi + NG, :] + 0.5 * deta)
+        J_1to0 = jac(p1, p0, xi1, eta1)
         denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]      
 
         E_edge_0 = (2.0 * E_eta_0 + 2.0 * J_1to0[:, 1, 1] * E_eta_1 + J_1to0[:, 1, 0] * (E_xi_1 + J_0to1[:, 0, 0] * E_xi_0)) / denom
 
         # E_eta_b at i, NG 
-        J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
         J_1to0 = jac(p1, p0, xi_grid[:, NG], eta_grid[:, NG])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[:, NG - 1], eta_grid[:, NG - 1] + 0.5 * deta)
+        J_0to1 = jac(p0, p1, xi0, eta0)
         denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
         
         E_edge_1 = (2.0 * E_eta_1 + 2.0 * J_0to1[:, 1, 1] * E_eta_0 + J_0to1[:, 1, 0] * (E_xi_0 + J_1to0[:, 0, 0] * E_xi_1)) / denom
@@ -350,14 +353,18 @@ def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
 
         # E_xi_a at i + 1/2, Neta + NG - 1/2        
         J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
-        J_1to0 = jac(p1, p0, xi_grid[:, NG] + 0.5 * dxi, eta_grid[:, NG])
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[:, Neta + NG] + 0.5 * dxi, eta_grid[:, Neta + NG])
+        J_1to0 = jac(p1, p0, xi1, eta1)
         denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
+        
         E_edge_0 = (2.0 * E_xi_0 + 2.0 * J_1to0[:, 0, 0] * E_xi_1 + J_1to0[:, 0, 1] * (E_eta_1 + J_0to1[:, 1, 1] * E_eta_0)) / denom
 
         # E_eta_b at i, NG        
-        J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1], eta_grid[:, Neta + NG - 1] + 0.5 * deta)
-        J_1to0 = jac(p1, p0, xi_grid[:, Neta + NG - 1], eta_grid[:, Neta + NG - 1])
+        J_1to0 = jac(p1, p0, xi_grid[:, NG], eta_grid[:, NG])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[:, NG - 1], eta_grid[:, NG - 1] + 0.5 * deta)
+        J_0to1 = jac(p0, p1, xi0, eta0)
         denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
+        
         E_edge_1 = (2.0 * E_eta_1 + 2.0 * J_0to1[:, 1, 1] * E_eta_0 + J_0to1[:, 1, 0] * (E_xi_0 + J_1to0[:, 0, 0] * E_xi_1)) / denom
 
         return E_edge_0, E_edge_1
@@ -366,15 +373,18 @@ def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
 
         # E_xi_a at i + 1/2, Neta + NG - 1/2        
         J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
-        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[NG, :] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[:, Neta + NG] + 0.5 * dxi, eta_grid[:, Neta + NG])
+        J_1to0 = jac(p1, p0, xi1, eta1)
         denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
         
         E_edge_0 = (2.0 * E_xi_0 + 2.0 * J_1to0[:, 0, 0] * E_xi_1 + J_1to0[:, 0, 1] * (E_eta_1 + J_0to1[:, 1, 1] * E_eta_0)) / denom
 
         # E_xi_b at NG, j        
-        J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
         J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[NG, :])
-        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]      
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[NG - 1, :] + 0.5 * dxi, eta_grid[NG - 1, :])
+        J_0to1 = jac(p0, p1, xi0, eta0)
+        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]
+           
         E_edge_1 = (2.0 * E_xi_1 + 2.0 * J_0to1[:, 0, 0] * E_xi_0 + J_0to1[:, 0, 1] * (E_eta_0 + J_1to0[:, 1, 1] * E_eta_1)) / denom
 
         return E_edge_0, E_edge_1
@@ -386,85 +396,88 @@ def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
 # Compute auxiliary B edge fields
 ########
 
-# def compute_B_edge(p0, p1, typ, top, B_xi_0, B_eta_0, B_xi_1, B_eta_1):
+def compute_B_edge(p0, p1, jac, top, B_xi_0, B_eta_0, B_xi_1, B_eta_1):
     
-#     if (typ == "vect"):
-#         jac = jacob
-#     elif (typ == "form"):
-#         jac = jacob_inv
-    
-#     top = topology[p0, p1]
-#     if (top == 0):
-#         return
-    
-#     elif (top == 'xx'):
+    if (top == 'xx'):
 
-#         # B_xi at Nxi + NG - 1/2, j
-#         J_0to1 = jac(p0, p1, xi_yee[Nxi + NG - 1], eta)
-#         J_1to0 = jac(p1, p0, xi[NG], eta)
-#         denom = 4.0 - J_0to1[1, 0] * J_1to0[0, 1]
+        # B_xi_a at Nxi + NG - 1/2, j
+        J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[Nxi + NG, :], eta_grid[Nxi + NG, :] + 0.5 * deta)
+        J_1to0 = jac(p1, p0, xi1, eta1)
+        denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
               
-#         B_edge_0 = (2.0 * B_xi_0 + 2.0 * J_1to0[0, 0] * B_xi_1 + J_1to0[0, 1] * (B_eta_1 + J_0to1[1, 1] * B_eta_0)) / denom
+        B_edge_0 = (2.0 * B_xi_0 + 2.0 * J_1to0[:, 0, 0] * B_xi_1 + J_1to0[:, 0, 1] * (B_eta_1 + J_0to1[:, 1, 1] * B_eta_0)) / denom
         
-#         # B_eta at NG, j 
-#         J_0to1 = jac(p0, p1, xi_yee[Nxi + NG - 1], eta)
-#         J_1to0 = jac(p1, p0, xi[NG], eta)
-#         denom = 4.0 - J_0to1[1, 0] * J_1to0[0, 1]
+        # B_eta_b at NG, j 
+        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[NG, :])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[NG - 1, :] + 0.5 * dxi, eta_grid[NG - 1, :])
+        J_0to1 = jac(p0, p1, xi0, eta0)
+        denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
 
-#         B_edge_1 = (2.0 * B_eta_1 + 2.0 * J_0to1[1, 1] * B_eta_0 + J_0to1[1, 0] * (B_xi_0 + J_1to0[0, 0] * B_xi_1)) / denom
+        B_edge_1 = (2.0 * B_eta_1 + 2.0 * J_0to1[:, 1, 1] * B_eta_0 + J_0to1[:, 1, 0] * (B_xi_0 + J_1to0[:, 0, 0] * B_xi_1)) / denom
 
-#     elif (top == 'xy'):
+        return B_edge_0, B_edge_1
     
-#         for j in range(NG, Neta + NG):
+    elif (top == 'xy'):
 
-#             # Average to get B_xi at xi, not xi_yee
-#             B_xi_0  = 0.5 * (field1[p0, Nxi + NG - 1, j] + field1[p0, Nxi + NG - 1, j - 1])  
-#             B_eta_0 = field2[p0, Nxi + NG - 1, j]
-#             B_xi_1  = field1[p1, j, NG]
-#             B_eta_1 = 0.5 * (field2[p1, j, NG] + field2[p1, j - 1, NG]) 
-            
-#             J_0to1 = jac(p0, p1, xi_yee[Nxi + NG - 1], eta[j])
-#             J_1to0 = jac(p1, p0, xi[j], eta[NG])
+        # B_xi_a at Nxi + NG - 1/2, j + 1/2
+        J_0to1 = jac(p0, p1, xi_grid[Nxi + NG - 1, :] + 0.5 * dxi, eta_grid[Nxi + NG - 1, :] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[Nxi + NG, :], eta_grid[Nxi + NG, :] + 0.5 * deta)
+        J_1to0 = jac(p1, p0, xi1, eta1)
+        denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]
+              
+        B_edge_0 = (2.0 * B_xi_0 + 2.0 * J_1to0[:, 0, 0] * B_xi_1 + J_1to0[:, 0, 1] * (B_eta_1 + J_0to1[:, 1, 1] * B_eta_0)) / denom
 
-#             denom = 4.0 - J_0to1[1, 0] * J_1to0[0, 1]      
-#             B_edge_0[j] = (2.0 * B_xi_0 + 2.0 * J_1to0[0, 0] * B_xi_1 + J_1to0[0, 1] * (B_eta_1 + J_0to1[1, 1] * B_eta_0)) / denom
+        # B_xi_b at i, NG
+        J_1to0 = jac(p1, p0, xi_grid[:, NG] + 0.5 * dxi, eta_grid[NG, :])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[:, NG - 1], eta_grid[:, NG - 1] + 0.5 * deta)
+        J_0to1 = jac(p0, p1, xi0, eta0)
+        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]
+        
+        B_edge_1 = (2.0 * B_xi_1 + 2.0 * J_0to1[:, 0, 0] * B_xi_0 + J_0to1[:, 0, 1] * (B_eta_0 + J_1to0[:, 1, 1] * B_eta_1)) / denom
 
-#             denom = 4.0 - J_0to1[0, 1] * J_1to0[1, 0]      
-#             B_edge_1[j] = (2.0 * B_xi_1 + 2.0 * J_0to1[0, 0] * B_xi_0 + J_0to1[0, 1] * (B_eta_0 + J_1to0[1, 1] * B_eta_1)) / denom
+        return B_edge_0, B_edge_1
 
-#     elif (top == 'yy'):
+    elif (top == 'yy'):
     
-#         for j in range(NG, Nxi + NG):
+        # B_eta_a at NG, j 
+        J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[:, Neta + NG] + 0.5 * dxi, eta_grid[:, Neta + NG])
+        J_1to0 = jac(p1, p0, xi1, eta1)
+        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]
+              
+        B_edge_0 = (2.0 * B_eta_0 + 2.0 * J_1to0[:, 1, 1] * B_eta_1 + J_1to0[:, 1, 0] * (B_xi_1 + J_0to1[:, 0, 0] * B_xi_0)) / denom
 
-#             B_xi_0  = field1[p0, j, Nxi + NG - 1]  
-#             B_eta_0 = 0.5 * (field2[p0, j, Nxi + NG - 1] + field2[p0, j - 1, Nxi + NG - 1])
-#             B_xi_1  = field1[p1, j, NG]    
-#             B_eta_1 = 0.5 * (field2[p1, j, NG] + field2[p1, j - 1, NG]) 
+        # B_xi_b at i, NG
+        J_1to0 = jac(p1, p0, xi_grid[:, NG], eta_grid[:, NG])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[:, NG - 1], eta_grid[:, NG - 1] + 0.5 * deta)
+        J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
+        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0]
+          
+        B_edge_1 = (2.0 * B_xi_1 + 2.0 * J_0to1[:, 0, 0] * B_xi_0 + J_0to1[:, 0, 1] * (B_eta_0 + J_1to0[:, 1, 1] * B_eta_1)) / denom
+
+        return B_edge_0, B_edge_1
+
+    elif (top == 'yx'):
             
-#             J_0to1 = jac(p0, p1, xi[j], eta_yee[Neta + NG - 1])
-#             J_1to0 = jac(p1, p0, xi[j], eta[NG])
+        J_0to1 = jac(p0, p1, xi_grid[:, Neta + NG - 1] + 0.5 * dxi, eta_grid[:, Neta + NG - 1] + 0.5 * deta)
+        xi1, eta1 = transform_coords(p0, p1, xi_grid[:, Neta + NG] + 0.5 * dxi, eta_grid[:, Neta + NG])
+        J_1to0 = jac(p1, p0, xi1, eta1)
+        denom = 4.0 - J_0to1[:, 0, 1] * J_1to0[:, 1, 0] 
+             
+        B_edge_0 = (2.0 * B_eta_0 + 2.0 * J_1to0[:, 1, 1] * B_eta_1 + J_1to0[:, 1, 0] * (B_xi_1 + J_0to1[:, 0, 0] * B_xi_0)) / denom
 
-#             denom = 4.0 - J_0to1[0, 1] * J_1to0[1, 0]      
-#             B_edge_0[j] = (2.0 * B_eta_0 + 2.0 * J_1to0[1, 1] * B_eta_1 + J_1to0[1, 0] * (B_xi_1 + J_0to1[0, 0] * B_xi_0)) / denom
-#             B_edge_1[j] = (2.0 * B_xi_1 + 2.0 * J_0to1[0, 0] * B_xi_0 + J_0to1[0, 1] * (B_eta_0 + J_1to0[1, 1] * B_eta_1)) / denom
+        J_1to0 = jac(p1, p0, xi_grid[NG, :], eta_grid[NG, :])
+        xi0, eta0 = transform_coords(p1, p0, xi_grid[NG - 1, :] + 0.5 * dxi, eta_grid[NG - 1, :])
+        J_0to1 = jac(p0, p1, xi0, eta0)
+        denom = 4.0 - J_0to1[:, 1, 0] * J_1to0[:, 0, 1]    
+          
+        B_edge_1 = (2.0 * B_eta_1 + 2.0 * J_0to1[:, 1, 1] * B_eta_0 + J_0to1[:, 1, 0] * (B_xi_0 + J_1to0[:, 0, 0] * B_xi_1)) / denom
 
-#     elif (top == 'yx'):
+        return B_edge_0, B_edge_1
     
-#         for j in range(NG, Nxi + NG):
-
-#             B_xi_0  = field1[p0, j, Nxi + NG - 1]  
-#             B_eta_0 = 0.5 * (field2[p0, j, Nxi + NG - 1] + field2[p0, j - 1, Nxi + NG - 1])
-#             B_xi_1  = 0.5 * (field1[p1, NG, j] + field1[p1, NG, j - 1])    
-#             B_eta_1 = field2[p1, NG, j] 
-            
-#             J_0to1 = jac(p0, p1, xi[j], eta_yee[Neta + NG - 1])
-#             J_1to0 = jac(p1, p0, xi[NG], eta[j])
-
-#             denom = 4.0 - J_0to1[0, 1] * J_1to0[1, 0]      
-#             B_edge_0[j] = (2.0 * B_eta_0 + 2.0 * J_1to0[1, 1] * B_eta_1 + J_1to0[1, 0] * (B_xi_1 + J_0to1[0, 0] * B_xi_0)) / denom
-
-#             denom = 4.0 - J_0to1[1, 0] * J_1to0[0, 1]      
-#             B_edge_1[j] = (2.0 * B_eta_1 + 2.0 * J_0to1[1, 1] * B_eta_0 + J_0to1[1, 0] * (B_xi_0 + J_1to0[0, 0] * B_xi_1)) / denom
+    else:
+        return
     
 ########
 # Communication of covariant or contravariant E
@@ -472,6 +485,244 @@ def compute_E_edge(p0, p1, typ, top, E_xi_0, E_eta_0, E_xi_1, E_eta_1):
 # patch1 has the closed boundary 
 ########  
 
+# def communicate_E_patch(patch0, patch1, typ):
+
+#     if (typ == "vect"):
+#         field1 = E1u
+#         field2 = E2u
+#         jac = jacob
+#     if (typ == "form"):
+#         field1 = E1d
+#         field2 = E2d
+#         jac = jacob_inv
+    
+#     transform = (globals()["transform_" + typ])
+
+#     top = topology[patch0, patch1]
+    
+#     if (top == 'xx'):
+
+#         #########
+#         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
+#         ########
+
+#         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
+#         i1 = NG  # First active cell of xi edge of patch1   
+                
+#         xi0 = xi_grid[i0, :] + 0.0 * dxi
+#         eta0 = eta_grid[i0, :] + 0.5 * deta
+        
+#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+        
+#         E1 = interp(field1[patch1, i1, :], eta, eta1)
+#         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
+        
+#         E_mean_xi = 0.5 * (E1u[patch0, i0 - 1, :] + N.roll(E1u[patch0, i0 - 1, :], -1))
+#         E_edge_1 = compute_E_edge(patch0, patch1, jac, top, E_mean_xi, E2u[patch0, i0 - 1, :], E1, E2)[1]
+        
+#         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E_edge_1, E2)[1][NG:(Nxi + NG)]
+
+#         if (typ == "vect"):
+        
+#             i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
+#             i1 = NG  # First active cell of xi edge of patch1 
+            
+#             xi0 = xi_grid[i0, :] + 0.0 * dxi
+#             eta0 = eta_grid[i0, :] + 0.0 * deta
+            
+#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+            
+#             Er1 = interp(Er[patch1, i1, :], eta, eta1)
+#             Er[patch0, i0, NG:(Nxi + NG)] = Er1[NG:(Nxi + NG)]
+
+#         #########
+#         # Communicate fields from xi right edge of patch0 to xi left edge patch1
+#         ########
+        
+#         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
+#         i1 = NG - 1 # First ghost cell of xi edge of patch1   
+                
+#         xi1 = xi_grid[i1, :] + 0.5 * dxi
+#         eta1 = eta_grid[i1, :] + 0.0 * deta
+        
+#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
+        
+#         E1 = interp(field1[patch0, i0, :], eta, eta0)
+#         E2 = interp(field2[patch0, i0, :], eta_yee, eta0)
+
+#         E_mean_eta = 0.5 * (E2u[patch1, i1 + 1, :] + N.roll(E2u[patch1, i1 + 1, :], 1))
+#         E_edge_0 = compute_E_edge(patch0, patch1, jac, top, E1, E2, E1u[patch1, i1 + 1, :], E_mean_eta)[0]
+
+#         field1[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E_edge_0)[0][NG:(Nxi + NG)]
+
+#     elif (top == 'xy'):
+            
+#         #########
+#         # Communicate fields from eta bottom edge of patch1 to xi right edge of patch0
+#         ########
+        
+#         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
+#         j1 = NG  # First active cell of eta edge of patch1 
+                
+#         xi0 = xi_grid[i0, :] + 0.0 * dxi
+#         eta0 = eta_grid[i0, :] + 0.5 * deta
+        
+#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+
+#         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
+#         E2 = interp(field2[patch1, :, j1], xi, xi1)
+
+#         E_mean_xi = 0.5 * (E1u[patch0, i0 - 1, :] + N.roll(E1u[patch0, i0 - 1, :], -1))
+#         E_edge_1 = compute_E_edge(patch0, patch1, jac, top, E_mean_xi, E2u[patch0, i0 - 1, :], E1, E2)[1]
+
+#         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E_edge_1)[1][NG:(Nxi + NG)]
+
+#         if (typ == "vect"):
+        
+#             i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
+#             j1 = NG  # First active cell of eta edge of patch1 
+            
+#             xi0 = xi_grid[i0, :] + 0.0 * dxi
+#             eta0 = eta_grid[i0, :] + 0.0 * deta
+            
+#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+            
+#             Er1 = interp(Er[patch1, :, j1], xi, xi1)
+#             Er[patch0, i0, (NG + 1):(Nxi + NG)] = Er1[(NG + 1):(Nxi + NG)]
+            
+#         #########
+#         # Communicate fields from xi right edge of patch0 to eta bottom edge patch1
+#         ########
+        
+#         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
+#         j1 = NG - 1 # First ghost cell on eta edge of patch1 
+                
+#         xi1 = xi_grid[:, j1] + 0.0 * dxi
+#         eta1 = eta_grid[:, j1] + 0.5 * deta
+        
+#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
+    
+#         E1 = interp(field1[patch0, i0, :], eta, eta0)
+#         E2 = interp(field2[patch0, i0, :], eta_yee, eta0)
+
+#         E_mean_xi = 0.5 * (E1u[patch1, j1 + 1, :] + N.roll(E1u[patch1, j1 + 1, :], 1))
+#         E_edge_0 = compute_E_edge(patch0, patch1, jac, top, E1, E2, E_mean_xi, E2u[patch1, j1 + 1, :])[0]
+        
+#         field2[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E_edge_0)[1][NG:(Nxi + NG + 1)]
+
+#     elif (top == 'yy'):
+    
+#         #########
+#         # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
+#         ########
+        
+#         j0 = Neta + NG # Last ghost cell of eta edge of patch0
+#         j1 = NG # First active cell of eta edge of patch1
+                
+#         xi0 = xi_grid[:, j0] + 0.5 * dxi
+#         eta0 = eta_grid[:, j0] + 0.0 * deta
+        
+#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+        
+#         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
+#         E2 = interp(field2[patch1, :, j1], xi, xi1)
+
+#         E_mean_eta = 0.5 * (E2u[patch0, :, j0 - 1] + N.roll(E2u[patch0, :, j0 - 1], -1))
+#         E_edge_1 = compute_E_edge(patch0, patch1, jac, top, E1u[patch0, :, j0 - 1], E_mean_eta, E1, E2)[1]
+        
+#         field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E_edge_1)[0][NG:(Nxi + NG)]
+
+#         if (typ == "vect"):
+
+#             j0 = Neta + NG # Last ghost cell of eta edge of patch0
+#             j1 = NG # First active cell of eta edge of patch1
+            
+#             xi0 = xi_grid[:, j0] + 0.0 * dxi
+#             eta0 = eta_grid[:,j0] + 0.0 * deta
+            
+#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+            
+#             Er1 = interp(Er[patch1, :, j1], xi, xi1)
+#             Er[patch0, NG:(Nxi + NG), j0] = Er1[NG:(Nxi + NG)]
+
+#         #########
+#         # Communicate fields from eta top edge of patch0 to eta bottom edge patch1
+#         ########
+        
+#         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
+#         j1 = NG - 1 # First ghost cell of eta edge of patch1
+                
+#         xi1 = xi_grid[:, j1] + 0.0 * dxi
+#         eta1 = eta_grid[:, j1] + 0.5 * deta
+        
+#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
+        
+#         E1 = interp(field1[patch0, :, j0], xi_yee, xi0)
+#         E2 = interp(field2[patch0, :, j0], xi, xi0)
+
+#         E_mean_xi = 0.5 * (E1u[patch1, :, j1 + 1] + N.roll(E1u[patch1, :, j1 + 1], 1))
+#         E_edge_0 = compute_E_edge(patch0, patch1, jac, top, E1, E2, E_mean_xi, E2u[patch1, :, j1 + 1])[0]
+        
+#         field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E_edge_0, E2)[1][NG:(Nxi + NG)]            
+        
+#     elif (top == 'yx'):
+
+#         #########
+#         # Communicate fields from xi right edge of patch1 to eta top edge of patch0
+#         ########
+        
+#         j0 = Neta + NG # Last ghost cell of eta edge of patch0
+#         i1 = NG # First active cell of xi edge of patch1
+                
+#         xi0 = xi_grid[:, j0] + 0.5 * dxi
+#         eta0 = eta_grid[:, j0] + 0.0 * deta
+        
+#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+        
+#         E1 = interp(field1[patch1, i1, :], eta, eta1)
+#         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
+
+#         E_mean_eta = 0.5 * (E2u[patch0, :, j0 - 1] + N.roll(E2u[patch0, :, j0 - 1], -1))
+#         E_edge_1 = compute_E_edge(patch0, patch1, jac, top, E1u[patch0, :, j0 - 1], E_mean_eta, E1, E2)[1]
+        
+#         field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E_edge_1, E2)[0][NG:(Nxi + NG)]
+
+#         if (typ == "vect"):
+    
+#             j0 = Neta + NG # Last ghost cell of eta edge of patch0
+#             i1 = NG # First active cell of xi edge of patch1
+            
+#             xi0 = xi_grid[:, j0] + 0.0 * dxi
+#             eta0 = eta_grid[:, j0] + 0.0 * deta
+            
+#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
+            
+#             Er1 = interp(Er[patch1, i1, :], eta, eta1)
+#             Er[patch0, (NG + 1):(Nxi + NG), j0] = Er1[(NG + 1):(Nxi + NG)]
+
+#         #########
+#         # Communicate fields from eta top edge of patch0 to xi right edge patch1
+#         ########
+        
+#         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
+#         i1 = NG - 1 # First ghost cell on xi edge of patch1
+                
+#         xi1 = xi_grid[i1, :] + 0.5 * dxi
+#         eta1 = eta_grid[i1, :] + 0.0 * deta
+        
+#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
+        
+#         E1 = interp(field1[patch0, :, j0], xi_yee, xi0)
+#         E2 = interp(field2[patch0, :, j0], xi, xi0)
+
+#         E_mean_xi = 0.5 * (E1u[patch1, i1 + 1, :] + N.roll(E1u[patch1, i1 + 1, :], 1))
+#         E_edge_0 = compute_E_edge(patch0, patch1, jac, top, E1, E2, E_mean_xi, E2u[patch1, i1 + 1, :])[0]
+
+#         field1[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG + 1)]
+
+#     else:
+#         return
+      
 def communicate_E_patch(patch0, patch1, typ):
 
     if (typ == "vect"):
@@ -500,12 +751,10 @@ def communicate_E_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         E1 = interp(field1[patch1, i1, :], eta, eta1)
+        # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
         
-        E_mean_xi = 0.5 * (E1u[patch0, i0 - 1, :] + N.roll(E1u[patch0, i0 - 1, :], -1))
-        E_edge_1 = compute_E_edge(patch0, patch1, typ, top, E_mean_xi, E2u[patch0, i0 - 1, :], E1, E2)[1]
-        
-        field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E_edge_1, E2)[1][NG:(Nxi + NG)]
+        field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
 
         if (typ == "vect"):
         
@@ -533,17 +782,15 @@ def communicate_E_patch(patch0, patch1, typ):
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
         E1 = interp(field1[patch0, i0, :], eta, eta0)
-        E2 = interp(field2[patch0, i0, :], eta_yee, eta0)
-
-        E_mean_eta = 0.5 * (E2u[patch1, i1 + 1, :] + N.roll(E2u[patch1, i1 + 1, :], 1))
-        E_edge_0 = compute_E_edge(patch0, patch1, typ, top, E1, E2, E1u[patch1, i1 + 1, :], E_mean_eta)[0]
-
-        field1[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E_edge_0)[0][NG:(Nxi + NG)]
+        E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
+        
+        field1[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG)]
 
     elif (top == 'xy'):
             
         #########
-        # Communicate fields from eta bottom edge of patch1 to xi right edge of patch0
+        # Communicate fields from eta left edge of patch1 to xi right edge of patch0
         ########
         
         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
@@ -553,14 +800,12 @@ def communicate_E_patch(patch0, patch1, typ):
         eta0 = eta_grid[i0, :] + 0.5 * deta
         
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-
+        
         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
         E2 = interp(field2[patch1, :, j1], xi, xi1)
+        # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch0, :, j1 - 1]), xi, xi1)
 
-        E_mean_xi = 0.5 * (E1u[patch0, i0 - 1, :] + N.roll(E1u[patch0, i0 - 1, :], -1))
-        E_edge_1 = compute_E_edge(patch0, patch1, typ, top, E_mean_xi, E2u[patch0, i0 - 1, :], E1, E2)[1]
-
-        field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E_edge_1)[1][NG:(Nxi + NG)]
+        field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
 
         if (typ == "vect"):
         
@@ -576,7 +821,7 @@ def communicate_E_patch(patch0, patch1, typ):
             Er[patch0, i0, (NG + 1):(Nxi + NG)] = Er1[(NG + 1):(Nxi + NG)]
             
         #########
-        # Communicate fields from xi right edge of patch0 to eta bottom edge patch1
+        # Communicate fields from xi right edge of patch0 to eta left edge patch1
         ########
         
         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
@@ -589,18 +834,17 @@ def communicate_E_patch(patch0, patch1, typ):
     
         E1 = interp(field1[patch0, i0, :], eta, eta0)
         E2 = interp(field2[patch0, i0, :], eta_yee, eta0)
+        
+        # E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
+        # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
 
-        E_mean_xi = 0.5 * (E1u[patch1, j1 + 1, :] + N.roll(E1u[patch1, j1 + 1, :], 1))
-        E_edge_0 = compute_E_edge(patch0, patch1, typ, top, E1, E2, E_mean_xi, E2u[patch1, j1 + 1, :])[0]
-        
-        field2[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E_edge_0)[1][NG:(Nxi + NG + 1)]
-        
+        field2[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG + 1)]
         # field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]
 
     elif (top == 'yy'):
     
         #########
-        # Communicate fields from eta bottom edge of patch1 to eta top edge of patch0
+        # Communicate fields from eta left edge of patch1 to eta right edge of patch0
         ########
         
         j0 = Neta + NG # Last ghost cell of eta edge of patch0
@@ -613,11 +857,9 @@ def communicate_E_patch(patch0, patch1, typ):
         
         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
         E2 = interp(field2[patch1, :, j1], xi, xi1)
-
-        E_mean_eta = 0.5 * (E2u[patch0, :, j0 - 1] + N.roll(E2u[patch0, :, j0 - 1], -1))
-        E_edge_1 = compute_E_edge(patch0, patch1, typ, top, E1u[patch0, :, j0 - 1], E_mean_eta, E1, E2)[1]
+        # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch1, :, j1 - 1]), xi, xi1)
         
-        field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E_edge_1)[0][NG:(Nxi + NG)]
+        field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
 
         if (typ == "vect"):
 
@@ -633,7 +875,7 @@ def communicate_E_patch(patch0, patch1, typ):
             Er[patch0, NG:(Nxi + NG), j0] = Er1[NG:(Nxi + NG)]
 
         #########
-        # Communicate fields from eta top edge of patch0 to eta bottom edge patch1
+        # Communicate fields from eta right edge of patch0 to eta left edge patch1
         ########
         
         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
@@ -644,13 +886,11 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        E1 = interp(field1[patch0, :, j0], xi_yee, xi0)
+        E1 = (interp(field1[patch0, :, j0], xi_yee, xi0)+interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
         E2 = interp(field2[patch0, :, j0], xi, xi0)
-
-        E_mean_xi = 0.5 * (E1u[patch1, :, j1 + 1] + N.roll(E1u[patch1, :, j1 + 1], 1))
-        E_edge_0 = compute_E_edge(patch0, patch1, typ, top, E1, E2, E_mean_xi, E2u[patch1, :, j1 + 1])[0]
         
-        field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E_edge_0, E2)[1][NG:(Nxi + NG)]            
+        field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]            
         
     elif (top == 'yx'):
 
@@ -667,12 +907,10 @@ def communicate_E_patch(patch0, patch1, typ):
         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
         
         E1 = interp(field1[patch1, i1, :], eta, eta1)
+        # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
-
-        E_mean_eta = 0.5 * (E2u[patch0, :, j0 - 1] + N.roll(E2u[patch0, :, j0 - 1], -1))
-        E_edge_1 = compute_E_edge(patch0, patch1, typ, top, E1u[patch0, :, j0 - 1], E_mean_eta, E1, E2)[1]
         
-        field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E_edge_1, E2)[0][NG:(Nxi + NG)]
+        field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
 
         if (typ == "vect"):
     
@@ -699,239 +937,14 @@ def communicate_E_patch(patch0, patch1, typ):
         
         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
         
-        E1 = interp(field1[patch0, :, j0], xi_yee, xi0)
+        E1 = (interp(field1[patch0, :, j0], xi_yee, xi0) + interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
+        # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
         E2 = interp(field2[patch0, :, j0], xi, xi0)
-
-        E_mean_xi = 0.5 * (E1u[patch1, i1 + 1, :] + N.roll(E1u[patch1, i1 + 1, :], 1))
-        E_edge_0 = compute_E_edge(patch0, patch1, typ, top, E1, E2, E_mean_xi, E2u[patch1, i1 + 1, :])[0]
 
         field1[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG + 1)]
 
     else:
         return
-      
-# def communicate_E_patch(patch0, patch1, typ):
-
-#     if (typ == "vect"):
-#         field1 = E1u
-#         field2 = E2u
-#     if (typ == "form"):
-#         field1 = E1d
-#         field2 = E2d
-    
-#     transform = (globals()["transform_" + typ])
-
-#     top = topology[patch0, patch1]
-    
-#     if (top == 'xx'):
-
-#         #########
-#         # Communicate fields from xi left edge of patch1 to xi right edge of patch0
-#         ########
-
-#         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
-#         i1 = NG  # First active cell of xi edge of patch1   
-                
-#         xi0 = xi_grid[i0, :] + 0.0 * dxi
-#         eta0 = eta_grid[i0, :] + 0.5 * deta
-        
-#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-        
-#         E1 = interp(field1[patch1, i1, :], eta, eta1)
-#         # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
-#         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
-        
-#         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
-
-#         if (typ == "vect"):
-        
-#             i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
-#             i1 = NG  # First active cell of xi edge of patch1 
-            
-#             xi0 = xi_grid[i0, :] + 0.0 * dxi
-#             eta0 = eta_grid[i0, :] + 0.0 * deta
-            
-#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-            
-#             Er1 = interp(Er[patch1, i1, :], eta, eta1)
-#             Er[patch0, i0, NG:(Nxi + NG)] = Er1[NG:(Nxi + NG)]
-
-#         #########
-#         # Communicate fields from xi right edge of patch0 to xi left edge patch1
-#         ########
-        
-#         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
-#         i1 = NG - 1 # First ghost cell of xi edge of patch1   
-                
-#         xi1 = xi_grid[i1, :] + 0.5 * dxi
-#         eta1 = eta_grid[i1, :] + 0.0 * deta
-        
-#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
-        
-#         E1 = interp(field1[patch0, i0, :], eta, eta0)
-#         E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-#         # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
-        
-#         field1[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG)]
-
-#     elif (top == 'xy'):
-            
-#         #########
-#         # Communicate fields from eta left edge of patch1 to xi right edge of patch0
-#         ########
-        
-#         i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
-#         j1 = NG  # First active cell of eta edge of patch1 
-                
-#         xi0 = xi_grid[i0, :] + 0.0 * dxi
-#         eta0 = eta_grid[i0, :] + 0.5 * deta
-        
-#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-        
-#         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
-#         E2 = interp(field2[patch1, :, j1], xi, xi1)
-#         # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch0, :, j1 - 1]), xi, xi1)
-
-#         field2[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, E1, E2)[1][NG:(Nxi + NG)]
-
-#         if (typ == "vect"):
-        
-#             i0 = Nxi + NG # Last ghost cell of xi edge of patch0             
-#             j1 = NG  # First active cell of eta edge of patch1 
-            
-#             xi0 = xi_grid[i0, :] + 0.0 * dxi
-#             eta0 = eta_grid[i0, :] + 0.0 * deta
-            
-#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-            
-#             Er1 = interp(Er[patch1, :, j1], xi, xi1)
-#             Er[patch0, i0, (NG + 1):(Nxi + NG)] = Er1[(NG + 1):(Nxi + NG)]
-            
-#         #########
-#         # Communicate fields from xi right edge of patch0 to eta left edge patch1
-#         ########
-        
-#         i0 = Nxi + NG - 1 # Last active cell of xi edge of patch0                   
-#         j1 = NG - 1 # First ghost cell on eta edge of patch1 
-                
-#         xi1 = xi_grid[:, j1] + 0.0 * dxi
-#         eta1 = eta_grid[:, j1] + 0.5 * deta
-        
-#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
-    
-#         E1 = interp(field1[patch0, i0, :], eta, eta0)
-#         E2 = interp(field2[patch0, i0, :], eta_yee, eta0)
-        
-#         # E2 = (interp(field2[patch0, i0, :], eta_yee, eta0) + interp(field2[patch0, i0 + 1, :], eta_yee, eta0)) / 2.0
-#         # E2 = interp(0.5 * (field2[patch0, i0, :] + field2[patch0, i0 + 1, :]), eta_yee, eta0)
-
-#         field2[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG + 1)]
-#         # field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]
-
-#     elif (top == 'yy'):
-    
-#         #########
-#         # Communicate fields from eta left edge of patch1 to eta right edge of patch0
-#         ########
-        
-#         j0 = Neta + NG # Last ghost cell of eta edge of patch0
-#         j1 = NG # First active cell of eta edge of patch1
-                
-#         xi0 = xi_grid[:, j0] + 0.5 * dxi
-#         eta0 = eta_grid[:, j0] + 0.0 * deta
-        
-#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-        
-#         E1 = interp(field1[patch1, :, j1], xi_yee, xi1)
-#         E2 = interp(field2[patch1, :, j1], xi, xi1)
-#         # E2 = interp(0.5 * (field2[patch1, :, j1] + field2[patch1, :, j1 - 1]), xi, xi1)
-        
-#         field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
-
-#         if (typ == "vect"):
-
-#             j0 = Neta + NG # Last ghost cell of eta edge of patch0
-#             j1 = NG # First active cell of eta edge of patch1
-            
-#             xi0 = xi_grid[:, j0] + 0.0 * dxi
-#             eta0 = eta_grid[:,j0] + 0.0 * deta
-            
-#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-            
-#             Er1 = interp(Er[patch1, :, j1], xi, xi1)
-#             Er[patch0, NG:(Nxi + NG), j0] = Er1[NG:(Nxi + NG)]
-
-#         #########
-#         # Communicate fields from eta right edge of patch0 to eta left edge patch1
-#         ########
-        
-#         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
-#         j1 = NG - 1 # First ghost cell of eta edge of patch1
-                
-#         xi1 = xi_grid[:, j1] + 0.0 * dxi
-#         eta1 = eta_grid[:, j1] + 0.5 * deta
-        
-#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
-        
-#         E1 = (interp(field1[patch0, :, j0], xi_yee, xi0)+interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-#         # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
-#         E2 = interp(field2[patch0, :, j0], xi, xi0)
-        
-#         field2[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, E1, E2)[1][NG:(Nxi + NG)]            
-        
-#     elif (top == 'yx'):
-
-        # #########
-        # # Communicate fields from xi right edge of patch1 to eta top edge of patch0
-        # ########
-        
-#         j0 = Neta + NG # Last ghost cell of eta edge of patch0
-#         i1 = NG # First active cell of xi edge of patch1
-                
-#         xi0 = xi_grid[:, j0] + 0.5 * dxi
-#         eta0 = eta_grid[:, j0] + 0.0 * deta
-        
-#         xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-        
-#         E1 = interp(field1[patch1, i1, :], eta, eta1)
-#         # E1 = interp(0.5 * (field1[patch1, i1, :] + field1[patch1, i1 - 1, :]), eta, eta1)
-#         E2 = interp(field2[patch1, i1, :], eta_yee, eta1)
-        
-#         field1[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, E1, E2)[0][NG:(Nxi + NG)]
-
-#         if (typ == "vect"):
-    
-#             j0 = Neta + NG # Last ghost cell of eta edge of patch0
-#             i1 = NG # First active cell of xi edge of patch1
-            
-#             xi0 = xi_grid[:, j0] + 0.0 * dxi
-#             eta0 = eta_grid[:, j0] + 0.0 * deta
-            
-#             xi1, eta1 = transform_coords(patch0, patch1, xi0, eta0)
-            
-#             Er1 = interp(Er[patch1, i1, :], eta, eta1)
-#             Er[patch0, (NG + 1):(Nxi + NG), j0] = Er1[(NG + 1):(Nxi + NG)]
-
-        # #########
-        # # Communicate fields from eta top edge of patch0 to xi right edge patch1
-        # ########
-        
-#         j0 = Neta + NG - 1 # Last active cell of eta edge of patch0
-#         i1 = NG - 1 # First ghost cell on xi edge of patch1
-                
-#         xi1 = xi_grid[i1, :] + 0.5 * dxi
-#         eta1 = eta_grid[i1, :] + 0.0 * deta
-        
-#         xi0, eta0 = transform_coords(patch1, patch0, xi1, eta1)
-        
-#         E1 = (interp(field1[patch0, :, j0], xi_yee, xi0) + interp(field1[patch0, :, j0 + 1], xi_yee, xi0)) / 2.0
-#         # E1 = interp(0.5 * (field1[patch0, :, j0] + field1[patch0, :, j0 + 1]), xi_yee, xi0)
-#         E2 = interp(field2[patch0, :, j0], xi, xi0)
-
-#         field1[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, E1, E2)[0][NG:(Nxi + NG + 1)]
-
-#     else:
-#         return
             
 ########
 # Communication of covariant or contravariant B
@@ -944,9 +957,11 @@ def communicate_B_patch(patch0, patch1, typ):
     if (typ == "vect"):
         field1 = B1u
         field2 = B2u
+        jac = jacob
     if (typ == "form"):
         field1 = B1d
         field2 = B2d
+        jac = jacob_inv
     
     transform = (globals()["transform_" + typ])
 
@@ -968,8 +983,11 @@ def communicate_B_patch(patch0, patch1, typ):
         
         B1 = interp(field1[patch1, i1, :], eta_yee, eta1)
         B2 = interp(field2[patch1, i1, :], eta, eta1)
-        
-        field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B1, B2)[0][NG:(Nxi + NG)]
+
+        B_mean_eta = 0.5 * (B2u[patch0, i0 - 1, :] + N.roll(B2u[patch0, i0 - 1, :], -1))
+        B_edge_1 = compute_B_edge(patch0, patch1, jac, top, B1u[patch0, i0 - 1, :], B_mean_eta, B1, B2)[1]
+
+        field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B1, B_edge_1)[0][NG:(Nxi + NG)]
         
         #########
         # Communicate fields from xi right edge of patch0 to xi left edge patch1
@@ -986,7 +1004,10 @@ def communicate_B_patch(patch0, patch1, typ):
         B1 = interp(field1[patch0, i0, :], eta_yee, eta0)
         B2 = interp(field2[patch0, i0, :], eta, eta0)
 
-        field2[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][NG:(Nxi + NG)]
+        B_mean_xi = 0.5 * (B1u[patch1, i1 + 1, :] + N.roll(B1u[patch1, i1 + 1, :], 1))
+        B_edge_0 = compute_B_edge(patch0, patch1, jac, top, B1, B2, B_mean_xi, B2u[patch1, i1 + 1, :])[0]
+
+        field2[patch1, i1, NG:(Nxi + NG)] = transform(patch0, patch1, xi0, eta0, B_edge_0, B2)[1][NG:(Nxi + NG)]
         
         if (typ == "vect"):
 
@@ -1017,8 +1038,11 @@ def communicate_B_patch(patch0, patch1, typ):
         
         B1 = interp(field1[patch1, :, j1], xi, xi1)
         B2 = interp(field2[patch1, :, j1], xi_yee, xi1)
-        
-        field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B1, B2)[0][NG:(Nxi + NG)]
+
+        B_mean_eta = 0.5 * (B2u[patch0, i0 - 1, :] + N.roll(B2u[patch0, i0 - 1, :], -1))
+        B_edge_1 = compute_B_edge(patch0, patch1, jac, top, B1u[patch0, i0 - 1, :], B_mean_eta, B1, B2)[1]
+
+        field1[patch0, i0, NG:(Nxi + NG)] = transform(patch1, patch0, xi1, eta1, B_edge_1, B2)[0][NG:(Nxi + NG)]
 
         #########
         # Communicate fields from xi right edge of patch0 to eta bottom edge patch1
@@ -1034,8 +1058,11 @@ def communicate_B_patch(patch0, patch1, typ):
         
         B1 = interp(field1[patch0, i0, :], eta_yee, eta0)
         B2 = interp(field2[patch0, i0, :], eta, eta0)
-        
-        field1[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][NG:(Nxi + NG + 1)]
+
+        B_mean_eta = 0.5 * (B2u[patch1, :, j1 + 1] + N.roll(B2u[patch1, :, j1 + 1], 1))
+        B_edge_0 = compute_B_edge(patch0, patch1, jac, top, B1, B2, B1u[patch1, :, j1 + 1], B_mean_eta)[0]
+   
+        field1[patch1, NG:(Nxi + NG + 1), j1] = transform(patch0, patch1, xi0, eta0, B_edge_0, B2)[0][NG:(Nxi + NG + 1)]
 
         if (typ == "vect"):
 
@@ -1066,8 +1093,11 @@ def communicate_B_patch(patch0, patch1, typ):
         
         B1 = interp(field1[patch1, :, j1], xi, xi1)
         B2 = interp(field2[patch1, :, j1], xi_yee, xi1)
-        
-        field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B1, B2)[1][NG:(Nxi + NG)]
+
+        B_mean_xi = 0.5 * (B1u[patch0, :, j0 - 1] + N.roll(B1u[patch0, :, j0 - 1], -1))
+        B_edge_1 = compute_B_edge(patch0, patch1, jac, top, B_mean_xi, B2u[patch0, :, j0 - 1], B1, B2)[1]
+
+        field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B_edge_1, B2)[1][NG:(Nxi + NG)]
         
         #########
         # Communicate fields from eta top edge of patch0 to eta bottom edge patch1
@@ -1083,8 +1113,11 @@ def communicate_B_patch(patch0, patch1, typ):
         
         B1 = interp(field1[patch0, :, j0], xi, xi0)
         B2 = interp(field2[patch0, :, j0], xi_yee, xi0)
-        
-        field1[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, B1, B2)[0][NG:(Nxi + NG)]
+
+        B_mean_eta = 0.5 * (B2u[patch1, :, j1 + 1] + N.roll(B2u[patch1, :, j1 + 1], 1))
+        B_edge_0 = compute_B_edge(patch0, patch1, jac, top, B1, B2, B1u[patch1, :, j1 + 1], B_mean_eta)[0]
+
+        field1[patch1, NG:(Nxi + NG), j1] = transform(patch0, patch1, xi0, eta0, B1, B_mean_eta)[0][NG:(Nxi + NG)]
         
         if (typ == "vect"):
 
@@ -1116,7 +1149,10 @@ def communicate_B_patch(patch0, patch1, typ):
         B1 = interp(field1[patch1, i1, :], eta_yee, eta1)
         B2 = interp(field2[patch1, i1, :], eta, eta1)
 
-        field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B1, B2)[1][NG:(Nxi + NG)]
+        B_mean_xi = 0.5 * (B1u[patch0, :, j0 - 1] + N.roll(B1u[patch0, :, j0 - 1], -1))
+        B_edge_1 = compute_B_edge(patch0, patch1, jac, top, B_mean_xi, B2u[patch0, :, j0 - 1], B1, B2)[1]
+
+        field2[patch0, NG:(Nxi + NG), j0] = transform(patch1, patch0, xi1, eta1, B1, B_edge_1)[1][NG:(Nxi + NG)]
         
         #########
         # Communicate fields from eta top edge of patch0 to xi right edge patch1
@@ -1133,7 +1169,10 @@ def communicate_B_patch(patch0, patch1, typ):
         B1 = interp(field1[patch0, :, j0], xi, xi0)
         B2 = interp(field2[patch0, :, j0], xi_yee, xi0)
 
-        field2[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, B1, B2)[1][NG:(Nxi + NG + 1)]
+        B_mean_xi = 0.5 * (B1u[patch1, i1 + 1, :] + N.roll(B1u[patch1, i1 + 1, :], 1))
+        B_edge_0 = compute_B_edge(patch0, patch1, jac, top, B1, B2, B_mean_xi, B2u[patch1, i1 + 1, :])[0]
+
+        field2[patch1, i1, NG:(Nxi + NG + 1)] = transform(patch0, patch1, xi0, eta0, B1, B_edge_0)[1][NG:(Nxi + NG + 1)]
         
         if (typ == "vect"):
 
@@ -1391,8 +1430,8 @@ def update_poles():
 
 def update_poles_integral():
 
-    B_mean_1 = (B1d[Sphere.A, NG, Neta + NG - 1] + B1d[Sphere.D, NG, Neta + NG - 1] + B1d[Sphere.N, NG, Neta + NG - 1]) / 1.0
-    B_mean_2 = (B2d[Sphere.B, Nxi + NG - 1, NG]  + B2d[Sphere.C, Nxi + NG - 1, NG]  + B2d[Sphere.S, Nxi + NG - 1, NG])  / 1.0
+    B_mean_1 = (B1d[Sphere.A, NG, Neta + NG - 1] + B1d[Sphere.D, NG, Neta + NG - 1] + B1d[Sphere.N, NG, Neta + NG - 1]) / 3.0
+    B_mean_2 = (B2d[Sphere.B, Nxi + NG - 1, NG]  + B2d[Sphere.C, Nxi + NG - 1, NG]  + B2d[Sphere.S, Nxi + NG - 1, NG])  / 3.0
 
     Er[Sphere.A, NG, Neta + NG] += dt * N.sin(0.5 * deta) / (1.0 - N.cos(0.5 * deta)) * B_mean_1
     Er[Sphere.B, Nxi + NG, NG]  -= dt * N.sin(0.5 * dxi)  / (1.0 - N.cos(0.5 * dxi))  * B_mean_2
@@ -1616,8 +1655,8 @@ int_energy = N.zeros((6, Nt))
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded(idump, "Br", 0.1)
-        # plot_fields_unfolded(idump, "Er", 0.2)
+        # plot_fields_unfolded(idump, "Br", 0.1)
+        plot_fields_unfolded(idump, "Er", 0.1)
         idump += 1
         
     for p in range(6):
@@ -1644,7 +1683,7 @@ for it in tqdm(range(Nt), "Progression"):
     for p in range(6):
         push_E(it, p)
 
-    update_poles()
+    update_poles_integral()
 
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]

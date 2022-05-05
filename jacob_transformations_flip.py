@@ -109,4 +109,3 @@ def jacob_sph_to_S(theta, phi):
     delta = N.sqrt(1.0 + X * X + Y * Y)
     return N.array([[- X * delta**2 / (C**2 * N.sqrt(delta**2 - 1.0)), (Y / (C**2))], \
                     [- Y * delta**2 / (D**2 * N.sqrt(delta**2 - 1.0)), - X / (D**2)]])
-
