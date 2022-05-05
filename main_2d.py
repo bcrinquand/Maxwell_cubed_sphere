@@ -30,8 +30,8 @@ class Sphere:
 
 # Parameters
 cfl = 0.7
-Nxi = 128
-Neta = 128
+Nxi = 64
+Neta = 64
 NG = 1 # Number of ghosts zones
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
@@ -128,20 +128,34 @@ def contra_to_cov_E(patch):
     i0, i1 = NG, Nxi + NG
     j0, j1 = NG, Neta + NG
              
+    # E1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 1] * E1u[patch, i0:i1, j0:j1] + \
+    #                      0.5 * g12d[i0:i1, j0:j1, 1] * (E2u[patch, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
+    # E2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 2] * E2u[patch, i0:i1, j0:j1] + \
+    #                      0.5 * g12d[i0:i1, j0:j1, 2] * (E1u[patch, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])
+
     E1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 1] * E1u[patch, i0:i1, j0:j1] + \
-                         0.5 * g12d[i0:i1, j0:j1, 1] * (E2u[patch, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
+                         0.25 * g12d[i0:i1, j0:j1, 1] * (E2u[patch, i0:i1, j0:j1] + N.roll(N.roll(E2u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1] \
+                                                        + N.roll(E2u, -1, axis = 1)[patch, i0:i1, j0:j1] + N.roll(E2u, 1, axis = 2)[patch, i0:i1, j0:j1])
     E2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 2] * E2u[patch, i0:i1, j0:j1] + \
-                         0.5 * g12d[i0:i1, j0:j1, 2] * (E1u[patch, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])
+                         0.25 * g12d[i0:i1, j0:j1, 2] * (E1u[patch, i0:i1, j0:j1] + N.roll(N.roll(E1u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1] + 
+                                                         + N.roll(E1u, 1, axis = 1)[patch, i0:i1, j0:j1] + N.roll(E1u, -1, axis = 2)[patch, i0:i1, j0:j1])
 
 def contra_to_cov_B(patch):
 
     i0, i1 = NG, Nxi + NG 
     j0, j1 = NG, Neta + NG
     
+    # B1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 2] * B1u[patch, i0:i1, j0:j1] + \
+    #                      0.5 * g12d[i0:i1, j0:j1, 2] * (B2u[patch, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])            
+    # B2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 1] * B2u[patch, i0:i1, j0:j1] + \
+    #                      0.5 * g12d[i0:i1, j0:j1, 1] * (B1u[patch, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
+
     B1d[patch, i0:i1, j0:j1] = g11d[i0:i1, j0:j1, 2] * B1u[patch, i0:i1, j0:j1] + \
-                         0.5 * g12d[i0:i1, j0:j1, 2] * (B2u[patch, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1])            
+                         0.25 * g12d[i0:i1, j0:j1, 2] * (B2u[patch, i0:i1, j0:j1] + N.roll(N.roll(B2u, 1, axis = 1), -1, axis = 2)[patch, i0:i1, j0:j1]
+                                                         + N.roll(B2u, 1, axis = 1)[patch, i0:i1, j0:j1] + N.roll(B2u, -1, axis = 2)[patch, i0:i1, j0:j1])            
     B2d[patch, i0:i1, j0:j1] = g22d[i0:i1, j0:j1, 1] * B2u[patch, i0:i1, j0:j1] + \
-                         0.5 * g12d[i0:i1, j0:j1, 1] * (B1u[patch, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1])
+                         0.25 * g12d[i0:i1, j0:j1, 1] * (B1u[patch, i0:i1, j0:j1] + N.roll(N.roll(B1u, -1, axis = 1), 1, axis = 2)[patch, i0:i1, j0:j1]
+                                                         + N.roll(B1u, -1, axis = 1)[patch, i0:i1, j0:j1] + N.roll(B1u, 1, axis = 2)[patch, i0:i1, j0:j1])
 
 def push_B(it, patch):
     
@@ -235,28 +249,12 @@ def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
 # Interpolation routines
 ########
 
-# def interp(arr, x0, x):
-    
-#     i0 = N.argmin(N.abs(x - x0))
-#     if (x0 > x[i0]):
-#         i_min = i0
-#         i_max = i0 + 1
-#     else:
-#         i_min = i0 - 1
-#         i_max = i0
-
-#     if (i_max == Nxi + 2 * NG):
-#         return arr[i_min]
-#     else:
-#         # Define weight coefficients for interpolation
-#         w1 = (x0 - x[i_min]) / (x[i_max] - x[i_min])
-#         w2 = (x[i_max] - x0) / (x[i_max] - x[i_min])
-
-#         return (w1 * arr[i_max] + w2 * arr[i_min]) / (w1 + w2)
+# def interp(arr_in, xA, xB):
+#     f = interpolate.interp1d(xA, arr_in, kind='linear', fill_value="extrapolate", bounds_error=False)
+#     return f(xB)
 
 def interp(arr_in, xA, xB):
-    f = interpolate.interp1d(xA, arr_in, kind='linear', fill_value="extrapolate", bounds_error=False)
-    return f(xB)
+    return N.interp(xB, xA, arr_in)
 
 # %%
 # Communication between two patches
@@ -882,8 +880,8 @@ for p in range(6):
 
 idump = 0
 
-Nt = 50000 # Number of iterations
-FDUMP = 50 # Dump frequency
+Nt = 20000 # Number of iterations
+FDUMP = 200 # Dump frequency
 
 # Figure parameters
 scale, aspect = 2.0, 0.7
