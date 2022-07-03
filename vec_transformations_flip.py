@@ -1,6 +1,6 @@
 import numpy as N
 
-from coord_transformations_flip import coord_cart_to_sph, coord_sph_to_cart
+from coord_transformations_flip import coord_A_to_sph, coord_cart_to_sph, coord_sph_to_cart
 
 ########
 # Spherical <-> Cartesian
