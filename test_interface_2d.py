@@ -49,10 +49,7 @@ yBz_grid, xBz_grid = N.meshgrid(y_half, x_half)
 yEx_grid, xEx_grid = N.meshgrid(y_int, x_half)
 yEy_grid, xEy_grid = N.meshgrid(y_half, x_int)
 
-n_patches = 2    # Ex[1, :, 0]  += dt * sig_abs * (Ex[1, :, 0] - Bz[1, :, 0]) / P_half_2[0]
-    # Ex[1, :, -1] -= dt * sig_abs * (Ex[1, :, -1] + Bz[1, :, -1]) / P_half_2[-1]
-    # Ey[1, -1, :] += dt * sig_abs * (Ey[1, -1, :] - Bz[1, -1, :]) / P_half_2[-1]
-
+n_patches = 2
 
 # Define fields
 Bz = N.zeros((n_patches, Nx_half, Ny_half))
@@ -124,10 +121,10 @@ def compute_diff_E(p):
         dExdy[p, :, j] = (Ex[p, :, j] - Ex[p, :, j - 1]) / dy
 
 Jz = N.zeros_like(Bz)
-Jz[0, :, :] = 100.0 * N.exp(- (xBz_grid**2 + yBz_grid**2) / 0.1**2)
+Jz[0, :, :] = 0.0 * N.exp(- (xBz_grid**2 + yBz_grid**2) / 0.1**2)
 
 def push_B(p):
-        Bz[p, :, :] += dt * (dExdy[p, :, :] - dEydx[p, :, :]) + dt * Jz[p, :, :] * N.sin(10.0 * it * dt) * N.exp(- it * dt / 1.0)
+        Bz[p, :, :] += dt * (dExdy[p, :, :] - dEydx[p, :, :]) + dt * Jz[p, :, :] * N.sin(20.0 * it * dt) # * N.exp(- it * dt / 1.0)
 
 def push_E(p, it):
         Ex[p, :, :] += dt * dBzdy[p, :, :]
@@ -202,7 +199,7 @@ def BC_absorbing_E():
 # Initialization
 ########
 
-amp = 0.0
+amp = 1.0
 n_mode = 2
 wave = 2.0 * (x_max - x_min) / n_mode
 Bz0 = amp * N.cos(2.0 * N.pi * (xBz_grid - x_min) / wave) * N.cos(2.0 * N.pi * (yBz_grid - x_min) / wave)
@@ -249,8 +246,8 @@ def plot_fields(it):
 
 idump = 0
 
-Nt = 2000 # Number of iterations
-FDUMP = 50 # Dump frequency
+Nt = 50000 # Number of iterations
+FDUMP = 500 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -263,17 +260,17 @@ for it in tqdm(range(Nt), "Progression"):
         compute_diff_B(p)
         push_E(p, it)
 
-    interface_E()
-    BC_absorbing_E()
-    # BC_conducting_E()
+    # interface_E()
+    # BC_absorbing_E()
+    BC_conducting_E()
 
     for p in range(n_patches):
         compute_diff_E(p)
         push_B(p)
 
-    interface_B()
-    BC_absorbing_B()
-    # BC_conducting_B()
+    # interface_B()
+    # BC_absorbing_B()
+    BC_conducting_B()
 
     for p in range(n_patches):
         energy[p, it] = dx * dy * N.sum(Bz[p, :, :]**2) + N.sum(Ex[p, :, :]**2) + N.sum(Ey[p, :, :]**2)

@@ -89,6 +89,14 @@ def compute_diff_By_2():
     for i in range(2, Nx_int - 2):
         dBdx[i] = (By[i + 1] - By[i]) / dx
 
+def compute_diff_By_2_alt():
+
+    dBdx[0] = (- 8.0 * By[0] + 9.0 * By[1] -1.0 * By[2]) / dx / 3.0
+    dBdx[Nx_int - 1] = (8.0 * By[-1] - 9.0 * By[-2] + 1.0 * By[-3]) / dx / 3.0
+
+    for i in range(1, Nx_int - 1):
+        dBdx[i] = (By[i + 1] - By[i]) / dx
+
 def compute_diff_Ez_2():
     
     dEdx[0] = (- 0.5 * Ez[0] + 0.5 * Ez[1]) / dx / P_half_2[0]
@@ -100,6 +108,18 @@ def compute_diff_Ez_2():
     dEdx[Nx_half - 1] = (- 0.5 * Ez[-2] + 0.5 * Ez[-1]) / dx / P_half_2[Nx_half - 1]
 
     for i in range(3, Nx_half - 3):
+        dEdx[i] = (Ez[i] - Ez[i - 1]) / dx
+
+def compute_diff_Ez_2_alt():
+    
+    dEdx[0] = (- 0.5 * Ez[0] + 0.5 * Ez[1]) / dx / P_half_2[0]
+    # dEdx[0] = (- 3.0 * Ez[0] + 4.0 * Ez[1] - 1.0 * Ez[2]) / dx / 2.0
+    dEdx[1] = (- 0.25 * Ez[0] + 0.25 * Ez[1]) / dx / P_half_2[1]
+    
+    dEdx[Nx_half - 2] = (- 0.25 * Ez[-2] + 0.25 * Ez[-1]) / dx / P_half_2[Nx_half - 2]
+    dEdx[Nx_half - 1] = (- 0.5 * Ez[-2] + 0.5 * Ez[-1]) / dx / P_half_2[Nx_half - 1]
+
+    for i in range(2, Nx_half - 2):
         dEdx[i] = (Ez[i] - Ez[i - 1]) / dx
 
 def compute_diff_By_4():
