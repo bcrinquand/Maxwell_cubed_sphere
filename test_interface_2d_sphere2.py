@@ -323,11 +323,11 @@ def contra_to_cov_E_weights(p):
     E1d[p, -1, 1:-1] = g11d[-1, 1:-1, 0] * E1u[p, -1, 1:-1] + g12d[-1, 1:-1, 0] * (w1 * E2u[p, -1, 1:-2] + w2 * N.roll(E2u, -1, axis = 2)[p, -1, 1:-2]) / (w1 + w2)
     # Bottom edge
     w1 = sqrt_det_g[1:, 0, 0]
-    w2 = N.roll(sqrt_det_g, -1, axis = 0)[1:, 0, 0]
+    w2 = N.roll(sqrt_det_g, 1, axis = 0)[1:, 0, 0]
     E1d[p, 1:-1, 0] = g11d[0:-1, 0, 1] * E1u[p, 1:-1, 0] + g12d[0:-1, 0, 1] * (w1 * E2u[p, 1:, 0] + w2 * N.roll(E2u, 1, axis = 1)[p, 1:, 0]) / (w1 + w2)
     # Top edge
     w1 = sqrt_det_g[1:, -1, 0]
-    w2 = N.roll(sqrt_det_g, -1, axis = 0)[1:, -1, 0]
+    w2 = N.roll(sqrt_det_g, 1, axis = 0)[1:, -1, 0]
     E1d[p, 1:-1, -1] = g11d[0:-1, -1, 1] * E1u[p, 1:-1, -1] + g12d[0:-1, -1, 1] * (w1 * E2u[p, 1:, -1] + w2 * N.roll(E2u, 1, axis = 1)[p, 1:, -1]) / (w1 + w2)
     # Bottom left corner
     E1d[p, 0, 0] = g11d[0, 0, 0] * E1u[p, 0, 0] + g12d[0, 0, 0] * E2u[p, 0, 0]
@@ -403,15 +403,15 @@ def contra_to_cov_E_weights2(p):
     E1d[p, -1, 1:-1] = g11d[-1, 1:-1, 0] * E1u[p, -1, 1:-1] + (w1 * g1 * E2u[p, -1, 1:-2] + w2 * g2 * N.roll(E2u, -1, axis = 2)[p, -1, 1:-2]) / (w1 + w2)
     # Bottom edge
     w1 = sqrt_det_g[1:, 0, 0]
-    w2 = N.roll(sqrt_det_g, -1, axis = 0)[1:, 0, 0]
+    w2 = N.roll(sqrt_det_g, 1, axis = 0)[1:, 0, 0]
     g1 = g12d[1:, 0, 0]
-    g2 = N.roll(g12d, -1, axis = 0)[1:, 0, 0]
+    g2 = N.roll(g12d, 1, axis = 0)[1:, 0, 0]
     E1d[p, 1:-1, 0] = g11d[0:-1, 0, 1] * E1u[p, 1:-1, 0] + (w1 * g1 * E2u[p, 1:, 0] + w2 * g2 *  N.roll(E2u, 1, axis = 1)[p, 1:, 0]) / (w1 + w2)
     # Top edge
     w1 = sqrt_det_g[1:, -1, 0]
-    w2 = N.roll(sqrt_det_g, -1, axis = 0)[1:, -1, 0]
+    w2 = N.roll(sqrt_det_g, 1, axis = 0)[1:, -1, 0]
     g1 = g12d[1:, -1, 0]
-    g2 = N.roll(g12d, -1, axis = 0)[1:, -1, 0]
+    g2 = N.roll(g12d, 1, axis = 0)[1:, -1, 0]
     E1d[p, 1:-1, -1] = g11d[0:-1, -1, 1] * E1u[p, 1:-1, -1] + (w1 * g1 * E2u[p, 1:, -1] + w2 * g2 * N.roll(E2u, 1, axis = 1)[p, 1:, -1]) / (w1 + w2)
     # Bottom left corner
     E1d[p, 0, 0] = g11d[0, 0, 0] * E1u[p, 0, 0] + g12d[0, 0, 0] * E2u[p, 0, 0]

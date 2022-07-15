@@ -143,6 +143,7 @@ g22d = N.empty((Nxi_int, Neta_int, 4))
 g11u = N.empty((Nxi_int, Neta_int, 4))
 g12u = N.empty((Nxi_int, Neta_int, 4))
 g22u = N.empty((Nxi_int, Neta_int, 4))
+sqrt_det_g_half = N.empty(Nxi_half)
 
 for i in range(Nxi_int):
     for j in range(Neta_int):
@@ -200,6 +201,17 @@ for i in range(Nxi_int):
             g11u[i, j, i0] = inv_metric[0, 0]
             g12u[i, j, i0] = inv_metric[0, 1]
             g22u[i, j, i0] = inv_metric[1, 1]
+
+for i in range(Nxi_half):        
+        X = N.tan(xi_half[i])
+        Y = N.tan(eta_int[0])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        g11d0 = (C * C * D / (delta * delta))**2
+        g22d0 = (C * D * D / (delta * delta))**2
+        g12d0 = - X * Y * C * C * D * D / (delta)**4
+        sqrt_det_g_half[i] = N.sqrt(g11d0 * g22d0 - g12d0 * g12d0)
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
 
@@ -350,7 +362,7 @@ def compute_diff_E_alt(p):
 
 
 Jz = N.zeros_like(Br)
-Jz[Sphere.C, :, :] = 50.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
+Jz[Sphere.B, :, :] = 00.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
 
 def contra_to_cov_E(p):
 
@@ -616,9 +628,6 @@ def push_E(p, it, dtin):
 def interp(arr_in, xA, xB):
     return N.interp(xB, xA, arr_in)
 
-# Interface inner boundary 
-sig_in  = 1.10 / dxi # 0.45 / dt # 1.10 / dxi # 0.45 / dt # 75.0 # 0.5 / dt # 200.0
-
 # def compute_delta_B(p0, p1, dtin):
 
 #     i0 = 0 #1
@@ -720,6 +729,9 @@ sig_in  = 1.10 / dxi # 0.45 / dt # 1.10 / dxi # 0.45 / dt # 75.0 # 0.5 / dt # 20
 #         diff_Br[p0, i0:i1, -1] += 0.5 * (delta1[::-1] + delta2)[i0:i1]
 #         diff_Br[p1, 0, i0:i1]  += 0.5 * (delta1 + delta2[::-1])[i0:i1]
 
+# Interface inner boundary 
+sig_in  = 1.3 / dxi # 0.45 / dt # 1.10 / dxi # 0.45 / dt # 75.0 # 0.5 / dt # 200.0
+
 def compute_delta_B(p0, p1, dtin):
 
     i0 = 1 # 0
@@ -732,14 +744,14 @@ def compute_delta_B(p0, p1, dtin):
         # p0
         xi0 = xi_int[-1]
         eta0 = eta_half
-        Exi_0 = interp(E1u[p0, -1, :], eta_int, eta0)
-        Eeta_0 = interp(E2u[p0, -1, :], eta_half, eta0)
+        Exi_0 = interp(E1d[p0, -1, :], eta_int, eta0)
+        Eeta_0 = interp(E2d[p0, -1, :], eta_half, eta0)
 
         # p1
         xi1 = xi_int[0]
         eta1 = eta_half
-        Exi_1 = interp(E1u[p1, 0, :], eta_int, eta0)
-        Eeta_1 = interp(E2u[p1, 0, :], eta_half, eta0)
+        Exi_1 = interp(E1d[p1, 0, :], eta_int, eta0)
+        Eeta_1 = interp(E2d[p1, 0, :], eta_half, eta0)
 
         diff_Br[p0, -1, i0:i1] += dtin * sig_in * (Eeta_1[i0:i1] - Eeta_0[i0:i1])
         diff_Br[p1, 0, i0:i1]  += dtin * sig_in * (Eeta_1[i0:i1] - Eeta_0[i0:i1])
@@ -783,14 +795,14 @@ def compute_delta_B(p0, p1, dtin):
         # p0
         xi0 = xi_half
         eta0 = eta_int[-1]
-        Exi_0 = interp(E1u[p0, :, -1], xi_half, xi0)
-        Eeta_0 = interp(E2u[p0, :, -1], xi_int, xi0)
+        Exi_0 = interp(E1d[p0, :, -1], xi_half, xi0)
+        Eeta_0 = interp(E2d[p0, :, -1], xi_int, xi0)
 
         # p1
         xi1  = xi_int[-1]
         eta1 = eta_half
-        Exi_1 = interp(E1u[p1, 0, :], eta_int, eta1)
-        Eeta_1 = interp(E2u[p1, 0, :], eta_half, eta1)
+        Exi_1 = interp(E1d[p1, 0, :], eta_int, eta1)
+        Eeta_1 = interp(E2d[p1, 0, :], eta_half, eta1)
 
         diff_Br[p0, i0:i1, -1] += dtin * sig_in * (Exi_0[i0:i1] + (Eeta_1[::-1])[i0:i1])
         diff_Br[p1, 0, i0:i1]  += dtin * sig_in * ((Exi_0[::-1])[i0:i1] + Eeta_1[i0:i1])
@@ -827,38 +839,38 @@ def corners_B(p0):
 
 def compute_delta_E(p0, p1, dtin):
 
-    i0 = 1 # 0
-    i1 = Nxi_half - 1 
-
+    i0 = 0
+    i1 = Nxi_half
+    
     top = topology[p0, p1]
     
     if (top == 'xx'):
 
         Br0 = Br[p0, -1, :]
         Br1 = Br[p1, 0, :]
-        diff_E2[p0, -1, i0:i1] = dtin * sig_in * (Br1[i0:i1] - Br0[i0:i1])
-        diff_E2[p1, 0, i0:i1]  = dtin * sig_in * (Br1[i0:i1] - Br0[i0:i1])
+        diff_E2[p0, -1, i0:i1] += dtin * sig_in * (Br1[i0:i1] - Br0[i0:i1])
+        diff_E2[p1, 0, i0:i1]  += dtin * sig_in * (Br1[i0:i1] - Br0[i0:i1])
 
     if (top == 'xy'):
 
         Br0 = Br[p0, -1, :]
         Br1 = Br[p1, :, 0]
-        diff_E2[p0, -1, i0:i1] = dtin * sig_in * ((Br1[::-1])[i0:i1] - Br0[i0:i1])
-        diff_E1[p1, i0:i1, 0]  = - dtin * sig_in * (Br1[i0:i1] - (Br0[::-1])[i0:i1])
+        diff_E2[p0, -1, i0:i1] += dtin * sig_in * ((Br1[::-1])[i0:i1] - Br0[i0:i1])
+        diff_E1[p1, i0:i1, 0]  += - dtin * sig_in * (Br1[i0:i1] - (Br0[::-1])[i0:i1])
         
     if (top == 'yy'):
 
         Br0 = Br[p0, :, -1]
         Br1 = Br[p1, :, 0]
-        diff_E1[p0, i0:i1, -1] = dtin * sig_in * (Br0[i0:i1] - Br1[i0:i1])
-        diff_E1[p1, i0:i1, 0]  = dtin * sig_in * (Br0[i0:i1] - Br1[i0:i1])
+        diff_E1[p0, i0:i1, -1] += dtin * sig_in * (Br0[i0:i1] - Br1[i0:i1])
+        diff_E1[p1, i0:i1, 0]  += dtin * sig_in * (Br0[i0:i1] - Br1[i0:i1])
 
     if (top == 'yx'):
 
         Br0 = Br[p0, :, -1]
         Br1 = Br[p1, 0, :]
-        diff_E1[p0, i0:i1, -1] = dtin * sig_in * (Br0[i0:i1] - Br1[i0:i1][::-1])
-        diff_E2[p1, 0, i0:i1]  = - dtin * sig_in * (Br0[i0:i1][::-1] - Br1[i0:i1])
+        diff_E1[p0, i0:i1, -1] += dtin * sig_in * (Br0[i0:i1] - (Br1[::-1])[i0:i1])
+        diff_E2[p1, 0, i0:i1]  += - dtin * sig_in * ((Br0[::-1])[i0:i1] - Br1[i0:i1])
 
 
 def interface_E(p0, p1):
@@ -900,20 +912,68 @@ def corners_E(p0):
 # Triple points
 ########
 
-sig_cor  = 1.10 / dxi # 0.45 / dt 
+def plus(index):
+    if (index == 0):
+        return index  + 1
+    elif (index == -1):
+        return index - 1
+    
+sig_cor  = 0.1 / dxi # 0.45 / dt 
 
-def compute_corners_B(n_corner, dtin):
+def compute_corners_E(n_corner, dtin):
 
     p0, p1, p2 = triplet[n_corner, 0], triplet[n_corner, 1], triplet[n_corner, 2]
     i0, j0 = index_corners[n_corner, 0][0], index_corners[n_corner, 0][1]
     i1, j1 = index_corners[n_corner, 1][0], index_corners[n_corner, 1][1]
     i2, j2 = index_corners[n_corner, 2][0], index_corners[n_corner, 2][1]
+    
+    fcoord0 = (globals()["coord_" + sphere[p0] + "_to_sph"])
+    th0, ph0 = fcoord0(xi_int[i0], eta_int[j0])
 
-    if (n_corner==0):
-        
-        
+    i0p, j0p = plus(i0), plus(j0)
+    i1p, j1p = plus(i1), plus(j1)
+    i2p, j2p = plus(i2), plus(j2)
 
-def compute_corners_E(n_corner, dtin):
+    fvec0 = (globals()["vec_" + sphere[p0] + "_to_sph"])
+    fvec1 = (globals()["vec_" + sphere[p1] + "_to_sph"])
+    fvec2 = (globals()["vec_" + sphere[p2] + "_to_sph"])
+    fvec0i = (globals()["vec_sph_to_" + sphere[p0]])
+    fvec1i = (globals()["vec_sph_to_" + sphere[p1]])
+    fvec2i = (globals()["vec_sph_to_" + sphere[p2]])
+    
+    Etha, Epha = fvec0(xi_int[i0p], eta_int[j0], E1u[p0, i0p, j0], E2u[p0, i0p, j0])
+    Ethb, Ephb = fvec0(xi_int[i0], eta_int[j0p], E1u[p0, i0, j0p], E2u[p0, i0, j0p])
+    Ethc, Ephc = fvec1(xi_int[i1p], eta_int[j1], E1u[p1, i1p, j1], E2u[p1, i1p, j1])
+    Ethd, Ephd = fvec1(xi_int[i1], eta_int[j1p], E1u[p1, i1, j1p], E2u[p1, i1, j1p])
+    Ethe, Ephe = fvec2(xi_int[i2p], eta_int[j2], E1u[p2, i2p, j2], E2u[p2, i2p, j2])
+    Ethf, Ephf = fvec2(xi_int[i2], eta_int[j2p], E1u[p2, i2, j2p], E2u[p2, i2, j2p])
+    
+    Eth = (Etha + Ethb + Ethc + Ethd + Ethe + Ethf) / 6.0
+    Eph = (Epha + Ephb + Ephc + Ephd + Ephe + Ephf) / 6.0
+
+    Exi0, Eeta0 = fvec0i(th0, ph0, Eth, Eph)
+    Exi1, Eeta1 = fvec1i(th0, ph0, Eth, Eph)
+    Exi2, Eeta2 = fvec2i(th0, ph0, Eth, Eph)
+    
+    E1u[p0, i0, j0] = Exi0
+    E2u[p0, i0, j0] = Eeta0
+    E1u[p1, i1, j1] = Exi1
+    E2u[p1, i1, j1] = Eeta1
+    E1u[p2, i2, j2] = Exi2
+    E2u[p2, i2, j2] = Eeta2
+
+    # diff_E1[p0, i0, j0] += sig_cor * dt * (E1u[p0, i0, j0] - Exi0)
+    # diff_E2[p0, i0, j0] += sig_cor * dt * (E2u[p0, i0, j0] - Eeta0)
+    # diff_E1[p1, i1, j1] += sig_cor * dt * (E1u[p1, i1, j1] - Exi1)
+    # diff_E2[p1, i1, j1] += sig_cor * dt * (E2u[p1, i1, j1] - Eeta1)
+    # diff_E1[p2, i2, j2] += sig_cor * dt * (E1u[p2, i2, j2] - Exi2)
+    # diff_E2[p2, i2, j2] += sig_cor * dt * (E2u[p2, i2, j2] - Eeta2)   
+    
+    # diff_Br[p0, i0, j0] += sig_cor * dt * (E1u[p0, i0, j0] - Exi0)
+    # diff_Br[p1, i1, j1] += sig_cor * dt * (E1u[p1, i1, j1] - Exi1)
+    # diff_Br[p2, i2, j2] += sig_cor * dt * (E1u[p2, i2, j2] - Exi2)
+
+def compute_corners_B(n_corner, dtin):
 
     p0, p1, p2 = triplet[n_corner, 0], triplet[n_corner, 1], triplet[n_corner, 2]
     i0, j0 = index_corners[n_corner, 0][0], index_corners[n_corner, 0][1]
@@ -924,81 +984,49 @@ def compute_corners_E(n_corner, dtin):
     Br1 = Br[p1, i1, j1]
     Br2 = Br[p2, i2, j2]
 
-    if (n_corner == 0): # ABN
-        txi0, teta0 =  1.0, -1.0
-        txi1, teta1 =  1.0,  1.0
-        txi2, teta2 = -1.0,  1.0
-    elif (n_corner == 1): # ABS
-        txi0, teta0 = -1.0, -1.0
-        txi1, teta1 = -1.0,  1.0
-        txi2, teta2 =  1.0, -1.0
-    elif (n_corner == 2): # BCN
-        txi0, teta0 =  1.0, -1.0
-        txi1, teta1 = -1.0,  1.0
-        txi2, teta2 = -1.0, -1.0
-    elif (n_corner == 3): # BCS
-        txi0, teta0 = -1.0, -1.0
-        txi1, teta1 = -1.0, -1.0
-        txi2, teta2 = -1.0, -1.0
-    elif (n_corner == 4): # CDN
-        txi0, teta0 =  1.0,  1.0
-        txi1, teta1 = -1.0,  1.0
-        txi2, teta2 =  1.0, -1.0
-    elif (n_corner == 5): # CDS
-        txi0, teta0 =  1.0,  -1.0
-        txi1, teta1 = -1.0,  -1.0
-        txi2, teta2 =  -1.0,  1.0
-    elif (n_corner == 6): # DAN
-        txi0, teta0 =  1.0,  1.0
-        txi1, teta1 =  1.0,  1.0
-        txi2, teta2 =  1.0,  1.0
-    elif (n_corner == 7): # DAS
-        txi0, teta0 =  1.0, -1.0
-        txi1, teta1 = -1.0,  1.0
-        txi2, teta2 =  1.0,  1.0
-    else:
-        return
+    i0p, j0p = plus(i0), plus(j0)
+    i1p, j1p = plus(i1), plus(j1)
+    i2p, j2p = plus(i2), plus(j2)
+    
+    Bra = Br[p0, i0p, j0]
+    Brb = Br[p0, i0, j0p]
+    Brc = Br[p0, i0p, j0p]
+    Brd = Br[p1, i1p, j1]
+    Bre = Br[p1, i1, j1p]
+    Brf = Br[p1, i1p, j1p]
+    Brg = Br[p2, i2p, j2]
+    Brh = Br[p2, i2, j2p]
+    Bri = Br[p2, i2p, j2p]
 
-    # Patch 0
-    norm = N.sqrt(g11u[i0, j0, 0] * txi0**2 + g22u[i0, j0, 0] * teta0**2 + 2.0 * g12u[i0, j0, 0] * txi0 * teta0)
-    # txi0 /= norm
-    # teta0 /= norm
-    deltaBr0 = sig_cor * dtin * (Br0 - 0.5 * (Br1 + Br2))
-    # deltaBr0 = sig_cor * dtin * (Br0 - Br1)
-    # deltaBr0 = sig_cor * dtin * (Br0 - (Br0 + Br1 + Br2)/3.0)
+    mean = (Bra + Brb + Brd + Bre + Brg + Brh) / 6.0
+    
+    # mean = (Bra + Brb + Brc + Brd + Bre + Brf + Brg + Brh + Bri) / 9.0
 
-    # Patch 1
-    norm = N.sqrt(g11u[i1, j1, 0] * txi1**2 + g22u[i1, j1, 0] * teta1**2 + 2.0 * g12u[i1, j1, 0] * txi1 * teta1)
-    # txi1 /= norm
-    # teta1 /= norm
-    deltaBr1 = sig_cor * dtin * (Br1 - 0.5 * (Br0 + Br2))
-    # deltaBr1 = sig_cor * dtin * (Br1 - Br2)
-    # deltaBr1 = sig_cor * dtin * (Br1 - (Br0 + Br1 + Br2)/3.0)
+    # Bra = Br[p0, i0p, j0p]
+    # Brb = Br[p1, i1p, j1p]
+    # Brc = Br[p2, i2p, j2p]
+    # mean = (Bra + Brb + Brc) / 3.0    
 
-    # Patch 2
-    norm = N.sqrt(g11u[i2, j2, 0] * txi2**2 + g22u[i2, j2, 0] * teta2**2 + 2.0 * g12u[i2, j2, 0] * txi2 * teta2)
-    # txi2 /= norm
-    # teta2 /= norm
-    deltaBr2 = sig_cor * dtin * (Br2 - 0.5 * (Br0 + Br1))
-    # deltaBr2 = sig_cor * dtin * (Br2 - Br0)
-    # deltaBr2 = sig_cor * dtin * (Br2 - (Br0 + Br1 + Br2)/3.0) 
+    Br[p0, i0, j0] = mean
+    Br[p1, i1, j1] = mean
+    Br[p2, i2, j2] = mean
 
-    deltaBr = (deltaBr0 + deltaBr1 + deltaBr2) / 3.0
-
-    diff_E1[p0, i0, j0] = deltaBr0 * txi0 # * (g11u[i0, j0, 0] * txi0 + g12u[i0, j0, 0] * teta0)
-    diff_E2[p0, i0, j0] = deltaBr0 * teta0 # * (g22u[i0, j0, 0] * teta0 + g12u[i0, j0, 0] * txi0)
-
-    diff_E1[p1, i1, j1] = deltaBr1 * txi1 # (g11u[i1, j1, 0] * txi1 + g12u[i1, j1, 0] * teta1)
-    diff_E2[p1, i1, j1] = deltaBr1 * teta1 # (g22u[i1, j1, 0] * teta1 + g12u[i1, j1, 0] * txi1)
-
-    diff_E1[p2, i2, j2] = deltaBr2 * txi2 # (g11u[i2, j2, 0] * txi2 + g12u[i2, j2, 0] * teta2)
-    diff_E2[p2, i2, j2] = deltaBr2 * teta2 # (g22u[i2, j2, 0] * teta2 + g12u[i2, j2, 0] * txi2)   
-            
+    # diff_Br[p0, i0, j0] += sig_cor * dt * (Br[p0, i0, j0] - mean)
+    # diff_Br[p1, i1, j1] += sig_cor * dt * (Br[p1, i1, j1] - mean)
+    # diff_Br[p2, i2, j2] += sig_cor * dt * (Br[p2, i2, j2] - mean)
+    
+    # diff_E1[p0, i0, j0] += sig_cor * dt * (Br[p0, i0, j0] - mean)
+    # diff_E2[p0, i0, j0] += sig_cor * dt * (Br[p0, i0, j0] - mean)
+    # diff_E1[p1, i1, j1] += sig_cor * dt * (Br[p1, i1, j1] - mean)
+    # diff_E2[p1, i1, j1] += sig_cor * dt * (Br[p1, i1, j1] - mean)
+    # diff_E1[p2, i2, j2] += sig_cor * dt * (Br[p2, i2, j2] - mean)
+    # diff_E2[p2, i2, j2] += sig_cor * dt * (Br[p2, i2, j2] - mean)
+    
 ########
 # Initialization
 ########
 
-amp = 0.0
+amp = 1.0
 n_mode = 2
 wave = 2.0 * (xi_max - xi_min) / n_mode
 # Br0 = amp * N.sin(2.0 * N.pi * (xBr_grid - xi_min) / wave) * N.sin(2.0 * N.pi * (yBr_grid - xi_min) / wave)
@@ -1104,7 +1132,7 @@ patch = range(n_patches)
 from scipy.ndimage.filters import gaussian_filter
 
 Nt = 50000 # Number of iterations
-FDUMP = 50 # Dump frequency
+FDUMP = 500 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -1115,23 +1143,26 @@ for it in tqdm(range(Nt), "Progression"):
         idump += 1
     
     diff_Br[:, :, :] = 0.0
-
+    diff_E1[:, :, :] = 0.0
+    diff_E2[:, :, :] = 0.0
+    
     compute_diff_B(patch)
 
     push_E(patch, it, dt)
-
-    for i in range(n_corners):
-        compute_corners_E(i, dt)
         
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         compute_delta_E(p0, p1, dt)
 
-    corners_E(patch)
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         interface_E(p0, p1)
-    
+
+    # for i in range(n_corners):
+    #     compute_corners_E(i, dt)
+
+    corners_E(patch)
+
     contra_to_cov_E(patch)
     # contra_to_cov_E_weights2(patch)
 
@@ -1142,14 +1173,16 @@ for it in tqdm(range(Nt), "Progression"):
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
         compute_delta_B(p0, p1, dt)
+    
+    for i in range(n_zeros):
+        p0, p1 = index_row[i], index_col[i]
+        interface_B(p0, p1)
 
     for i in range(n_corners):
         compute_corners_B(i, dt)
 
     corners_B(patch)
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
-        interface_B(p0, p1)
+
     
     for p in range(n_patches):
         energy[p, it] = dxi * deta * (N.sum(Br[p, :, :]**2) \
