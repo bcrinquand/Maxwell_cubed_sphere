@@ -28,7 +28,7 @@ class Sphere:
     S = 5
 
 # Parameters
-cfl = 0.7
+cfl = 0.5
 Nxi  = 128 # Number of cells in xi
 Neta = 128 # Number of cells in eta
 
@@ -69,6 +69,9 @@ g11d = N.empty((Nxi_int, Neta_int, 4))
 g12d = N.empty((Nxi_int, Neta_int, 4))
 g22d = N.empty((Nxi_int, Neta_int, 4))
 sqrt_det_g_half = N.empty(Nxi_half)
+g12d_half = N.empty(Nxi_half)
+g11d_half = N.empty(Nxi_half)
+g22d_half = N.empty(Nxi_half)
 
 for i in range(Nxi_int):
     for j in range(Neta_int):
@@ -137,14 +140,14 @@ for i in range(Nxi_half):
         C = N.sqrt(1.0 + X * X)
         D = N.sqrt(1.0 + Y * Y)
         delta = N.sqrt(1.0 + X * X + Y * Y)
-        g11d0 = (C * C * D / (delta * delta))**2
-        g22d0 = (C * D * D / (delta * delta))**2
-        g12d0 = - X * Y * C * C * D * D / (delta)**4
-        sqrt_det_g_half[i] = N.sqrt(g11d0 * g22d0 - g12d0 * g12d0)
+        g11d_half[i] = (C * C * D / (delta * delta))**2
+        g22d_half[i] = (C * D * D / (delta * delta))**2
+        g12d_half[i] = - X * Y * C * C * D * D / (delta)**4
+        sqrt_det_g_half[i] = N.sqrt(g11d_half[i] * g22d_half[i] - g12d_half[i] * g12d_half[i])
 
 sqrt_det_g = N.sqrt(g11d * g22d - g12d * g12d)
 
-dt = cfl * N.min(1.0 / N.sqrt(g11d / (sqrt_det_g * sqrt_det_g) / (dxi * dxi) + g22d / (sqrt_det_g * sqrt_det_g) / (deta * deta) ))
+dt = cfl * N.min(1.0 / N.sqrt(g11u / (dxi * dxi) + g22u / (deta * deta) + 2.0 * g12u / (dxi * deta)))
 print("delta t = {}".format(dt))
 
 # Define fields
@@ -153,6 +156,9 @@ E1u = N.zeros((n_patches, Nxi_half, Neta_int))
 E2u = N.zeros((n_patches, Nxi_int,  Neta_half))
 E1d = N.zeros((n_patches, Nxi_half, Neta_int))
 E2d = N.zeros((n_patches, Nxi_int,  Neta_half))
+E1d0 = N.zeros((n_patches, Nxi_half, Neta_int))
+E2d0 = N.zeros((n_patches, Nxi_int,  Neta_half))
+Br0 = N.zeros((n_patches, Nxi_half, Neta_half))
 dBrd1 = N.zeros((n_patches, Nxi_int,  Neta_half))
 dBrd2 = N.zeros((n_patches, Nxi_half, Neta_int))
 dE1d2 = N.zeros((n_patches, Nxi_half, Neta_half))
@@ -213,6 +219,29 @@ P_half_2[-3] = 1.25
 P_half_2[-2] = 0.25 
 P_half_2[-1] = 0.5 
 
+P_int_4 = N.ones(Nxi_int)
+P_int_4[0] = 407/1152
+P_int_4[1] = 473/384
+P_int_4[2] = 343/384
+P_int_4[3] = 1177/1152
+P_int_4[-1] = 407/1152
+P_int_4[-2] = 473/384
+P_int_4[-3] = 343/384
+P_int_4[-4] = 1177/1152
+
+P_half_4 = N.ones(Nxi_half)
+P_half_4[0] = 5/63
+P_half_4[1] = 121/128
+P_half_4[2] = 1085/1152
+P_half_4[3] = 401/384
+P_half_4[4] = 2659/2688
+P_half_4[-1] = 5/63
+P_half_4[-2] = 121/128
+P_half_4[-3] = 1085/1152
+P_half_4[-4] = 401/384
+P_half_4[-5] = 2659/2688
+
+
 def compute_diff_B(p):
 
     dBrd1[p, 0, :] = (- 0.5 * Br[p, 0, :] + 0.25 * Br[p, 1, :] + 0.25 * Br[p, 2, :]) / dxi / P_int_2[0]
@@ -231,6 +260,18 @@ def compute_diff_B(p):
     
     dBrd2[p, :, 2:(Neta_int - 2)] = (N.roll(Br, -1, axis = 2)[p, :, 2:(Neta_int - 2)] - Br[p, :, 2:(Neta_int - 2)]) / deta
 
+def compute_diff_B_low(p):
+
+    dBrd1[p, 0, :] = (- 2.0 * Br[p, 0, :] + 2.0 * Br[p, 1, :]) / dxi
+    dBrd1[p, Nxi_int - 1, :] = (- 2.0 * Br[p, -2, :] + 2.0 * Br[p, -1, :]) / dxi
+    
+    dBrd1[p, 1:(Nxi_int - 1), :] = (N.roll(Br, -1, axis = 1)[p, 1:(Nxi_int - 1), :] - Br[p, 1:(Nxi_int - 1), :]) / dxi
+
+    dBrd2[p, :, 0] = (- 2.0 * Br[p, :, 0] + 2.0 * Br[p, :, 1]) / deta
+    dBrd2[p, :, Nxi_int - 1] = (- 2.0 * Br[p, :, -2] + 2.0 * Br[p, :, -1]) / deta
+    
+    dBrd2[p, :, 1:(Neta_int - 1)] = (N.roll(Br, -1, axis = 2)[p, :, 1:(Neta_int - 1)] - Br[p, :, 1:(Neta_int - 1)]) / deta
+
 def compute_diff_B_alt(p):
     
     dBrd1[p, 0, :] = (- 8.0 * Br[p, 0, :] + 9.0 * Br[p, 1, :] - 1.0 * Br[p, 2, :]) / dxi / 3.0
@@ -244,6 +285,63 @@ def compute_diff_B_alt(p):
     dBrd2[p, :, Nxi_int - 1] = (1.0 * Br[p, :, -3] - 9.0 * Br[p, :, -2] + 8.0 * Br[p, :, -1]) / deta / 3.0
         
     dBrd2[p, :, 1:(Neta_int - 1)] = (N.roll(Br, -1, axis = 2)[p, :, 1:(Neta_int - 1)] - Br[p, :, 1:(Neta_int - 1)]) / deta
+
+def compute_diff_B_order(p):
+  
+    dBrd1[p, 0, :] = (-323/378 * Br[p, 0, :] + 2783/3072 * Br[p, 1, :] -1085/27648 * Br[p, 2, :] -17/9216 * Br[p, 3, :] -667/64512 * Br[p, 4, :]) / dxi / P_int_4[0]
+    dBrd1[p, 1, :] = (-5/21 * Br[p, 0, :] -847/1024 * Br[p, 1, :] + 1085/1024 * Br[p, 2, :] -37/1024 * Br[p, 3, :] +  899/21504 * Br[p, 4, :]) / dxi / P_int_4[1]
+    dBrd1[p, 2, :] = (5/42 * Br[p, 0, :] -121/1024 * Br[p, 1, :] -1085/1024 * Br[p, 2, :] + 3575/3072 * Br[p, 3, :] -753/7168 * Br[p, 4, :]) / dxi / P_int_4[2]
+    dBrd1[p, 3, :] = (-5/189 * Br[p, 0, :] + 121/3072 * Br[p, 1, :] + 1085/27648 * Br[p, 2, :] -10759/9216 * Br[p, 3, :] + 74635/64512 * Br[p, 4, :] - 1/24 * Br[p, 5, :]) / dxi / P_int_4[3]
+
+    dBrd1[p, -1, :] = (323/378 * Br[p, -1, :] - 2783/3072 * Br[p, -2, :] + 1085/27648 * Br[p, -3, :] + 17/9216 * Br[p, -4, :] + 667/64512 * Br[p, -5, :]) / dxi / P_int_4[-1]
+    dBrd1[p, -2, :] = (5/21 * Br[p, -1, :] + 847/1024 * Br[p, -2, :] - 1085/1024 * Br[p, -3, :] + 37/1024 * Br[p, -4, :] - 899/21504 * Br[p, -5, :]) / dxi / P_int_4[-2]
+    dBrd1[p, -3, :] = (- 5/42 * Br[p, -1, :] + 121/1024 * Br[p, -2, :] + 1085/1024 * Br[p, -3, :] - 3575/3072 * Br[p, -4, :] + 753/7168 * Br[p, -5, :]) / dxi / P_int_4[-3]
+    dBrd1[p, -4, :] = (5/189 * Br[p, -1, :] - 121/3072 * Br[p, -2, :] - 1085/27648 * Br[p, -3, :] + 10759/9216 * Br[p, -4, :] - 74635/64512 * Br[p, -5, :] + 1/24 * Br[p, -6, :]) / dxi / P_int_4[-4]
+
+    dBrd1[p, 4:(Nxi_int - 4), :] = (N.roll(Br, 1, axis = 1)[p, 4:(Nxi_int - 4), :] - 27.0 * Br[p, 4:(Nxi_int - 4), :] + 27.0 * N.roll(Br, -1, axis = 1)[p, 4:(Nxi_int - 4), :] - N.roll(Br, -2, axis = 1)[p, 4:(Nxi_int - 4), :]) / (24.0 * dxi)
+
+    dBrd2[p, :, 0] = (-323/378 * Br[p, :, 0] + 2783/3072 * Br[p, :, 1] -1085/27648 * Br[p, :, 2] -17/9216 * Br[p, :, 3] -667/64512 * Br[p, :, 4]) / deta / P_int_4[0]
+    dBrd2[p, :, 1] = (-5/21 * Br[p, :, 0] -847/1024 * Br[p, :, 1] + 1085/1024 * Br[p, :, 2] -37/1024 * Br[p, :, 3] +  899/21504 * Br[p, :, 4]) / deta / P_int_4[1]
+    dBrd2[p, :, 2] = (5/42 * Br[p, :, 0] -121/1024 * Br[p, :, 1] -1085/1024 * Br[p, :, 2] + 3575/3072 * Br[p, :, 3] -753/7168 * Br[p, :, 4]) / deta / P_int_4[2]
+    dBrd2[p, :, 3] = (-5/189 * Br[p, :, 0] + 121/3072 * Br[p, :, 1] + 1085/27648 * Br[p, :, 2] -10759/9216 * Br[p, :, 3] + 74635/64512 * Br[p, :, 4] - 1/24 * Br[p, :, 5]) / deta / P_int_4[3]
+
+    dBrd2[p, :, -1] = (323/378 * Br[p, :, -1] - 2783/3072 * Br[p, :, -2] + 1085/27648 * Br[p, :, -3] + 17/9216 * Br[p, :, -4] + 667/64512 * Br[p, :, -5]) / deta / P_int_4[-1]
+    dBrd2[p, :, -2] = (5/21 * Br[p, :, -1] + 847/1024 * Br[p, :, -2] - 1085/1024 * Br[p, :, -3] + 37/1024 * Br[p, :, -4] - 899/21504 * Br[p, :, -5]) / deta / P_int_4[-2]
+    dBrd2[p, :, -3] = (- 5/42 * Br[p, :, -1] + 121/1024 * Br[p, :, -2] + 1085/1024 * Br[p, :, -3] - 3575/3072 * Br[p, :, -4] + 753/7168 * Br[p, :, -5]) / deta / P_int_4[-3]
+    dBrd2[p, :, -4] = (5/189 * Br[p, :, -1] - 121/3072 * Br[p, :, -2] - 1085/27648 * Br[p, :, -3] + 10759/9216 * Br[p, :, -4] - 74635/64512 * Br[p, :, -5] + 1/24 * Br[p, :, -6]) / deta / P_int_4[-4]
+
+    dBrd2[p, :, 4:(Nxi_int - 4)] = (N.roll(Br, 1, axis = 2)[p, :, 4:(Neta_int - 4)] - 27.0 * Br[p, :, 4:(Neta_int - 4)] + 27.0 * N.roll(Br, -1, axis = 2)[p, :, 4:(Neta_int - 4)] - N.roll(Br, -2, axis = 2)[p, :, 4:(Nxi_int - 4)]) / (24.0 * deta)
+
+
+def compute_diff_E_order(p):
+  
+    dE2d1[p, 0, :] = (-55/378 * E2d[p, 0, :] + 5/21 * E2d[p, 1, :] -5/42 * E2d[p, 2, :] + 5/189 * E2d[p, 3, :]) / dxi / P_half_4[0]
+    dE2d1[p, 1, :] = (-2783/3072 * E2d[p, 0, :] + 847/1024 * E2d[p, 1, :] + 121/1024 * E2d[p, 2, :] -121/3072 * E2d[p, 3, :]) / dxi / P_half_4[1]
+    dE2d1[p, 2, :] = (1085/27648 * E2d[p, 0, :] -1085/1024 * E2d[p, 1, :] + 1085/1024 * E2d[p, 2, :] -1085/27648 * E2d[p, 3, :]) / dxi / P_half_4[2]
+    dE2d1[p, 3, :] = (17/9216 * E2d[p, 0, :] + 37/1024 * E2d[p, 1, :] -3575/3072 * E2d[p, 2, :] +10759/9216 * E2d[p, 3, :] - 1/24 * E2d[p, 4, :]) / dxi / P_half_4[3]
+    dE2d1[p, 4, :] = (667/64512 * E2d[p, 0, :] -899/21504 * E2d[p, 1, :] + 753/7168 * E2d[p, 2, :] -74635/64512 * E2d[p, 3, :] + 9/8 * E2d[p, 4, :] - 1/24 * E2d[p, 5, :]) / dxi / P_half_4[4]
+
+    dE2d1[p, Nxi_half -1, :] = (55/378 * E2d[p, -1, :] - 5/21 * E2d[p, -2, :] + 5/42 * E2d[p, -3, :] - 5/189 * E2d[p, -4, :]) / dxi / P_half_4[-1]
+    dE2d1[p, Nxi_half -2, :] = (2783/3072 * E2d[p, -1, :] - 847/1024 * E2d[p, -2, :] - 121/1024 * E2d[p, -3, :] + 121/3072 * E2d[p, -4, :]) / dxi / P_half_4[-2]
+    dE2d1[p, Nxi_half -3, :] = (- 1085/27648 * E2d[p, -1, :] + 1085/1024 * E2d[p, -2, :] - 1085/1024 * E2d[p, -3, :] + 1085/27648 * E2d[p, -4, :]) / dxi / P_half_4[-3]
+    dE2d1[p, Nxi_half -4, :] = (- 17/9216 * E2d[p, -1, :] - 37/1024 * E2d[p, -2, :] + 3575/3072 * E2d[p, -3, :] - 10759/9216 * E2d[p, -4, :] + 1/24 * E2d[p, -5, :]) / dxi / P_half_4[-4]
+    dE2d1[p, Nxi_half -5, :] = (- 667/64512 * E2d[p, -1, :] + 899/21504 * E2d[p, -2, :] - 753/7168 * E2d[p, -3, :] + 74635/64512 * E2d[p, -4, :] - 9/8 * E2d[p, -5, :] + 1/24 * E2d[p, -6, :]) / dxi / P_half_4[-5]
+
+    dE2d1[p, 5:(Nxi_half - 5), :] = (N.roll(E2d, 2, axis = 1)[p, 5:(Nxi_half - 5), :] - 27.0 * N.roll(E2d, 1, axis = 1)[p, 5:(Nxi_half - 5), :] + 27.0 * E2d[p, 5:(Nxi_half - 5), :] - N.roll(E2d, -1, axis = 1)[p, 5:(Nxi_half - 5), :]) / (24.0 * dxi)
+
+    dE1d2[p, :, 0] = (-55/378 * E1d[p, :, 0] + 5/21 * E1d[p, :, 1] -5/42 * E1d[p, :, 2] + 5/189 * E1d[p, :, 3]) / deta / P_half_4[0]
+    dE1d2[p, :, 1] = (-2783/3072 * E1d[p, :, 0] + 847/1024 * E1d[p, :, 1] + 121/1024 * E1d[p, :, 2] -121/3072 * E1d[p, :, 3]) / deta / P_half_4[1]
+    dE1d2[p, :, 2] = (1085/27648 * E1d[p, :, 0] -1085/1024 * E1d[p, :, 1] + 1085/1024 * E1d[p, :, 2] -1085/27648 * E1d[p, :, 3]) / deta / P_half_4[2]
+    dE1d2[p, :, 3] = (17/9216 * E1d[p, :, 0] + 37/1024 * E1d[p, :, 1] -3575/3072 * E1d[p, :, 2] +10759/9216 * E1d[p, :, 3] - 1/24 * E1d[p, :, 4]) / deta / P_half_4[3]
+    dE1d2[p, :, 4] = (667/64512 * E1d[p, :, 0] -899/21504 * E1d[p, :, 1] + 753/7168 * E1d[p, :, 2] -74635/64512 * E1d[p, :, 3] + 9/8 * E1d[p, :, 4] - 1/24 * E1d[p, :, 5]) / deta / P_half_4[4]
+
+    dE1d2[p, :, Neta_half -1] = (55/378 * E1d[p, :, -1] - 5/21 * E1d[p, :, -2] + 5/42 * E1d[p, :, -3] - 5/189 * E1d[p, :, -4]) / deta / P_half_4[-1]
+    dE1d2[p, :, Neta_half -2] = (2783/3072 * E1d[p, :, -1] - 847/1024 * E1d[p, :, -2] - 121/1024 * E1d[p, :, -3] + 121/3072 * E1d[p, :, -4]) / deta / P_half_4[-2]
+    dE1d2[p, :, Neta_half -3] = (- 1085/27648 * E1d[p, :, -1] + 1085/1024 * E1d[p, :, -2] - 1085/1024 * E1d[p, :, -3] + 1085/27648 * E1d[p, :, -4]) / deta / P_half_4[-3]
+    dE1d2[p, :, Neta_half -4] = (- 17/9216 * E1d[p, :, -1] - 37/1024 * E1d[p, :, -2] + 3575/3072 * E1d[p, :, -3] -10759/9216 * E1d[p, :, -4] + 1/24 * E1d[p, :, -5]) / deta / P_half_4[-4]
+    dE1d2[p, :, Neta_half -5] = (- 667/64512 * E1d[p, :, -1] + 899/21504 * E1d[p, :, -2] - 753/7168 * E1d[p, :, -3] + 74635/64512 * E1d[p, :, -4] - 9/8 * E1d[p, :, -5] + 1/24 * E1d[p, :, -6]) / deta / P_half_4[-5]
+
+    dE1d2[p, :, 5:(Neta_half - 5)] = (N.roll(E1d, 2, axis = 2)[p, :, 5:(Neta_half - 5)] - 27.0 * N.roll(E1d, 1, axis = 2)[p, :, 5:(Neta_half - 5)] + 27.0 * E1d[p, :, 5:(Neta_half - 5)] - N.roll(E1d, -1, axis = 2)[p, :, 5:(Neta_half - 5)]) / (24.0 * deta)
 
 
 def compute_diff_E(p):
@@ -267,6 +365,24 @@ def compute_diff_E(p):
     dE1d2[p, :, Neta_half - 1] = (- 0.5 * E1d[p, :, -2] + 0.5 * E1d[p, :, -1]) / deta / P_half_2[Nxi_half - 1]
 
     dE1d2[p, :, 3:(Neta_half - 3)] = (E1d[p, :, 3:(Neta_half - 3)] - N.roll(E1d, 1, axis = 2)[p, :, 3:(Neta_half - 3)]) / deta
+
+def compute_diff_E_low(p):
+
+    dE2d1[p, 0, :] = (- E2d[p, 0, :] + E2d[p, 1, :]) / dxi
+    dE2d1[p, 1, :] = (- E2d[p, 0, :] + E2d[p, 1, :]) / dxi
+
+    dE2d1[p, Nxi_half - 2, :] = (- E2d[p, -2, :] + E2d[p, -1, :]) / dxi
+    dE2d1[p, Nxi_half - 1, :] = (- E2d[p, -2, :] + E2d[p, -1, :]) / dxi
+
+    dE2d1[p, 2:(Nxi_half - 2), :] = (E2d[p, 2:(Nxi_half - 2), :] - N.roll(E2d, 1, axis = 1)[p, 2:(Nxi_half - 2), :]) / dxi
+
+    dE1d2[p, :, 0] = (- E1d[p, :, 0] + E1d[p, :, 1]) / dxi
+    dE1d2[p, :, 1] = (- E1d[p, :, 0] + E1d[p, :, 1]) / dxi
+
+    dE1d2[p, :, Neta_half - 2] = (- E1d[p, :, -2] + E1d[p, :, -1]) / deta
+    dE1d2[p, :, Neta_half - 1] = (- E1d[p, :, -2] + E1d[p, :, -1]) / deta
+
+    dE1d2[p, :, 2:(Neta_half - 2)] = (E1d[p, :, 2:(Neta_half - 2)] - N.roll(E1d, 1, axis = 2)[p, :, 2:(Neta_half - 2)]) / deta
 
 def compute_diff_E_alt(p):
 
@@ -561,7 +677,7 @@ def interp(arr_in, xA, xB):
 #     return f(xB)
 
 # Vertical interface inner boundary 
-sig_in  = 0.8 / dt # 75.0 # 0.5 / dt # 200.0
+sig_in  = 1.0 / dxi # 75.0 # 0.5 / dt # 200.0
 
 normt=N.zeros_like(xi_half)
 
@@ -618,25 +734,31 @@ normt[-1] = N.sqrt(g11u[-1, -1, 0]*txi**2 + g22u[-1, -1, 0]*teta**2 + 2.0 * g12u
 #     # diff_E2[Sphere.B, 0, :] = dtin * sig_in * (Eeta_1 - Eeta_0)
 #     # diff_E2[Sphere.A, -1, :] = dtin * sig_in * (Eeta_1 - Eeta_0)
 
-def compute_delta_E(dtin):
+def compute_delta_E(dtin, E1in, E2in, Brin):
 
     xi0 = xi_int[-1]
     eta0 = eta_half
-    Exi_0 = interp(E1d[Sphere.A, -1, :], eta_int, eta0)
-    Eeta_0 = interp(E2d[Sphere.A, -1, :], eta_half, eta0)
+    Exi_0 = interp(E1in[Sphere.A, -1, :], eta_int, eta0)
+    Eeta_0 = interp(E2in[Sphere.A, -1, :], eta_half, eta0)
 
     xi1 = xi_int[0]
     eta1 = eta_half
-    Exi_1 = interp(E1d[Sphere.B, 0, :], eta_int, eta1)
-    Eeta_1 = interp(E2d[Sphere.B, 0, :], eta_half, eta1)
+    Exi_1 = interp(E1in[Sphere.B, 0, :], eta_int, eta1)
+    Eeta_1 = interp(E2in[Sphere.B, 0, :], eta_half, eta1)
 
-    diff_E2[Sphere.B, 0, :] = dtin * sig_in * (Eeta_1 - Eeta_0)
+    diff_E2[Sphere.B, 0, :] = dtin * sig_in * (Eeta_1 - Eeta_0) 
     diff_E2[Sphere.A, -1, :] = dtin * sig_in * (Eeta_1 - Eeta_0)
+    
+    diff_E2[Sphere.A, -1, :] = dt * sig_in * 0.5 * (- E2in[0, -1, :] / N.sqrt(g22d_half) + Brin[0, -1, :] - (- E2in[1, 0, :] / N.sqrt(g22d_half) + Brin[1, 0, :]))
+    diff_E2[Sphere.B, 0, :]  = dt * sig_in * 0.5 * (E2in[1, 0, :] / N.sqrt(g22d_half) + Brin[1, 0, :] - (E2in[0, -1, :] / N.sqrt(g22d_half) + Brin[0, -1, :] ))
+    
+def compute_delta_B(dtin, E1in, E2in, Brin):
 
-def compute_delta_B(dtin):
+    # diff_Br[Sphere.A, -1, :] = dtin * sig_in * (Br[Sphere.B, 0, :] - Br[Sphere.A, -1, :])
+    # diff_Br[Sphere.B, 0, :] = dtin * sig_in * (Br[Sphere.B, 0, :] - Br[Sphere.A, -1, :])
 
-    diff_Br[Sphere.A, -1, :] = dtin * sig_in * (Br[Sphere.B, 0, :] - Br[Sphere.A, -1, :])
-    diff_Br[Sphere.B, 0, :] = dtin * sig_in * (Br[Sphere.B, 0, :] - Br[Sphere.A, -1, :])
+    diff_Br[Sphere.A, -1, :] = dt * sig_in * 0.5 * (E2in[0, -1, :] / N.sqrt(g22d_half) - Brin[0, -1, :] - (E2in[1, 0, :] / N.sqrt(g22d_half) - Brin[1, 0, :]))
+    diff_Br[Sphere.B, 0, :]  = dt * sig_in * 0.5 * (E2in[1, 0, :] / N.sqrt(g22d_half) + Brin[1, 0, :] - (E2in[0, -1, :] / N.sqrt(g22d_half) + Brin[0, -1, :]))
 
 # def compute_delta_E(dtin):
 
@@ -727,9 +849,9 @@ def interface_B():
     # Br[Sphere.B, 0, :]  -= delta
     # Br[Sphere.A, -1, :] -= delta
 
-    Br[Sphere.B, 0, :]  -= diff_E2[Sphere.B, 0, :]  / sqrt_det_g_half
-    Br[Sphere.A, -1, :] -= diff_E2[Sphere.A, -1, :] / sqrt_det_g_half
-
+    Br[Sphere.B, 0, :]  -= diff_E2[Sphere.B, 0, :]  / P_int_2[0]  / sqrt_det_g_half # / N.sqrt(g22d_half)
+    Br[Sphere.A, -1, :] -= diff_E2[Sphere.A, -1, :] / P_int_2[-1] / sqrt_det_g_half # / N.sqrt(g22d_half)
+# 
     # #### Third attempt
     # # A -> B
     # xi1 = xi_int[0]
@@ -782,8 +904,8 @@ def interface_E():
     # E2u[Sphere.B, 0, :]  -= delta
     # E2u[Sphere.A, -1, :] -= delta
     
-    E2u[Sphere.B, 0, :]  -= diff_Br[Sphere.B, 0, :]  / sqrt_det_g_half
-    E2u[Sphere.A, -1, :] -= diff_Br[Sphere.A, -1, :] / sqrt_det_g_half
+    E2u[Sphere.B, 0, :]  -= diff_Br[Sphere.B, 0, :]  / P_int_2[0]  / sqrt_det_g_half / N.sqrt(g22d_half)
+    E2u[Sphere.A, -1, :] -= diff_Br[Sphere.A, -1, :] / P_int_2[-1] / sqrt_det_g_half / N.sqrt(g22d_half)
 
     # #### Third attempt
     # # A -> B
@@ -831,36 +953,36 @@ def interface_E():
 
 
 # Absorbing outer boundaries
-sig_abs = 0.2 / dt # 70.0 # 1.0 / dt # 500.0 
+sig_abs = sig_in # 0.5 / dxi # 70.0 # 1.0 / dt # 500.0 
 
 def BC_absorbing_B():
 
-    Br[0, :, 0]  += dt * sig_abs * (E1u[0, :, 0] - Br[0, :, 0]) / P_half_2[0]
-    Br[0, :, -1] -= dt * sig_abs * (E1u[0, :, -1] + Br[0, :, -1]) / P_half_2[-1]
-    Br[0, 0, :]  -= dt * sig_abs * (E2u[0, 0, :] + Br[0, 0, :]) / P_half_2[0]
+    Br[0, :, 0]  += dt * sig_abs * 0.5 * (E1d[0, :, 0] / N.sqrt(g11d_half) - Br[0, :, 0]) / P_half_2[0]
+    Br[0, :, -1] -= dt * sig_abs * 0.5 * (E1d[0, :, -1]  / N.sqrt(g11d_half)+ Br[0, :, -1]) / P_half_2[-1]
+    Br[0, 0, :]  -= dt * sig_abs * 0.5 * (E2d[0, 0, :] / N.sqrt(g22d_half) + Br[0, 0, :])/ P_half_2[0]
     
-    # Br[0, -1, :] += dt * sig_abs * (E2u[0, -1, :] - Br[0, -1, :]) / P_half_2[-1]
+    # Br[0, -1, :] += dt * sig_abs * (E2d[0, -1, :] - Br[0, -1, :]) / P_half_2[-1]
 
-    Br[1, :, 0]  += dt * sig_abs * (E1u[1, :, 0] - Br[1, :, 0]) / P_half_2[0]
-    Br[1, :, -1] -= dt * sig_abs * (E1u[1, :, -1] + Br[1, :, -1]) / P_half_2[-1]
-    Br[1, -1, :] += dt * sig_abs * (E2u[1, -1, :] - Br[1, -1, :]) / P_half_2[-1]
+    Br[1, :, 0]  += dt * sig_abs * 0.5 * (E1d[1, :, 0] / N.sqrt(g11d_half) - Br[1, :, 0])/ P_half_2[0]
+    Br[1, :, -1] -= dt * sig_abs * 0.5 * (E1d[1, :, -1] / N.sqrt(g11d_half) + Br[1, :, -1]) / P_half_2[-1]
+    Br[1, -1, :] += dt * sig_abs * 0.5 * (E2d[1, -1, :] / N.sqrt(g22d_half) - Br[1, -1, :]) / P_half_2[-1]
     
 def BC_absorbing_E():
 
-    E1u[0, :, 0]  -= dt * sig_abs * (E1u[0, :, 0] - Br[0, :, 0]) / P_half_2[0]
-    E1u[0, :, -1] -= dt * sig_abs * (E1u[0, :, -1] + Br[0, :, -1]) / P_half_2[-1]    
-    E2u[0, 0, :]  -= dt * sig_abs * (E2u[0, 0, :] + Br[0, 0, :]) / P_half_2[0]
+    E1u[0, :, 0]  -= dt * sig_abs * 0.5 * (E1d[0, :, 0] / N.sqrt(g11d_half) - Br[0, :, 0]) / P_int_2[0] / N.sqrt(g11d_half)
+    E1u[0, :, -1] -= dt * sig_abs * 0.5 * (E1d[0, :, -1]  / N.sqrt(g11d_half)+ Br[0, :, -1])/ P_int_2[-1] / N.sqrt(g11d_half)
+    E2u[0, 0, :]  -= dt * sig_abs * 0.5 * (E2d[0, 0, :] / N.sqrt(g22d_half) + Br[0, 0, :])/ P_int_2[0] / N.sqrt(g22d_half)
     
-    # E2u[0, -1, :] -= dt * sig_abs * (E2u[0, -1, :] - Br[0, -1, :]) / P_half_2[-1]
+    # E2u[0, -1, :] -= dt * sig_abs * (E2d[0, -1, :] - Br[0, -1, :]) / P_half_2[-1]
 
-    E1u[1, :, 0]  -= dt * sig_abs * (E1u[1, :, 0] - Br[1, :, 0]) / P_half_2[0]
-    E1u[1, :, -1] -= dt * sig_abs * (E1u[1, :, -1] + Br[1, :, -1]) / P_half_2[-1]    
-    E2u[1, -1, :] -= dt * sig_abs * (E2u[1, -1, :] - Br[1, -1, :]) / P_half_2[-1]
+    E1u[1, :, 0]  -= dt * sig_abs * 0.5 * (E1d[1, :, 0] / N.sqrt(g11d_half) - Br[1, :, 0])/ P_int_2[0] / N.sqrt(g11d_half)
+    E1u[1, :, -1] -= dt * sig_abs * 0.5 * (E1d[1, :, -1]  / N.sqrt(g11d_half)+ Br[1, :, -1]) / P_int_2[-1] / N.sqrt(g11d_half)
+    E2u[1, -1, :] -= dt * sig_abs * 0.5 * (E2d[1, -1, :]  / N.sqrt(g22d_half)- Br[1, -1, :]) / P_int_2[-1] / N.sqrt(g22d_half)
     
     return
 
 # Perfectly conducting outer boundaries    
-sig_cond = 80.0 # 1.0 / dt # 500.0 
+sig_cond = 0.1 / dxi # 80.0 500.0 
 
 def BC_conducting_B():
 
@@ -870,9 +992,9 @@ def BC_conducting_B():
 
     # Br[0, -1, :] += dt * sig_cond * E2u[0, -1, :] / P_half_2[-1]
 
-    Br[1, :, 0]  += dt * sig_abs * E1d[1, :, 0] / P_half_2[0]
-    Br[1, :, -1] -= dt * sig_abs * E1d[1, :, -1] / P_half_2[-1]
-    Br[1, -1, :] += dt * sig_abs * E2d[1, -1, :] / P_half_2[-1]
+    Br[1, :, 0]  += dt * sig_cond * E1u[1, :, 0] / P_half_2[0]
+    Br[1, :, -1] -= dt * sig_cond * E1u[1, :, -1] / P_half_2[-1]
+    Br[1, -1, :] += dt * sig_cond * E2u[1, -1, :] / P_half_2[-1]
     
     return
 
@@ -893,14 +1015,14 @@ def BC_conducting_E():
 amp = 0.0
 n_mode = 2
 wave = 2.0 * (xi_max - xi_min) / n_mode
-Br0 = amp * N.sin(2.0 * N.pi * (xBr_grid - xi_min) / wave) * N.sin(2.0 * N.pi * (yBr_grid - xi_min) / wave)
-E1u0 = N.zeros((Nxi_half, Neta_int))
-E2u0 = N.zeros((Nxi_int, Neta_half))
+Bri = amp * N.sin(2.0 * N.pi * (xBr_grid - xi_min) / wave) * N.sin(2.0 * N.pi * (yBr_grid - xi_min) / wave)
+E1ui = N.zeros((Nxi_half, Neta_int))
+E2ui = N.zeros((Nxi_int, Neta_half))
 
 for p in range(n_patches):
-    Br[p, :, :] = Br0[:, :]
-    E1u[p, :, :] = E1u0[:, :]
-    E2u[p, :, :] = E2u0[:, :]
+    Br[p, :, :] = Bri[:, :]
+    E1u[p, :, :] = E1ui[:, :]
+    E2u[p, :, :] = E2ui[:, :]
 
 ########
 # Visualization
@@ -925,6 +1047,8 @@ def plot_fields(it):
     P.xlim((xi_min - 0.5, xi_max + 0.5))
     ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
     
+    P.title(r'$t={:.3f} R/c$'.format(FDUMP*it*dt))
+    
     figsave_png(fig, "snapshots_penalty/fields_" + str(it))
 
     P.close('all')
@@ -937,7 +1061,7 @@ idump = 0
 
 patch = range(n_patches)
 
-Nt = 150000 # Number of iterations
+Nt = 500000 # Number of iterations
 FDUMP = 1000 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
@@ -947,36 +1071,48 @@ for it in tqdm(range(Nt), "Progression"):
         plot_fields(idump)
         idump += 1
 
-    compute_diff_B_alt(patch)
+    compute_diff_B(patch)
+    # compute_diff_B_order(patch)
+    # compute_diff_B_alt(patch)
+    # compute_diff_B_low(patch)
+
+    Br0[:,:,:] = Br[:,:,:]    
+    E1d0[:,:,:] = E1d[:,:,:]
+    E2d0[:,:,:] = E2d[:,:,:]
 
     push_E(patch, it)
 
-    compute_delta_B(dt)
+    E1d0[:,:,:] = 0.5 * (E1d[:,:,:] + E1d0[:,:,:])
+    E2d0[:,:,:] = 0.5 * (E2d[:,:,:] + E2d0[:,:,:])
 
-    interface_E()
+    compute_delta_B(dt, E1d0, E2d0, Br)
 
-    # compute_delta_E(dt)
-    # interface_E()
+    interface_E() 
 
     BC_absorbing_E()
-    # BC_conducting_E()    
+    # BC_conducting_E()
 
-    # contra_to_cov_E_weights2(patch)
-    contra_to_cov_E(patch)
+    contra_to_cov_E_weights(patch)
+    # contra_to_cov_E(patch)
 
-    compute_diff_E_alt(patch)
+    compute_diff_E(patch)
+    # compute_diff_E_order(patch)
+    # compute_diff_E_alt(patch)
+    # compute_diff_E_low(patch)
     
     push_B(patch)
 
-    compute_delta_E(dt)
+    Br0[:,:,:] = 0.5 * (Br[:,:,:] + Br0[:,:,:])
+
+    compute_delta_E(dt, E1d, E2d, Br0)
 
     interface_B()
 
-    # compute_delta_B(dt)
-    # interface_B()
-    
     BC_absorbing_B()
     # BC_conducting_B()
+
+    # compute_delta_B(dt)
+    # interface_B()
 
     for p in range(n_patches):
         energy[p, it] = dxi * deta * N.sum(Br[p, :, :]**2) \
