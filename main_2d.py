@@ -1047,8 +1047,6 @@ idump = 0
 
 patch = range(n_patches)
 
-from scipy.ndimage.filters import gaussian_filter
-
 Nt = 500000 # Number of iterations
 FDUMP = 1000 # Dump frequency
 time = dt * N.arange(Nt)
@@ -1069,10 +1067,6 @@ corners_B(patch)
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
 
-        # # Dump data
-        # h5f = h5py.File('data/Br_{}.h5'.format(idump), 'w')
-        # h5f.create_dataset('Br', data=Br[:,:,:])
-        # h5f.close()
 
         plot_fields_unfolded_Br(idump, 1.0)
         idump += 1
@@ -1096,8 +1090,6 @@ for it in tqdm(range(Nt), "Progression"):
         # compute_delta_E(p0, p1, dt, E1d0, E2d0, Br)
         compute_delta_E(p0, p1, dt, E1d, E2d, Br)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
         interface_E(p0, p1)
 
     corners_E(patch)
@@ -1120,16 +1112,14 @@ for it in tqdm(range(Nt), "Progression"):
         compute_delta_B(p0, p1, dt, E1d, E2d, Br0)
         # compute_delta_B(p0, p1, dt, E1d, E2d, Br)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
         interface_B(p0, p1)
 
     corners_B(patch)
 
-    for p in range(n_patches):
-        # energy[p, it] = dxi * deta * (N.sum(Br[p, :, :]**2) \
-        # + N.sum(E1u[p, :, :]**2) + N.sum(E2u[p, :, :]**2))
-        energy[:, it] = compute_energy()
+    # for p in range(n_patches):
+    #     # energy[p, it] = dxi * deta * (N.sum(Br[p, :, :]**2) \
+    #     # + N.sum(E1u[p, :, :]**2) + N.sum(E2u[p, :, :]**2))
+    #     energy[:, it] = compute_energy()
     
 # for p in range(n_patches):
 #     P.plot(time, energy[p, :])
