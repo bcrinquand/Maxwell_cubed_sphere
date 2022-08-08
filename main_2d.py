@@ -96,7 +96,7 @@ index_corners[7,1] = (0 ,  0)
 index_corners[7,2] = (0 , -1)
 
 # Parameters
-cfl = 0.5
+cfl = 0.1
 Nxi  = 64 # Number of cells in xi
 Neta = 64 # Number of cells in eta
 
@@ -468,7 +468,6 @@ def compute_diff_E_low(p):
     dE1d2[p, :, Neta_half - 1] = (- E1d[p, :, -2] + E1d[p, :, -1]) / deta
 
     dE1d2[p, :, 2:(Neta_half - 2)] = (E1d[p, :, 2:(Neta_half - 2)] - N.roll(E1d, 1, axis = 2)[p, :, 2:(Neta_half - 2)]) / deta
-
 
 Jz = N.zeros_like(Br)
 Jz[Sphere.B, :, :] = 0.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
@@ -1048,7 +1047,7 @@ idump = 0
 patch = range(n_patches)
 
 Nt = 500000 # Number of iterations
-FDUMP = 1000 # Dump frequency
+FDUMP = 100 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -1067,6 +1066,10 @@ corners_B(patch)
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
 
+        # Dump data
+        h5f = h5py.File('snapshots_penalty/Br_{}.h5'.format(idump), 'w')
+        h5f.create_dataset('Br', data=Br[:,:,:])
+        h5f.close()
 
         plot_fields_unfolded_Br(idump, 1.0)
         idump += 1

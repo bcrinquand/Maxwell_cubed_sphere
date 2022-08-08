@@ -35,10 +35,10 @@ class Sphere:
     S = 5
 
 # Grids
-Nxi  = 45 # Number of cells in xi
-Neta = 45 # Number of cells in eta
-FDUMP = 7000
-dt = 0.008806157051359396
+Nxi  = 64 # Number of cells in xi
+Neta = 64 # Number of cells in eta
+FDUMP = 100
+dt = 0.0012402405053214785
 
 Nxi_int = Nxi + 1 # Number of integer points
 Nxi_half = Nxi + 2 # Number of hlaf-step points
@@ -71,7 +71,7 @@ field = N.zeros((n_patches, Nxi_half, Neta_half))
 
 # Reads hdf5 file
 def ReadFieldHDF5(it):
-    h5f = h5py.File('data/Br_{}.h5'.format(it), 'r')
+    h5f = h5py.File('snapshots_penalty/Br_{}.h5'.format(it), 'r')
     field[:, :, :] = N.array(h5f['Br'])
     h5f.close()
 

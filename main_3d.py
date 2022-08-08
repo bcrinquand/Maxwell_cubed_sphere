@@ -77,7 +77,7 @@ Neta_half = Neta + 2 # NUmber of half-step points
 NG = 1 # Radial ghost cells
 Nr = Nr0 + 2 * NG # Total number of radial points
 
-r_min, r_max = 1.0, 8.0
+r_min, r_max = 1.0, 12.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
 
@@ -960,7 +960,7 @@ def BC_B_metal_rmax(patch):
 ########
 
 B0 = 1.0
-tilt = 0.0 / 180.0 * N.pi
+tilt = 60.0 / 180.0 * N.pi
 
 def func_Br(r0, th0, ph0):
     return 2.0 * B0 * (N.cos(th0) * N.cos(tilt) + N.sin(th0) * N.sin(ph0) * N.sin(tilt)) / r0**3

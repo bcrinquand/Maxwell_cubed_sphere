@@ -142,6 +142,9 @@ g12d_half = N.empty(Nxi_int)
 g11d_half = N.empty(Nxi_int)
 g22d_half = N.empty(Nxi_int)
 
+sqrt_det_g_B1 = N.empty((Nxi_int, Neta_half))
+sqrt_det_g_B2 = N.empty((Nxi_half, Neta_int))
+
 for i in range(Nxi_int):
     for j in range(Neta_int):
         
@@ -189,6 +192,37 @@ for i in range(Nxi_int):
         g11d[i, j, 3] = (C * C * D / (delta * delta))**2
         g22d[i, j, 3] = (C * D * D / (delta * delta))**2
         g12d[i, j, 3] = - X * Y * C * C * D * D / (delta)**4
+
+for i in range(Nxi_int):
+    for j in range(Neta_half):
+        
+        # at B1 locations
+        X = N.tan(xi_int[i])
+        Y = N.tan(eta_half[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d0 = (C * C * D / (delta * delta))**2
+        g22d0 = (C * D * D / (delta * delta))**2
+        g12d0 = - X * Y * C * C * D * D / (delta)**4
+        sqrt_det_g_B1[i, j] = N.sqrt(g11d0 * g22d0 - g12d0 * g12d0)
+
+for i in range(Nxi_half):
+    for j in range(Neta_int):
+
+        # at B2 locations
+        X = N.tan(xi_half[i])
+        Y = N.tan(eta_int[j])
+        C = N.sqrt(1.0 + X * X)
+        D = N.sqrt(1.0 + Y * Y)
+        delta = N.sqrt(1.0 + X * X + Y * Y)
+        
+        g11d0 = (C * C * D / (delta * delta))**2
+        g22d0 = (C * D * D / (delta * delta))**2
+        g12d0 = - X * Y * C * C * D * D / (delta)**4
+        sqrt_det_g_B2[i, j] = N.sqrt(g11d0 * g22d0 - g12d0 * g12d0)
+
 
 for i in range(Nxi_int):
     for j in range(Neta_int):
@@ -421,6 +455,48 @@ def push_E(p, itime, dtin):
         
         # Current
         Er[p, :, :] += dtin * Jz[p, :, :] * N.sin(20.0 * itime * dtin) * (1 + N.tanh(20 - itime/5.))/2.
+
+# divB = N.zeros((n_patches, Nxi, Neta))
+
+# def compute_divB(p):
+
+#     divB[p, :, :] = ((N.roll(B1u[p, :-1, 1:-1] * sqrt_det_g[:-1, :-1, 2], -1, axis = 0) - B1u[p, :-1, 1:-1] * sqrt_det_g[:-1, :-1, 2]) / dxi   \
+#                    + (N.roll(B2u[p, 1:-1, :-1] * sqrt_det_g[:-1, :-1, 1], -1, axis = 1) - B2u[p, 1:-1, :-1] * sqrt_det_g[:-1, :-1, 1]) / deta) / sqrt_det_g[:-1, :-1, 3]
+
+divB = N.zeros((n_patches, Nxi_half, Neta_half))
+dB1d1 = N.zeros((n_patches, Nxi_half, Neta_half))
+dB2d2 = N.zeros((n_patches, Nxi_half, Neta_half))
+
+def compute_divB(p):
+    
+    dB1d1[p, 0, :] = (- 0.5 * B1u[p, 0, :] * sqrt_det_g_B1[0, :] + 0.5 * B1u[p, 1, :] * sqrt_det_g_B1[1, :]) / dxi / P_half_2[0]
+    dB1d1[p, 1, :] = (- 0.25 * B1u[p, 0, :] * sqrt_det_g_B1[0, :] + 0.25 * B1u[p, 1, :] * sqrt_det_g_B1[1, :]) / dxi / P_half_2[1]
+    dB1d1[p, 2, :] = (- 0.25 * B1u[p, 0, :] * sqrt_det_g_B1[0, :] - 0.75 * B1u[p, 1, :] * sqrt_det_g_B1[1, :] + B1u[p, 2, :] * sqrt_det_g_B1[2, :]) / dxi / P_half_2[2]
+
+    dB1d1[p, Nxi_half - 3, :] = (- B1u[p, -3, :] * sqrt_det_g_B1[-3, :] + 0.75 * B1u[p, -2, :] * sqrt_det_g_B1[-2, :] + 0.25 * B1u[p, -1, :] * sqrt_det_g_B1[-1, :]) / dxi / P_half_2[Nxi_half - 3]
+    dB1d1[p, Nxi_half - 2, :] = (- 0.25 * B1u[p, -2, :] * sqrt_det_g_B1[-2, :] + 0.25 * B1u[p, -1, :] * sqrt_det_g_B1[-1, :]) / dxi / P_half_2[Nxi_half - 2]
+    dB1d1[p, Nxi_half - 1, :] = (- 0.5 * B1u[p, -2, :] * sqrt_det_g_B1[-2, :] + 0.5 * B1u[p, -1, :] * sqrt_det_g_B1[-1, :]) / dxi / P_half_2[Nxi_half - 1]
+
+    dB1d1[p, 3:(Nxi_half - 3), :] = (B1u[p, 3:(Nxi_half - 3), :] * sqrt_det_g_B1[3:(Nxi_half - 3), :] - N.roll(B1u[p, :, :] * sqrt_det_g_B1[:, :], 1, axis = 0)[3:(Nxi_half - 3), :]) / dxi
+
+    dB2d2[p, :, 0] = (- 0.5 * B2u[p, :, 0] * sqrt_det_g_B2[:, 0] + 0.5 * B2u[p, :, 1] * sqrt_det_g_B2[:, 1]) / dxi / P_half_2[0]
+    dB2d2[p, :, 1] = (- 0.25 * B2u[p, :, 0] * sqrt_det_g_B2[:, 0] + 0.25 * B2u[p, :, 1] * sqrt_det_g_B2[:, 1]) / dxi / P_half_2[1]
+    dB2d2[p, :, 2] = (- 0.25 * B2u[p, :, 0] * sqrt_det_g_B2[:, 0] - 0.75 * B2u[p, :, 1] * sqrt_det_g_B2[:, 1] + B2u[p, :, 2] * sqrt_det_g_B2[:, 2]) / dxi / P_half_2[2]
+
+    dB2d2[p, :, Neta_half - 3] = (- B2u[p, :, -3] * sqrt_det_g_B2[:, -3] + 0.75 * B2u[p, :, -2] * sqrt_det_g_B2[:, -2] + 0.25 * B2u[p, :, -1] * sqrt_det_g_B2[:, -1]) / deta / P_half_2[Nxi_half - 3]
+    dB2d2[p, :, Neta_half - 2] = (- 0.25 * B2u[p, :, -2] * sqrt_det_g_B2[:, -2] + 0.25 * B2u[p, :, -1] * sqrt_det_g_B2[:, -1]) / deta / P_half_2[Nxi_half - 2]
+    dB2d2[p, :, Neta_half - 1] = (- 0.5 * B2u[p, :, -2] * sqrt_det_g_B2[:, -2] + 0.5 * B2u[p, :, -1] * sqrt_det_g_B2[:, -1]) / deta / P_half_2[Nxi_half - 1]
+
+    dB2d2[p, :, 3:(Neta_half - 3)] = (B2u[p, :, 3:(Neta_half - 3)] * sqrt_det_g_B2[:, 3:(Neta_half - 3)] - N.roll(B2u[p, :, :] * sqrt_det_g_B2[:, :], 1, axis = 1)[:, 3:(Neta_half - 3)]) / deta
+
+    # print(dB2d2[p, :5, Neta_half - 1], dB1d1[p, :5, Neta_half - 1])
+    divB[p, :, :] = (dB1d1[p, :, :] + dB2d2[p, :, :])
+
+def correct_B(p):
+    
+    B1u[p, -1, :] = B1u[p, -2, :] * sqrt_det_g_B1[-2, :] / sqrt_det_g_B1[-1, :] - dxi * dB2d2[p, -1, :] / sqrt_det_g_B1[-1, :]
+    B2u[p, :, -1] = B2u[p, :, -2] * sqrt_det_g_B2[:, -2] / sqrt_det_g_B2[:, -1] - deta* dB1d1[p, :, -1] / sqrt_det_g_B2[:, -1]
+
 
 ########
 # Boundary conditions
@@ -828,6 +904,31 @@ def plot_fields_unfolded_B1(it, vm):
 
     P.close('all')
 
+def plot_fields_unfolded_divB(it, vm):
+
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
+
+    # ax.pcolormesh(xi_half[1:-1], xi_half[1:-1], divB[Sphere.A, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_half[1:-1] + N.pi / 2.0 + 0.1, xi_half[1:-1], divB[Sphere.B, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_half[1:-1], xi_half[1:-1] - N.pi / 2.0 - 0.1, divB[Sphere.S, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    # ax.pcolormesh(xi_half[1:-1] + N.pi + 0.2, xi_half[1:-1], divB[Sphere.C, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_half[1:-1] - N.pi / 2.0 - 0.1, xi_half[1:-1], divB[Sphere.D, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    # ax.pcolormesh(xi_half[1:-1], xi_half[1:-1] + N.pi / 2.0 + 0.1, divB[Sphere.N, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    ax.pcolormesh(xi_half, xi_half, divB[Sphere.A, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_half + N.pi / 2.0 + 0.1, xi_half, divB[Sphere.B, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_half, xi_half - N.pi / 2.0 - 0.1, divB[Sphere.S, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    ax.pcolormesh(xi_half + N.pi + 0.2, xi_half, divB[Sphere.C, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_half - N.pi / 2.0 - 0.1, xi_half, divB[Sphere.D, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_half, xi_half + N.pi / 2.0 + 0.1, divB[Sphere.N, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    
+    figsave_png(fig, "snapshots_penalty/divB_" + str(it))
+
+    P.close('all')
+
 ########
 # Main routine
 ########
@@ -837,7 +938,7 @@ idump = 0
 patch = range(n_patches)
 
 Nt = 500000 # Number of iterations
-FDUMP = 1000 # Dump frequency
+FDUMP = 2 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -857,26 +958,27 @@ for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
 
         plot_fields_unfolded_Er(idump, 1.0)
+        plot_fields_unfolded_divB(idump, 0.01)
         idump += 1
 
     diff_Er[:, :, :] = 0.0
     diff_B1[:, :, :] = 0.0
     diff_B2[:, :, :] = 0.0
 
-    Er0[:, :, :] = Er[:, :, :]    
-    B1d0[:, :, :] = B1d[:, :, :]
-    B2d0[:, :, :] = B2d[:, :, :]
+    Er0[:, :, :] = Er[:, :, :]   
 
     compute_diff_B(patch)
     # compute_diff_B_alt(patch)
     # compute_diff_B_order(patch)
 
     push_E(patch, it, dt)
+    
+    Er0[:, :, :] = 0.5 * (Er[:, :, :] + Er0[:, :, :])
 
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
-        # compute_delta_E(p0, p1, dt, B1d0, B2d0, Er)
-        compute_delta_E(p0, p1, dt, B1d, B2d, Er)
+        compute_delta_E(p0, p1, dt, B1d, B2d, Er0)
+        # compute_delta_E(p0, p1, dt, B1d, B2d, Er)
 
         interface_E(p0, p1)
 
@@ -885,18 +987,27 @@ for it in tqdm(range(Nt), "Progression"):
     compute_diff_E(patch)
     # compute_diff_E_alt(patch)
     # compute_diff_E_order(patch)
+
+    B1d0[:, :, :] = B1d[:, :, :]
+    B2d0[:, :, :] = B2d[:, :, :]
     
     push_B(patch, it, dt)
+
+    B1d0[:, :, :] = 0.5 * (B1d[:, :, :] + B1d0[:, :, :])
+    B2d0[:, :, :] = 0.5 * (B2d[:, :, :] + B2d0[:, :, :])
     
     for i in range(n_zeros):
         p0, p1 = index_row[i], index_col[i]
-        compute_delta_B(p0, p1, dt, B1d, B2d, Er0)
+        compute_delta_B(p0, p1, dt, B1d0, B2d0, Er)
         # compute_delta_B(p0, p1, dt, B1d, B2d, Er)
 
         interface_B(p0, p1)
 
     corners_B(patch)
-
+    
+    for p0 in patch:
+        compute_divB(p0)
+        
     contra_to_cov_B(patch)
     # contra_to_cov_E_weights(patch)
 
@@ -904,7 +1015,7 @@ for it in tqdm(range(Nt), "Progression"):
     #     # energy[p, it] = dxi * deta * (N.sum(Er[p, :, :]**2) \
     #     # + N.sum(B1u[p, :, :]**2) + N.sum(B2u[p, :, :]**2))
     #     energy[:, it] = compute_energy()
-    
+        
 # for p in range(n_patches):
 #     P.plot(time, energy[p, :])
 

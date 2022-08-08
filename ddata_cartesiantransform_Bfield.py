@@ -21,9 +21,9 @@ outdir = '/home/bcrinqua/GitHub/Maxwell_cubed_sphere/data/'
 
 num = sys.argv[1]
 
-ONt = 80
-ONp = 160
-Nxyz = 80
+ONt = 100
+ONp = 200
+Nxyz = 100
 
 n_patches = 6
 # Connect patch indices and names
@@ -54,8 +54,8 @@ Neta_half = len(eta_half)
 Nxi = Nxi_int - 1
 Neta = Neta_int - 1
 
-print('Loaded grid with Nr x Nxi x Neta = '+str(Nr0)+' x '+str(Nxi_int)+' x '+str(Neta_int))
-
+# print('Loaded grid with Nr x Nxi x Neta = '+str(Nr0)+' x '+str(Nxi_int)+' x '+str(Neta_int))
+print('File number {}'.format(num))
 ########
 # Establish grid infrastructure
 ########
@@ -79,7 +79,7 @@ B1_c = N.zeros((n_patches, Nr0, Nxi, Neta))
 B2_c = N.zeros((n_patches, Nr0, Nxi, Neta))
 
 Ot = N.linspace(0, N.pi, ONt)
-Op = N.linspace(- N.pi, N.pi, ONp, endpoint=False)
+Op = N.linspace(- N.pi, N.pi, ONp)
 
 BrS = N.zeros((Nr0, ONt, ONp))
 BtS = N.zeros((Nr0, ONt, ONp))
@@ -124,6 +124,8 @@ compute_B_nodes(range(n_patches))
 Pt1D = []
 Pp1D = []
 
+eta_grid, xi_grid = N.meshgrid(eta_half[1:-1], xi_half[1:-1])
+
 for patch in range(6):
 
     fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
@@ -143,10 +145,13 @@ for h in tqdm(range(Nr0)):
 
     for patch in range(6):
 
-        for i in range(Nxi):
-            for j in range(Neta):
+        # for i in range(Nxi):
+        #     for j in range(Neta):
 
-                    PB1D.append(Br_c[patch, h, i, j])
+        #             PB1D.append(Br_c[patch, h, i, j])
+
+        PB1D = PB1D + (Br_c[patch, h, :, :]).flatten().tolist()
+
 
     PB1D = N.array(PB1D)
 
@@ -162,21 +167,35 @@ for h in tqdm(range(Nr0)):
     PB1D = []
     PB2D = []
 
+    # for patch in range(6):
+
+    #     fvec = (globals()["vec_" + sphere[patch] + "_to_sph"])
+
+    #     for i in range(Nxi):
+    #         for j in range(Neta):
+
+    #                 B1uC = B1_c[patch, h, i, j]
+    #                 B2uC = B2_c[patch, h, i, j]
+
+    #                 Btu, Bpu = fvec(xi_int[i] + 0.5 * dxi, eta_int[j] + 0.5 * dxi, B1uC, B2uC)
+
+    #                 PB1D.append(Btu)
+    #                 PB2D.append(Bpu)
+
+
+
     for patch in range(6):
 
         fvec = (globals()["vec_" + sphere[patch] + "_to_sph"])
 
-        for i in range(Nxi):
-            for j in range(Neta):
+        B1uC = B1_c[patch, h, :, :]
+        B2uC = B2_c[patch, h, :, :]
 
-                    B1uC = B1_c[patch, h, i, j]
-                    B2uC = B2_c[patch, h, i, j]
+        Btu, Bpu = fvec(xi_grid[:, :], eta_grid[:, :], B1uC, B2uC)
 
-                    Btu, Bpu = fvec(xi_int[i] + 0.5 * dxi, eta_int[j] + 0.5 * dxi, B1uC, B2uC)
-
-                    PB1D.append(Btu)
-                    PB2D.append(Bpu)
-
+        PB1D = PB1D + Btu.flatten().tolist()
+        PB2D = PB2D + Bpu.flatten().tolist()
+        
     PB1D = N.array(PB1D)
     PB2D = N.array(PB2D)
 
@@ -224,9 +243,9 @@ my_interpolating_function_x = RegularGridInterpolator((R1d, Theta1d, Phi1d), dat
 my_interpolating_function_y = RegularGridInterpolator((R1d, Theta1d, Phi1d), data_yc, bounds_error=False, fill_value = 0.0, method='linear')
 my_interpolating_function_z = RegularGridInterpolator((R1d, Theta1d, Phi1d), data_zc, bounds_error=False, fill_value = 0.0, method='linear')
 
-# my_interpolating_function_r = RegularGridInterpolator((R1d, Theta1d, Phi1d), BrS, bounds_error=False, fill_value = 0.0, method='linear')
-# my_interpolating_function_t = RegularGridInterpolator((R1d, Theta1d, Phi1d), BtS, bounds_error=False, fill_value = 0.0, method='linear')
-# my_interpolating_function_p = RegularGridInterpolator((R1d, Theta1d, Phi1d), BpS, bounds_error=False, fill_value = 0.0, method='linear')
+my_interpolating_function_r = RegularGridInterpolator((R1d, Theta1d, Phi1d), BrS, bounds_error=False, fill_value = 0.0, method='linear')
+my_interpolating_function_t = RegularGridInterpolator((R1d, Theta1d, Phi1d), BtS, bounds_error=False, fill_value = 0.0, method='linear')
+my_interpolating_function_p = RegularGridInterpolator((R1d, Theta1d, Phi1d), BpS, bounds_error=False, fill_value = 0.0, method='linear')
 
 yi = N.linspace(-r_max,r_max,Nxyz)
 xi = N.linspace(-r_max,r_max,Nxyz)
@@ -240,38 +259,64 @@ datar_out = N.zeros_like(xv)
 datat_out = N.zeros_like(xv)
 datap_out = N.zeros_like(xv)
 
-for i in tqdm(range(0, N.shape(datax_out)[0])):
-    for j in range(0, N.shape(datax_out)[1]):
-        for k in range(0, N.shape(datax_out)[2]):
-            rtmp = N.sqrt(xv[i,j,k]**2 + yv[i,j,k]**2 + zv[i,j,k]**2)
-            thetatmp = N.arccos(zv[i,j,k] / N.sqrt(xv[i,j,k]**2 + yv[i,j,k]**2 + zv[i,j,k]**2))
-            phitmp = N.arctan2(yv[i,j,k], xv[i,j,k])
+rtmp = N.sqrt(xv**2 + yv**2 + zv**2)
+thetatmp = N.arccos(zv / N.sqrt(xv**2 + yv**2 + zv**2))
+phitmp = N.arctan2(yv, xv)
 
-            datax_out[i,j,k] = my_interpolating_function_x([rtmp,thetatmp,phitmp])
-            datay_out[i,j,k] = my_interpolating_function_y([rtmp,thetatmp,phitmp])
-            dataz_out[i,j,k] = my_interpolating_function_z([rtmp,thetatmp,phitmp])
+rf = rtmp.flatten()
+thf = thetatmp.flatten()
+phf = phitmp.flatten()
+Ntot=Nxyz**3
+flat = N.array([[rf[i] for i in range(Ntot)],[thf[i] for i in range(Ntot)],[phf[i] for i in range(Ntot)]])
 
-            # datar_out[i,j,k] = my_interpolating_function_r([rtmp,thetatmp,phitmp])
-            # datat_out[i,j,k] = my_interpolating_function_t([rtmp,thetatmp,phitmp])
-            # datap_out[i,j,k] = my_interpolating_function_p([rtmp,thetatmp,phitmp])
+datax_out = my_interpolating_function_x(flat.T)
+datay_out = my_interpolating_function_y(flat.T)
+dataz_out = my_interpolating_function_z(flat.T)
 
-Bsq = N.sqrt(datax_out**2 + datay_out**2 + dataz_out**2)
+datax = datax_out.reshape((Nxyz,Nxyz,Nxyz))
+datay = datay_out.reshape((Nxyz,Nxyz,Nxyz))
+dataz = dataz_out.reshape((Nxyz,Nxyz,Nxyz))
+
+datar_out = my_interpolating_function_r(flat.T)
+datat_out = my_interpolating_function_t(flat.T)
+datap_out = my_interpolating_function_p(flat.T)
+
+datar = datar_out.reshape((Nxyz,Nxyz,Nxyz))
+datat = datat_out.reshape((Nxyz,Nxyz,Nxyz))
+datap = datap_out.reshape((Nxyz,Nxyz,Nxyz))
+
+# for i in tqdm(range(0, N.shape(datax_out)[0])):
+#     for j in range(0, N.shape(datax_out)[1]):
+#         for k in range(0, N.shape(datax_out)[2]):
+#             rtmp = N.sqrt(xv[i,j,k]**2 + yv[i,j,k]**2 + zv[i,j,k]**2)
+#             thetatmp = N.arccos(zv[i,j,k] / N.sqrt(xv[i,j,k]**2 + yv[i,j,k]**2 + zv[i,j,k]**2))
+#             phitmp = N.arctan2(yv[i,j,k], xv[i,j,k])
+
+#             datax_out[i,j,k] = my_interpolating_function_x([rtmp,thetatmp,phitmp])
+#             datay_out[i,j,k] = my_interpolating_function_y([rtmp,thetatmp,phitmp])
+#             dataz_out[i,j,k] = my_interpolating_function_z([rtmp,thetatmp,phitmp])
+
+#             # datar_out[i,j,k] = my_interpolating_function_r([rtmp,thetatmp,phitmp])
+#             # datat_out[i,j,k] = my_interpolating_function_t([rtmp,thetatmp,phitmp])
+#             # datap_out[i,j,k] = my_interpolating_function_p([rtmp,thetatmp,phitmp])
+
+Bsq = N.sqrt(datax**2 + datay**2 + dataz**2)
 
 h5f = h5py.File(outdir+'Bsq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
 h5f.create_dataset('Bsq', data=Bsq)
 h5f.close()
 
 h5f = h5py.File(outdir+'Bxyz'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-h5f.create_dataset('Bx', data=datax_out)
-h5f.create_dataset('By', data=datay_out)
-h5f.create_dataset('Bz', data=dataz_out)
+h5f.create_dataset('Bx', data=datax)
+h5f.create_dataset('By', data=datay)
+h5f.create_dataset('Bz', data=dataz)
 h5f.close()
 
-# h5f = h5py.File(outdir+'Brthph'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-# h5f.create_dataset('Br', data=datar_out)
-# h5f.create_dataset('Bth', data=datat_out)
-# h5f.create_dataset('Bph', data=datap_out)
-# h5f.close()
+h5f = h5py.File(outdir+'Brthph'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+h5f.create_dataset('Br', data=datar)
+h5f.create_dataset('Bth', data=datat)
+h5f.create_dataset('Bph', data=datap)
+h5f.close()
 
 h5f = h5py.File(outdir+'grid_xyz.h5', 'w')
 h5f.create_dataset('xpos', data=xi)

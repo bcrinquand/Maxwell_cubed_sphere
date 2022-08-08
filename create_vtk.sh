@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files=(./data/Bsq_*.h5)
-do fil in files
+for fil in ./data/Bsq_*.h5; do
+    echo ${fil}
     h5tovtk ${fil}
 done
