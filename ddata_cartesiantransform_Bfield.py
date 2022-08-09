@@ -110,7 +110,7 @@ ReadFieldHDF5(num, "B2u")
 
 def compute_B_nodes(p):
 
-    Br_c[p, :, :, :] = 0.5 * (Br[p, NG:(Nr0 + NG), 1:-1, 1:-1] + N.roll(Br, -1, axis = 1)[p, NG:(Nr0 + NG):, 1:-1, 1:-1])    
+    Br_c[p, :, :, :] = 0.5 * (Br[p, NG:(Nr0 + NG), 1:-1, 1:-1] + N.roll(Br, -1, axis = 1)[p, NG:(Nr0 + NG), 1:-1, 1:-1])    
     B1_c[p, :, :, :] = 0.5 * (B1u[p, NG:(Nr0 + NG), :-1, 1:-1] + N.roll(B1u, -1, axis = 2)[p, NG:(Nr0 + NG), :-1, 1:-1])
     B2_c[p, :, :, :] = 0.5 * (B2u[p, NG:(Nr0 + NG), 1:-1, :-1] + N.roll(B2u, -1, axis = 3)[p, NG:(Nr0 + NG), 1:-1, :-1])
 
@@ -227,10 +227,6 @@ Tzr = N.divide(Z, N.sqrt(X*X+Y*Y+Z*Z), out=N.zeros_like(X), where=N.sqrt(X*X+Y*Y
 Tzt = - N.sqrt(X*X+Y*Y)
 Tzp = 0
 
-# data_xc = N.sin(THETA) * N.cos(PHI) * BrS + R * N.cos(THETA) * N.cos(PHI) * BtS - R * N.sin(THETA) * N.sin(PHI) * BpS
-# data_yc = N.sin(THETA) * N.sin(PHI) * BrS + R * N.cos(THETA) * N.sin(PHI) * BtS + R * N.sin(THETA) * N.cos(PHI) * BpS
-# data_zc = N.cos(THETA) * BrS - R * N.sin(THETA) * BtS
-
 data_xc = Txr * BrS + Txt * BtS + Txp * BpS
 data_yc = Tyr * BrS + Tyt * BtS + Typ * BpS
 data_zc = Tzr * BrS + Tzt * BtS + Tzp * BpS
@@ -277,13 +273,13 @@ datax = datax_out.reshape((Nxyz,Nxyz,Nxyz))
 datay = datay_out.reshape((Nxyz,Nxyz,Nxyz))
 dataz = dataz_out.reshape((Nxyz,Nxyz,Nxyz))
 
-datar_out = my_interpolating_function_r(flat.T)
-datat_out = my_interpolating_function_t(flat.T)
-datap_out = my_interpolating_function_p(flat.T)
+# datar_out = my_interpolating_function_r(flat.T)
+# datat_out = my_interpolating_function_t(flat.T)
+# datap_out = my_interpolating_function_p(flat.T)
 
-datar = datar_out.reshape((Nxyz,Nxyz,Nxyz))
-datat = datat_out.reshape((Nxyz,Nxyz,Nxyz))
-datap = datap_out.reshape((Nxyz,Nxyz,Nxyz))
+# datar = datar_out.reshape((Nxyz,Nxyz,Nxyz))
+# datat = datat_out.reshape((Nxyz,Nxyz,Nxyz))
+# datap = datap_out.reshape((Nxyz,Nxyz,Nxyz))
 
 # for i in tqdm(range(0, N.shape(datax_out)[0])):
 #     for j in range(0, N.shape(datax_out)[1]):
@@ -302,6 +298,14 @@ datap = datap_out.reshape((Nxyz,Nxyz,Nxyz))
 
 Bsq = N.sqrt(datax**2 + datay**2 + dataz**2)
 
+Br_pol = N.mean(BrS, axis = 2)
+Bth_pol = N.mean(BtS, axis = 2)
+Bph_pol = N.mean(BpS, axis = 2)
+
+Br_tor = BrS[:, int(ONt/2), :]
+Bth_tor = BtS[:, int(ONt/2), :]
+Bph_tor = BpS[:, int(ONt/2), :]
+
 h5f = h5py.File(outdir+'Bsq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
 h5f.create_dataset('Bsq', data=Bsq)
 h5f.close()
@@ -313,13 +317,28 @@ h5f.create_dataset('Bz', data=dataz)
 h5f.close()
 
 h5f = h5py.File(outdir+'Brthph'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-h5f.create_dataset('Br', data=datar)
-h5f.create_dataset('Bth', data=datat)
-h5f.create_dataset('Bph', data=datap)
+h5f.create_dataset('Br_pol', data=Br_pol)
+h5f.create_dataset('Bth_pol', data=Bth_pol)
+h5f.create_dataset('Bph_pol', data=Bph_pol)
+h5f.create_dataset('Br_tor', data=Br_tor)
+h5f.create_dataset('Bth_tor', data=Bth_tor)
+h5f.create_dataset('Bph_tor', data=Bph_tor)
 h5f.close()
+
+# h5f = h5py.File(outdir+'Brthph_cart'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+# h5f.create_dataset('Br', data=datar)
+# h5f.create_dataset('Bth', data=datat)
+# h5f.create_dataset('Bph', data=datap)
+# h5f.close()
 
 h5f = h5py.File(outdir+'grid_xyz.h5', 'w')
 h5f.create_dataset('xpos', data=xi)
 h5f.create_dataset('ypos', data=yi)
 h5f.create_dataset('zpos', data=zi)
+h5f.close()
+
+h5f = h5py.File(outdir+'grid_rthph.h5', 'w')
+h5f.create_dataset('rpos',  data=r_yee[NG:(Nr0 + NG)])
+h5f.create_dataset('thpos', data=Ot)
+h5f.create_dataset('phpos', data=Op)
 h5f.close()

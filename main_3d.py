@@ -165,9 +165,9 @@ def WriteAllFieldsHDF5(idump):
     WriteFieldHDF5(idump, "Br")
     WriteFieldHDF5(idump, "B1u")
     WriteFieldHDF5(idump, "B2u")
-    # WriteFieldHDF5(idump, "Er")
-    # WriteFieldHDF5(idump, "E1u")
-    # WriteFieldHDF5(idump, "E2u")
+    WriteFieldHDF5(idump, "Er")
+    WriteFieldHDF5(idump, "E1u")
+    WriteFieldHDF5(idump, "E2u")
 
 def WriteCoordsHDF5():
 
@@ -251,7 +251,7 @@ for i in range(Nxi_int):
             g22d[k, i, j, 3] = (r0 * C * D * D / (delta * delta))**2
             g12d[k, i, j, 3] = - r0 * r0 * X * Y * C * C * D * D / (delta)**4
 
-            # 3 at (k + 1/2, i, j)
+            # 4 at (k + 1/2, i, j)
             r0 = r_yee[k]
             X = N.tan(xi_int[i])
             Y = N.tan(eta_int[j])
@@ -565,7 +565,7 @@ def push_E(p, dtin):
         # Interior
         E2u[p, :, :, 1:-1] += dtin * (dB1dr[p, :, :, 1:-1] - dBrd1[p, :, :, 1:-1]) / sqrt_det_g[:, :, 0:-1, 2]
         # Bottom edge
-        E2u[p, :, :, 0] += dtin * (dB1dr[p, :, :, 0] - dB1dr[p, :, :, 0]) / sqrt_det_g[:, :, 0, 0]
+        E2u[p, :, :, 0] += dtin * (dB1dr[p, :, :, 0] - dBrd1[p, :, :, 0]) / sqrt_det_g[:, :, 0, 0]
         # Top edge
         E2u[p, :, :, -1] += dtin * (dB1dr[p, :, :, -1] - dBrd1[p, :, :, -1]) / sqrt_det_g[:, :, -1, 0]
 
@@ -898,12 +898,10 @@ def corners_B(p0):
 # Perfectly conducting boundary conditions at r_min
 ########
 
-def BC_E_metal_rmin(patch):
-    Er[patch, :NG, :, :] = 0.0
-    E1u[patch, NG, :, :] = E1_surf[patch, :, :]
-    E2u[patch, NG, :, :] = E2_surf[patch, :, :]
-    E1u[patch, 0, :, :] = E1_surf[patch, :, :]
-    E2u[patch, 0, :, :] = E2_surf[patch, :, :]
+def BC_E_metal_rmin(it, patch):
+    Er[patch,  NG, :, :] = 0.0
+    E1u[patch, NG, :, :] = E1_surf[patch, :, :] #* 0.5 * (1.0 - N.tanh(5.0 - it/1.))
+    E2u[patch, NG, :, :] = E2_surf[patch, :, :] #* 0.5 * (1.0 - N.tanh(5.0 - it/1.))
     
 def BC_B_metal_rmin(patch):
     Br[patch, NG, :, :]   = Br_surf[patch, :, :]
@@ -960,7 +958,7 @@ def BC_B_metal_rmax(patch):
 ########
 
 B0 = 1.0
-tilt = 60.0 / 180.0 * N.pi
+tilt = 0.0 / 180.0 * N.pi
 
 def func_Br(r0, th0, ph0):
     return 2.0 * B0 * (N.cos(th0) * N.cos(tilt) + N.sin(th0) * N.sin(ph0) * N.sin(tilt)) / r0**3
@@ -981,43 +979,43 @@ def InitialData():
         fvec = (globals()["vec_sph_to_" + sphere[patch]])
         fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
 
-        for h in tqdm(range(Nr), "Patch {}".format(sphere[patch])):
+        # for h in tqdm(range(Nr), "Patch {}".format(sphere[patch])):
         # for h in range(Nr):
-            for i in range(Nxi_half):
-                for j in range(Neta_half):
+        for i in range(Nxi_half):
+            for j in range(Neta_half):
 
-                    r0 = r[h]
-                    th0, ph0 = fcoord(xi_half[i], eta_half[j])
-                    BrTMP = func_Br(r0, th0, ph0)
+                r0 = r[:]
+                th0, ph0 = fcoord(xi_half[i], eta_half[j])
+                BrTMP = func_Br(r0, th0, ph0)
 
-                    Br[patch, h, i, j] = BrTMP
-                    Br0[patch, h, i, j] = BrTMP
+                Br[patch, :, i, j] = BrTMP
+                Br0[patch,:, i, j] = BrTMP
                     
-            for i in range(Nxi_int):
-                for j in range(Neta_half):
+        for i in range(Nxi_int):
+            for j in range(Neta_half):
 
-                    r0 = r_yee[h]
+                    r0 = r_yee[:]
                     th0, ph0 = fcoord(xi_int[i], eta_half[j])
                     BtTMP = func_Bth(r0, th0, ph0)
                     BpTMP = func_Bph(r0, th0, ph0)
                     BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
 
-                    B1u[patch, h, i, j]  = BCStmp[0]
-                    B1u0[patch, h, i, j] = BCStmp[0]
-                    E2u[patch, h, i, j] = 0.0
+                    B1u[patch, :, i, j]  = BCStmp[0]
+                    B1u0[patch, :, i, j] = BCStmp[0]
+                    E2u[patch, :, i, j] = 0.0
 
-            for i in range(Nxi_half):
-                for j in range(Neta_int):
+        for i in range(Nxi_half):
+            for j in range(Neta_int):
 
-                    r0 = r_yee[h]
+                    r0 = r_yee[:]
                     th0, ph0 = fcoord(xi_half[i], eta_int[j])
                     BtTMP = func_Bth(r0, th0, ph0)
                     BpTMP = func_Bph(r0, th0, ph0)
                     BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
 
-                    B2u[patch, h, i, j]  = BCStmp[1]
-                    B2u0[patch, h, i, j] = BCStmp[1]
-                    E1u[patch, h, i, j]  = 0.0
+                    B2u[patch, :, i, j]  = BCStmp[1]
+                    B2u0[patch, :, i, j] = BCStmp[1]
+                    E1u[patch, :, i, j]  = 0.0
 
         Er[patch,  :, :, :] = 0.0
 
@@ -1025,7 +1023,7 @@ def InitialData():
 # Boundary conditions at r_min
 ########
 
-omega = 0.0 # Angular velocity of the conductor at r_min
+omega = 0.1 # Angular velocity of the conductor at r_min
 InitialData()
 
 def func_Eth(th0, ph0, omega0):
@@ -1109,13 +1107,13 @@ def plot_fields_unfolded_E1(it, vm, ir):
     fig = P.figure(1, facecolor='w')
     ax = P.subplot(111)
 
-    ax.pcolormesh(xE1_grid, xE1_grid, E1u[Sphere.A, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xE1_grid + N.pi / 2.0, yE1_grid, E1u[Sphere.B, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xE1_grid, yE1_grid - N.pi / 2.0, E1u[Sphere.S, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xE1_grid, yE1_grid, E1u[Sphere.A, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xE1_grid + N.pi / 2.0 + 0.1, yE1_grid, E1u[Sphere.B, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xE1_grid, yE1_grid - N.pi / 2.0 - 0.1, E1u[Sphere.S, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
 
-    ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, E1u[Sphere.C, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, E1u[Sphere.D, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
-    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, E1u[Sphere.N, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_c + N.pi + 0.2, eta_grid_c, E1u[Sphere.C, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_d - N.pi / 2.0 - 0.1, eta_grid_d, E1u[Sphere.D, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0 + 0.1, E1u[Sphere.N, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
     
     P.title(r'$t={:.3f} R/c$'.format(FDUMP*it*dt))
     
@@ -1123,6 +1121,28 @@ def plot_fields_unfolded_E1(it, vm, ir):
 
     P.close('all')
 
+def plot_fields_unfolded_E2(it, vm, ir):
+
+    xi_grid_c, eta_grid_c = unflip_eq(xE2_grid, yE2_grid)
+    xi_grid_d, eta_grid_d = unflip_eq(xE2_grid, yE2_grid)
+    xi_grid_n, eta_grid_n = unflip_po(xE2_grid, yE2_grid)
+
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
+
+    ax.pcolormesh(xE2_grid, yE2_grid, E2u[Sphere.A, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xE2_grid + N.pi / 2.0 + 0.1, yE2_grid, E2u[Sphere.B, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xE2_grid, yE2_grid - N.pi / 2.0 - 0.1, E2u[Sphere.S, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    ax.pcolormesh(xi_grid_c + N.pi + 0.2, eta_grid_c, E2u[Sphere.C, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_d - N.pi / 2.0 - 0.1, eta_grid_d, E2u[Sphere.D, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0 + 0.1, E2u[Sphere.N, ir, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    
+    P.title(r'$t={:.3f} R/c$'.format(FDUMP*it*dt))
+    
+    figsave_png(fig, "snapshots_3d/E2u_" + str(it))
+
+    P.close('all')
 
 ########
 # Initialization
@@ -1131,7 +1151,7 @@ def plot_fields_unfolded_E1(it, vm, ir):
 idump = 0
 
 Nt = 10001 # Number of iterations
-FDUMP = 10 # Dump frequency
+FDUMP = 5 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -1154,8 +1174,9 @@ WriteCoordsHDF5()
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded_Br(idump, 0.5, 10)
-        plot_fields_unfolded_E1(idump, 0.5, 10)
+        # plot_fields_unfolded_Br(idump, 0.5, 10)
+        plot_fields_unfolded_E1(idump, 0.1, 2)
+        plot_fields_unfolded_E2(idump, 0.1, 2)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
@@ -1178,7 +1199,7 @@ for it in tqdm(range(Nt), "Progression"):
 
     corners_E(patches)
 
-    BC_E_metal_rmin(patches)
+    BC_E_metal_rmin(it, patches)
     BC_E_absorb(patches)
     BC_E_metal_rmax(patches)
 
