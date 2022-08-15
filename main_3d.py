@@ -898,10 +898,11 @@ def corners_B(p0):
 # Perfectly conducting boundary conditions at r_min
 ########
 
+# NS rotation proile to avoid high frequency waves in FD solver
 def BC_E_metal_rmin(it, patch):
     Er[patch,  NG, :, :] = 0.0
-    E1u[patch, NG, :, :] = E1_surf[patch, :, :] #* 0.5 * (1.0 - N.tanh(5.0 - it/1.))
-    E2u[patch, NG, :, :] = E2_surf[patch, :, :] #* 0.5 * (1.0 - N.tanh(5.0 - it/1.))
+    E1u[patch, NG, :, :] = E1_surf[patch, :, :] * 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
+    E2u[patch, NG, :, :] = E2_surf[patch, :, :] * 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
     
 def BC_B_metal_rmin(patch):
     Br[patch, NG, :, :]   = Br_surf[patch, :, :]
@@ -920,27 +921,27 @@ sigma = N.exp(- 10.0 * delta**3)
 delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
 sigma_yee = N.exp(- 10.0 * delta**3)
 
-def BC_B_absorb(patch):
-    for k in range(Nr - i_abs, Nr):
-        Br[patch, k, :, :]  = Br0[patch, k, :, :] + (Br[patch, k, :, :] - Br0[patch, k, :, :]) * sigma[k]
-        B1u[patch, k, :, :] = B1u0[patch, k, :, :] + (B1u[patch, k, :, :] - B1u0[patch, k, :, :]) * sigma_yee[k]
-        B2u[patch, k, :, :] = B2u0[patch, k, :, :] + (B2u[patch, k, :, :] - B2u0[patch, k, :, :]) * sigma_yee[k]
-
-def BC_E_absorb(patch):
-    for k in range(Nr - i_abs, Nr):
-        Er[patch, k, :, :]  *= sigma_yee[k]
-        E1u[patch, k, :, :] *= sigma[k]
-        E2u[patch, k, :, :] *= sigma[k]
-
 # def BC_B_absorb(patch):
-#     Br[patch, :, :, :]  = Br0[patch, :, :, :] + N.transpose(N.transpose((Br[patch, :, :, :] - Br0[patch, :, :, :]) * sigma[:]))
-#     B1u[patch, :, :, :] = B1u0[patch, :, :, :] + N.transpose(N.transpose(B1u[patch, :, :, :] - B1u0[patch, :, :, :]) * sigma_yee[:])
-#     B2u[patch, :, :, :] = B2u0[patch, :, :, :] + N.transpose(N.transpose(B2u[patch, :, :, :] - B2u0[patch, :, :, :]) * sigma_yee[:])
+#     for k in range(Nr - i_abs, Nr):
+#         Br[patch, k, :, :]  = Br0[patch, k, :, :] + (Br[patch, k, :, :] - Br0[patch, k, :, :]) * sigma[k]
+#         B1u[patch, k, :, :] = B1u0[patch, k, :, :] + (B1u[patch, k, :, :] - B1u0[patch, k, :, :]) * sigma_yee[k]
+#         B2u[patch, k, :, :] = B2u0[patch, k, :, :] + (B2u[patch, k, :, :] - B2u0[patch, k, :, :]) * sigma_yee[k]
 
 # def BC_E_absorb(patch):
-#     Er[patch, :, :, :]  = N.transpose(N.transpose(Er[patch, :, :, :] * sigma_yee[:]))
-#     E1u[patch, :, :, :] = N.transpose(N.transpose(E1u[patch, :, :, :] * sigma[:]))
-#     E2u[patch, :, :, :] = N.transpose(N.transpose(E2u[patch, :, :, :] * sigma[:]))
+#     for k in range(Nr - i_abs, Nr):
+#         Er[patch, k, :, :]  *= sigma_yee[k]
+#         E1u[patch, k, :, :] *= sigma[k]
+#         E2u[patch, k, :, :] *= sigma[k]
+
+def BC_B_absorb(patch):
+    Br[patch, :, :, :]  = Br0[patch, :, :, :] + (Br[patch, :, :, :] - Br0[patch, :, :, :]) * sigma[:, None, None]
+    B1u[patch, :, :, :] = B1u0[patch, :, :, :] + (B1u[patch, :, :, :] - B1u0[patch, :, :, :]) * sigma_yee[:, None, None]
+    B2u[patch, :, :, :] = B2u0[patch, :, :, :] + (B2u[patch, :, :, :] - B2u0[patch, :, :, :]) * sigma_yee[:, None, None]
+
+def BC_E_absorb(patch):
+    Er[patch, :, :, :]  *= sigma_yee[:, None, None]
+    E1u[patch, :, :, :] *= sigma[:, None, None]
+    E2u[patch, :, :, :] *= sigma[:, None, None]
 
 ########
 # Boundary conditions at r_max
@@ -969,7 +970,7 @@ def func_Bth(r0, th0, ph0):
 #    return 0.0
 
 def func_Bph(r0, th0, ph0):
-    return - B0 * (N.cos(ph0) / N.sin(th0) * N.sin(tilt)) / r0**3
+    return - B0 * (N.cos(ph0) / N.sin(th0) * N.sin(tilt)) / r0**4
     # return 0.0
 
 def InitialData():
@@ -979,8 +980,6 @@ def InitialData():
         fvec = (globals()["vec_sph_to_" + sphere[patch]])
         fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
 
-        # for h in tqdm(range(Nr), "Patch {}".format(sphere[patch])):
-        # for h in range(Nr):
         for i in range(Nxi_half):
             for j in range(Neta_half):
 
@@ -1023,7 +1022,7 @@ def InitialData():
 # Boundary conditions at r_min
 ########
 
-omega = 0.1 # Angular velocity of the conductor at r_min
+omega = 0.0 # Angular velocity of the conductor at r_min
 InitialData()
 
 def func_Eth(th0, ph0, omega0):
@@ -1151,7 +1150,7 @@ def plot_fields_unfolded_E2(it, vm, ir):
 idump = 0
 
 Nt = 10001 # Number of iterations
-FDUMP = 5 # Dump frequency
+FDUMP = 20 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -1176,7 +1175,7 @@ for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         # plot_fields_unfolded_Br(idump, 0.5, 10)
         plot_fields_unfolded_E1(idump, 0.1, 2)
-        plot_fields_unfolded_E2(idump, 0.1, 2)
+        # plot_fields_unfolded_E2(idump, 0.1, 2)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
