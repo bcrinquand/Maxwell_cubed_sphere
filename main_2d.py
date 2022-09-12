@@ -620,15 +620,15 @@ def compute_delta_B(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, -1, :]
         Br_1 = Brin[p1, 0, :]
 
-        # diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  (- Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
-        # diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((  Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  (  Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
+                                                         (- Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((  Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
+                                                         (  Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
 
-        diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         (- Eeta_1[i0:i1] + Br_1[i0:i1])) / dxi / P_half[0]
-        diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((  Eeta_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         (  Eeta_0[i0:i1] + Br_0[i0:i1])) / dxi / P_half[0]
+        # diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  (- Eeta_1[i0:i1] + Br_1[i0:i1])) / dxi / P_half[0]
+        # diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((  Eeta_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  (  Eeta_0[i0:i1] + Br_0[i0:i1])) / dxi / P_half[0]
 
     if (top == 'xy'):
 
@@ -637,15 +637,15 @@ def compute_delta_B(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Br[p0, -1, :]
         Br_1 = Br[p1, :, 0]
         
-        # diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  ((Exi_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_1[::-1])[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
-        # diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  ((Eeta_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_0[::-1])[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
+                                                         ((Exi_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_1[::-1])[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
+                                                         ((Eeta_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_0[::-1])[i0:i1])) / dxi / P_half[0] / sqrt_gd_half[i0:i1]
 
-        diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         ((Exi_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / dxi / P_half[0]
-        diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         ((Eeta_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / dxi / P_half[0]
+        # diff_Br[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((- Eeta_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  ((Exi_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / dxi / P_half[0]
+        # diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  ((Eeta_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / dxi / P_half[0]
 
 
     if (top == 'yy'):
@@ -655,15 +655,15 @@ def compute_delta_B(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, :, -1]
         Br_1 = Brin[p1, :, 0]
         
-        # diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  (Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
-        # diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  (- Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
+                                                         (Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
+                                                         (- Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
 
-        diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         (Exi_1[i0:i1] + Br_1[i0:i1])) / deta / P_half[0]
-        diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         (- Exi_0[i0:i1] + Br_0[i0:i1])) / deta / P_half[0]
+        # diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  (Exi_1[i0:i1] + Br_1[i0:i1])) / deta / P_half[0]
+        # diff_Br[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((- Exi_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  (- Exi_0[i0:i1] + Br_0[i0:i1])) / deta / P_half[0]
 
     if (top == 'yx'):
 
@@ -672,15 +672,15 @@ def compute_delta_B(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, :, -1]
         Br_1 = Brin[p1, 0, :]
 
-        # diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  (- (Eeta_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
-        # diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  (- (Exi_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
+                                                         (- (Eeta_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
+        diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
+                                                         (- (Exi_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_half[0] / sqrt_gd_half[i0:i1]
 
-        diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         (- (Eeta_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_half[0]
-        diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         (- (Exi_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_half[0]
+        # diff_Br[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  (- (Eeta_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_half[0]
+        # diff_Br[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  (- (Exi_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_half[0]
 
 
 def interface_B(p0, p1):
@@ -727,15 +727,15 @@ def compute_delta_E(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, -1, :]
         Br_1 = Brin[p1, 0, :]
         
-        # diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] - Br_0[i0:i1]) - \
-        #                                                  (Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] - Br_1[i0:i1])) / dxi / P_int[0]
-        # diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  (Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1])) / dxi / P_int[0]
+        diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - sqrt_gd_half[i0:i1] * Br_0[i0:i1]) - \
+                                                         (Eeta_1[i0:i1] - sqrt_gd_half[i0:i1] * Br_1[i0:i1])) / dxi / P_int[0]
+        diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + sqrt_gd_half[i0:i1] * Br_1[i0:i1]) - \
+                                                         (Eeta_0[i0:i1] + sqrt_gd_half[i0:i1] * Br_0[i0:i1])) / dxi / P_int[0]
 
-        diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - Br_0[i0:i1]) - \
-                                                         (Eeta_1[i0:i1] - Br_1[i0:i1])) / dxi / P_int[0]
-        diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         (Eeta_0[i0:i1] + Br_0[i0:i1])) / dxi / P_int[0]
+        # diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - Br_0[i0:i1]) - \
+        #                                                  (Eeta_1[i0:i1] - Br_1[i0:i1])) / dxi / P_int[0]
+        # diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  (Eeta_0[i0:i1] + Br_0[i0:i1])) / dxi / P_int[0]
 
 
     if (top == 'xy'):
@@ -745,15 +745,15 @@ def compute_delta_E(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Br[p0, -1, :]
         Br_1 = Br[p1, :, 0]
 
-        # diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] / sqrt_gd_half[i0:i1] - Br_0[i0:i1]) - \
-        #                                                  (- (Exi_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] - (Br_1[::-1])[i0:i1])) / dxi / P_int[0]
-        # diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] / sqrt_gd_half[i0:i1] - Br_1[i0:i1]) - \
-        #                                                  (- (Eeta_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] - (Br_0[::-1])[i0:i1])) / dxi / P_int[0]
+        diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - sqrt_gd_half[i0:i1] * Br_0[i0:i1]) - \
+                                                         (- (Exi_1[::-1])[i0:i1] - sqrt_gd_half[i0:i1] * (Br_1[::-1])[i0:i1])) / dxi / P_int[0]
+        diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - sqrt_gd_half[i0:i1] * Br_1[i0:i1]) - \
+                                                         (- (Eeta_0[::-1])[i0:i1] - sqrt_gd_half[i0:i1] * (Br_0[::-1])[i0:i1])) / dxi / P_int[0]
 
-        diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - Br_0[i0:i1]) - \
-                                                         (- (Exi_1[::-1])[i0:i1] - (Br_1[::-1])[i0:i1])) / dxi / P_int[0]
-        diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - Br_1[i0:i1]) - \
-                                                         (- (Eeta_0[::-1])[i0:i1] - (Br_0[::-1])[i0:i1])) / dxi / P_int[0]
+        # diff_E2[p0, -1, i0:i1] += dtin * sig_in * 0.5 * ((Eeta_0[i0:i1] - Br_0[i0:i1]) - \
+        #                                                  (- (Exi_1[::-1])[i0:i1] - (Br_1[::-1])[i0:i1])) / dxi / P_int[0]
+        # diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - Br_1[i0:i1]) - \
+        #                                                  (- (Eeta_0[::-1])[i0:i1] - (Br_0[::-1])[i0:i1])) / dxi / P_int[0]
         
     if (top == 'yy'):
 
@@ -762,15 +762,15 @@ def compute_delta_E(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, :, -1]
         Br_1 = Brin[p1, :, 0]
 
-        # diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  (Exi_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1])) / deta / P_int[0]
-        # diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] / sqrt_gd_half[i0:i1] - Br_1[i0:i1]) - \
-        #                                                  (Exi_0[i0:i1] / sqrt_gd_half[i0:i1] - Br_0[i0:i1])) / deta / P_int[0]
+        diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + sqrt_gd_half[i0:i1] * Br_0[i0:i1]) - \
+                                                         (Exi_1[i0:i1] + sqrt_gd_half[i0:i1] * Br_1[i0:i1])) / deta / P_int[0]
+        diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - sqrt_gd_half[i0:i1] * Br_1[i0:i1]) - \
+                                                         (Exi_0[i0:i1] - sqrt_gd_half[i0:i1] * Br_0[i0:i1])) / deta / P_int[0]
 
-        diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         (Exi_1[i0:i1] + Br_1[i0:i1])) / deta / P_int[0]
-        diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - Br_1[i0:i1]) - \
-                                                         (Exi_0[i0:i1] - Br_0[i0:i1])) / deta / P_int[0]
+        # diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  (Exi_1[i0:i1] + Br_1[i0:i1])) / deta / P_int[0]
+        # diff_E1[p1, i0:i1, 0]  += dtin * sig_in * 0.5 * ((Exi_1[i0:i1] - Br_1[i0:i1]) - \
+        #                                                  (Exi_0[i0:i1] - Br_0[i0:i1])) / deta / P_int[0]
 
     if (top == 'yx'):
 
@@ -779,15 +779,15 @@ def compute_delta_E(p0, p1, dtin, E1in, E2in, Brin):
         Br_0 = Brin[p0, :, -1]
         Br_1 = Brin[p1, 0, :]
 
-        # diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] / sqrt_gd_half[i0:i1] + Br_0[i0:i1]) - \
-        #                                                  (- (Eeta_1[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_int[0]
-        # diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] / sqrt_gd_half[i0:i1] + Br_1[i0:i1]) - \
-        #                                                  (- (Exi_0[::-1])[i0:i1] / sqrt_gd_half[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_int[0]
+        diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + sqrt_gd_half[i0:i1] * Br_0[i0:i1]) - \
+                                                         (- (Eeta_1[::-1])[i0:i1] + sqrt_gd_half[i0:i1] * (Br_1[::-1])[i0:i1])) / deta / P_int[0]
+        diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + sqrt_gd_half[i0:i1] * Br_1[i0:i1]) - \
+                                                         (- (Exi_0[::-1])[i0:i1] + sqrt_gd_half[i0:i1] * (Br_0[::-1])[i0:i1])) / deta / P_int[0]
 
-        diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
-                                                         (- (Eeta_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_int[0]
-        diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
-                                                         (- (Exi_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_int[0]
+        # diff_E1[p0, i0:i1, -1] += dtin * sig_in * 0.5 * ((Exi_0[i0:i1] + Br_0[i0:i1]) - \
+        #                                                  (- (Eeta_1[::-1])[i0:i1] + (Br_1[::-1])[i0:i1])) / deta / P_int[0]
+        # diff_E2[p1, 0, i0:i1]  += dtin * sig_in * 0.5 * ((Eeta_1[i0:i1] + Br_1[i0:i1]) - \
+        #                                                  (- (Exi_0[::-1])[i0:i1] + (Br_0[::-1])[i0:i1])) / deta / P_int[0]
 
 def interface_E(p0, p1):
 
@@ -1073,10 +1073,10 @@ compute_diff_B = globals()['compute_diff_B_' + order]
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
 
-        # Dump data
-        h5f = h5py.File('snapshots_penalty/Br_{}.h5'.format(idump), 'w')
-        h5f.create_dataset('Br', data=Br[:,:,:])
-        h5f.close()
+        # # Dump data
+        # h5f = h5py.File('snapshots_penalty/Br_{}.h5'.format(idump), 'w')
+        # h5f.create_dataset('Br', data=Br[:,:,:])
+        # h5f.close()
 
         plot_fields_unfolded_Br(idump, 1.0)
         idump += 1
@@ -1127,10 +1127,10 @@ for it in tqdm(range(Nt), "Progression"):
 
     corners_B(patch)
 
-    # for p in range(n_patches):
-    #     # energy[p, it] = dxi * deta * (N.sum(Br[p, :, :]**2) \
-    #     # + N.sum(E1u[p, :, :]**2) + N.sum(E2u[p, :, :]**2))
-    #     energy[:, it] = compute_energy()
+    for p in range(n_patches):
+        energy[p, it] = dxi * deta * (N.sum(Br[p, :, :]**2) \
+        + N.sum(E1u[p, :, :]**2) + N.sum(E2u[p, :, :]**2))
+        # energy[:, it] = compute_energy()
     
 # for p in range(n_patches):
 #     P.plot(time, energy[p, :])

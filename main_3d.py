@@ -365,9 +365,12 @@ def transform_form(patch0, patch1, xi0, eta0, vxi0, veta0):
 # Interpolation routine
 ########
 
+# def interp(arr_in, xA, xB):
+#     f = interpolate.interp1d(xA, arr_in, axis = 1, kind='linear', fill_value=(0,0), bounds_error=False)
+#     return f(xB)
+
 def interp(arr_in, xA, xB):
-    f = interpolate.interp1d(xA, arr_in, axis = 1, kind='linear', fill_value=(0,0), bounds_error=False)
-    return f(xB)
+    return N.interp(xB, xA, arr_in)
 
 ########
 # Pushers
@@ -641,8 +644,8 @@ def compute_penalty_E(p0, p1, dtin, Erin, E1in, E2in, Brin, B1in, B2in):
         Er_1 = Erin[p1, :, :, 0]
         Eeta_0 = E2in[p0, :, -1, :]
         Exi_1  = E1in[p1, :, :, 0]
-        Br_0 = Br[p0, :, -1, :]
-        Br_1 = Br[p1, :, :, 0]
+        Br_0 = Brin[p0, :, -1, :]
+        Br_1 = Brin[p1, :, :, 0]
         Beta_0 = B2in[p0, :, -1, :]
         Bxi_1 = B1in[p1, :, :, 0]
         
@@ -781,12 +784,12 @@ def compute_penalty_B(p0, p1, dtin, Erin, E1in, E2in, Brin, B1in, B2in):
 
         Eeta_0 = E2in[p0, :, -1, :]
         Exi_1  = E1in[p1, :, :, 0]
-        Br_0 = Br[p0, :, -1, :]
-        Br_1 = Br[p1, :, :, 0]
+        Br_0 = Brin[p0, :, -1, :]
+        Br_1 = Brin[p1, :, :, 0]
         Beta_0 = B2in[p0, :, -1, :]
         Bxi_1  = B1in[p1, :, :, 0]
-        Er_0 = Er[p0, :, -1, :]
-        Er_1 = Er[p1, :, :, 0]
+        Er_0 = Erin[p0, :, -1, :]
+        Er_1 = Erin[p1, :, :, 0]
         
         diff_Br[p0, :, -1, :] += dtin * sig_in * 0.5 * ((- Eeta_0 + sqrt_gd_half * Br_0) - \
                                                         (  Exi_1[:, ::-1] + sqrt_gd_half[:, ::-1] * Br_1[:, ::-1])) / dxi / P_int_2[0]
@@ -895,21 +898,6 @@ def corners_B(p0):
     B2u[p0, :, -1, -1] -= diff_B2[p0, :, -1, -1] * sig_in / sqrt_det_g_int[:, 0]
 
 ########
-# Perfectly conducting boundary conditions at r_min
-########
-
-# NS rotation proile to avoid high frequency waves in FD solver
-def BC_E_metal_rmin(it, patch):
-    Er[patch,  NG, :, :] = 0.0
-    E1u[patch, NG, :, :] = E1_surf[patch, :, :] * 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
-    E2u[patch, NG, :, :] = E2_surf[patch, :, :] * 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
-    
-def BC_B_metal_rmin(patch):
-    Br[patch, NG, :, :]   = Br_surf[patch, :, :]
-    B1u[patch, :NG, :, :] = 0.0
-    B2u[patch, :NG, :, :] = 0.0
-
-########
 # Absorbing boundary conditions at r_max
 ########
 
@@ -959,18 +947,18 @@ def BC_B_metal_rmax(patch):
 ########
 
 B0 = 1.0
-tilt = 0.0 / 180.0 * N.pi
+tilt = 30.0 / 180.0 * N.pi
 
 def func_Br(r0, th0, ph0):
-    return 2.0 * B0 * (N.cos(th0) * N.cos(tilt) + N.sin(th0) * N.sin(ph0) * N.sin(tilt)) / r0**3
+    return 2.0 * B0 * (N.sin(tilt) * N.sin(th0) * N.cos(ph0) + N.cos(th0) * N.cos(tilt)) / r0**3
     # return B0 * N.sin(th0)**3 * N.cos(3.0 * ph0) 
 
 def func_Bth(r0, th0, ph0):
-    return B0 * (N.cos(tilt) * N.sin(th0) - N.cos(th0) * N.sin(ph0) * N.sin(tilt)) / r0**4
+    return B0 * (N.cos(tilt) * N.sin(th0) - N.sin(tilt) * N.cos(th0) * N.cos(ph0)) / r0**4
 #    return 0.0
 
 def func_Bph(r0, th0, ph0):
-    return - B0 * (N.cos(ph0) / N.sin(th0) * N.sin(tilt)) / r0**4
+    return B0 * (N.sin(tilt) * N.sin(ph0) / N.sin(th0)) / r0**4
     # return 0.0
 
 def InitialData():
@@ -1018,22 +1006,43 @@ def InitialData():
 
         Er[patch,  :, :, :] = 0.0
 
+InitialData()
+
 ########
 # Boundary conditions at r_min
 ########
 
-omega = 0.0 # Angular velocity of the conductor at r_min
-InitialData()
+rlc = 3.0 # Light cylinder radius
+omega = 1.0 / rlc # Spin velocity of the conductor at r_min
 
-def func_Eth(th0, ph0, omega0):
-    return - omega0 * func_Br(1.0, th0, ph0) * N.sin(th0)
+def func_Br_a(r0, th0, ph0):
+    return 2.0 * B0 * N.sin(tilt) * N.sin(th0) * N.cos(ph0) / r0**3
+
+def func_Br_b(r0, th0, ph0):
+    return 2.0 * B0 * N.sin(tilt) * N.sin(th0) * N.sin(ph0) / r0**3
+
+def func_Br_c(r0, th0, ph0):
+    return 2.0 * B0 * N.cos(tilt) * N.cos(th0) / r0**3
+
+def func_Eth_a(r0, th0, ph0, omega0):
+    return - r0 * r0 * omega0 * func_Br_a(r_min, th0, ph0) * N.sin(th0)
+
+def func_Eth_b(r0, th0, ph0, omega0):
+    return - r0 * r0 * omega0 * func_Br_b(r_min, th0, ph0) * N.sin(th0)
+
+def func_Eth_c(r0, th0, ph0, omega0):
+    return - r0 * r0 * omega0 * func_Br_c(r_min, th0, ph0) * N.sin(th0)
 
 # Fields at r_min
-E1_surf = N.zeros((n_patches, Nxi_half, Neta_int))
-E2_surf = N.zeros((n_patches, Nxi_int, Neta_half))
-Br_surf = N.zeros((n_patches, Nxi_half, Neta_half))
-
-Br_surf[:, :, :] = Br0[:, 0, :, :]
+E1_surf_a = N.zeros((n_patches, Nxi_half, Neta_int))
+E2_surf_a = N.zeros((n_patches, Nxi_int, Neta_half))
+E1_surf_b = N.zeros((n_patches, Nxi_half, Neta_int))
+E2_surf_b = N.zeros((n_patches, Nxi_int, Neta_half))
+E1_surf_c = N.zeros((n_patches, Nxi_half, Neta_int))
+E2_surf_c = N.zeros((n_patches, Nxi_int, Neta_half))
+Br_surf_a = N.zeros((n_patches, Nxi_half, Neta_half))
+Br_surf_b = N.zeros((n_patches, Nxi_half, Neta_half))
+Br_surf_c = N.zeros((n_patches, Nxi_half, Neta_half))
 
 for patch in range(6):
 
@@ -1041,26 +1050,73 @@ for patch in range(6):
     fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
 
     for i in range(Nxi_half):
+        for j in range(Neta_half):
+
+            r0 = r_min
+            th0, ph0 = fcoord(xi_half[i], eta_half[j])
+            Br_surf_a[patch, i, j] = func_Br_a(r0, th0, ph0)
+            Br_surf_b[patch, i, j] = func_Br_b(r0, th0, ph0)
+            Br_surf_c[patch, i, j] = func_Br_c(r0, th0, ph0)
+
+    for i in range(Nxi_half):
         for j in range(Neta_int):
 
-            r0 = r[0]
+            r0 = r_min
             th0, ph0 = fcoord(xi_half[i], eta_int[j])
-            EtTMP = func_Eth(th0, ph0, omega)
+            
+            EtTMP = func_Eth_a(r0, th0, ph0, omega)
             EpTMP = 0.0
             omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E1_surf_a[patch, i, j] = omega_patch[0]
 
-            E1_surf[patch, i, j] = omega_patch[0]
+            EtTMP = func_Eth_b(r0, th0, ph0, omega)
+            EpTMP = 0.0
+            omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E1_surf_b[patch, i, j] = omega_patch[0]
+
+            EtTMP = func_Eth_c(r0, th0, ph0, omega)
+            EpTMP = 0.0
+            omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E1_surf_c[patch, i, j] = omega_patch[0]
 
     for i in range(Nxi_int):
         for j in range(Neta_half):
 
-            r0 = r[0]
+            r0 = r_min
             th0, ph0 = fcoord(xi_int[i], eta_half[j])
-            EtTMP = func_Eth(th0, ph0, omega)
+
+            EtTMP = func_Eth_a(r0, th0, ph0, omega)
             EpTMP = 0.0
             omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E2_surf_a[patch, i, j] = omega_patch[1]
 
-            E2_surf[patch, i, j] = omega_patch[1]
+            EtTMP = func_Eth_b(r0, th0, ph0, omega)
+            EpTMP = 0.0
+            omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E2_surf_b[patch, i, j] = omega_patch[1]
+
+            EtTMP = func_Eth_c(r0, th0, ph0, omega)
+            EpTMP = 0.0
+            omega_patch = fvec(th0, ph0, EtTMP, EpTMP)
+            E2_surf_c[patch, i, j] = omega_patch[1]
+
+########
+# Perfectly conducting boundary conditions at r_min
+########
+
+def BC_B_metal_rmin(it, patch):
+    Br[patch, NG, :, :]   = Br_surf_a[patch, :, :] * N.cos(omega * it * dt) + Br_surf_b[patch, :, :] * N.sin(omega * it * dt) + Br_surf_c[patch, :, :]
+    B1u[patch, :NG, :, :] = 0.0
+    B2u[patch, :NG, :, :] = 0.0
+
+def BC_E_metal_rmin(it, patch):
+    Er[patch,  NG, :, :] = 0.0
+    E1u[patch, NG, :, :] = E1_surf_a[patch, :, :] * N.cos(omega * it * dt) + E1_surf_b[patch, :, :] * N.sin(omega * it * dt) + E1_surf_c[patch, :, :]
+    E2u[patch, NG, :, :] = E2_surf_a[patch, :, :] * N.cos(omega * it * dt) + E2_surf_b[patch, :, :] * N.sin(omega * it * dt) + E2_surf_c[patch, :, :]
+
+    # NS rotation profile to avoid high frequency waves in FD solver    
+    E1u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
+    E2u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
 
 ########
 # Plotting fields on an unfolded sphere
@@ -1173,9 +1229,9 @@ WriteCoordsHDF5()
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        # plot_fields_unfolded_Br(idump, 0.5, 10)
+        plot_fields_unfolded_Br(idump, 0.5, 2)
         plot_fields_unfolded_E1(idump, 0.1, 2)
-        # plot_fields_unfolded_E2(idump, 0.1, 2)
+        plot_fields_unfolded_E2(idump, 0.1, 2)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
@@ -1216,7 +1272,7 @@ for it in tqdm(range(Nt), "Progression"):
 
     corners_B(patches)
 
-    BC_B_metal_rmin(patches)
+    BC_B_metal_rmin(it, patches)
     BC_B_absorb(patches)
     BC_B_metal_rmax(patches)
 
