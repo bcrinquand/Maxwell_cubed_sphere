@@ -901,25 +901,25 @@ def compute_H_aux(p, Drin, D1in, D2in, Brin, B1in, B2in):
                                    * 0.5 * (D2in[p, NG:(Nr0 + NG), :, 1:-1] + N.roll(D2in, -1, axis = 1)[p, NG:(Nr0 + NG), :, 1:-1])
     # Bottom edge
     H1d[p, NG:(Nr0 + NG), :, 0] = alpha[p, NG:(Nr0 + NG), :, 0, 4] * B1in[p, NG:(Nr0 + NG), :, 0] \
-                                - sqrt_det_h[p, NG:(Nr0 + NG), :, 0, 4] * beta[p, NG:(Nr0 + NG), :, 0, 4] \
+                                + sqrt_det_h[p, NG:(Nr0 + NG), :, 0, 4] * beta[p, NG:(Nr0 + NG), :, 0, 4] \
                                 * 0.5 * (D2in[p, NG:(Nr0 + NG), :, 0] + N.roll(D2in, -1, axis = 1)[p, NG:(Nr0 + NG), :, 0])
     # Top edge
     H1d[p, NG:(Nr0 + NG), :, -1] = alpha[p, NG:(Nr0 + NG), :, -1, 4] * B1in[p, NG:(Nr0 + NG), :, -1] \
-                                   - sqrt_det_h[p, NG:(Nr0 + NG), :, -1, 4] * beta[p, NG:(Nr0 + NG), :, -1, 4] \
+                                   + sqrt_det_h[p, NG:(Nr0 + NG), :, -1, 4] * beta[p, NG:(Nr0 + NG), :, -1, 4] \
                                    * 0.5 * (D2in[p, NG:(Nr0 + NG), :, -1] + N.roll(D2in, -1, axis = 1)[p, NG:(Nr0 + NG), :, -1])
 
     ##### Heta
     ##### Interior
     H2d[p, NG:(Nr0 + NG), 1:-1, :] = alpha[p, NG:(Nr0 + NG), :-1, :, 5] * B2in[p, NG:(Nr0 + NG), 1:-1, :] \
-                                   + 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), :-1, :, 5] * beta[p, NG:(Nr0 + NG), :-1, :, 5] \
+                                   - 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), :-1, :, 5] * beta[p, NG:(Nr0 + NG), :-1, :, 5] \
                                    * (D1in[p, NG:(Nr0 + NG), 1:-1, :] + N.roll(D1in, -1, axis = 1)[p, NG:(Nr0 + NG), 1:-1, :])
     ##### Left edge
     H2d[p, NG:(Nr0 + NG), 0, :] = alpha[p, NG:(Nr0 + NG), 0, :, 4] * B2in[p, NG:(Nr0 + NG), 0, :] \
-                                   + 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), 0, :, 4] * beta[p, NG:(Nr0 + NG), 0, :, 4] \
+                                   - 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), 0, :, 4] * beta[p, NG:(Nr0 + NG), 0, :, 4] \
                                    * (D1in[p, NG:(Nr0 + NG), 0, :] + N.roll(D1in, -1, axis = 1)[p, NG:(Nr0 + NG), 0, :])
     ##### Right edge
     H2d[p, NG:(Nr0 + NG), -1, :] = alpha[p, NG:(Nr0 + NG), -1, :, 4] * B2in[p, NG:(Nr0 + NG), -1, :] \
-                                   + 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), -1, :, 4] * beta[p, NG:(Nr0 + NG), -1, :, 4] \
+                                   - 0.5 * sqrt_det_h[p, NG:(Nr0 + NG), -1, :, 4] * beta[p, NG:(Nr0 + NG), -1, :, 4] \
                                    * (D1in[p, NG:(Nr0 + NG), -1, :] + N.roll(D1in, -1, axis = 1)[p, NG:(Nr0 + NG), -1, :])
 
 

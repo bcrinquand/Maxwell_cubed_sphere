@@ -471,7 +471,7 @@ def compute_diff_E_4(p):
     dE1d2[p, :, 5:(Neta_half - 5)] = (N.roll(E1d, 2, axis = 2)[p, :, 5:(Neta_half - 5)] - 27.0 * N.roll(E1d, 1, axis = 2)[p, :, 5:(Neta_half - 5)] + 27.0 * E1d[p, :, 5:(Neta_half - 5)] - N.roll(E1d, -1, axis = 2)[p, :, 5:(Neta_half - 5)]) / (24.0 * deta) / P_half[None, 5:(Neta_half - 5)]
 
 Jz = N.zeros_like(Br)
-Jz[Sphere.B, :, :] = 0.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
+Jz[Sphere.A, :, :] = 100.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
 
 def contra_to_cov_E(p):
 
@@ -946,7 +946,7 @@ def filter_E_corner(n_corner, dtin):
 # Initialization
 ########
 
-amp = 1.0
+amp = 0.0
 n_mode = 2
 wave = 2.0 * (xi_max - xi_min) / n_mode
 E1ui = N.zeros_like(E1u)
@@ -1051,7 +1051,7 @@ idump = 0
 patch = range(n_patches)
 
 Nt = 500000 # Number of iterations
-FDUMP = 1000 # Dump frequency
+FDUMP = 100 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 
@@ -1078,7 +1078,7 @@ for it in tqdm(range(Nt), "Progression"):
         # h5f.create_dataset('Br', data=Br[:,:,:])
         # h5f.close()
 
-        plot_fields_unfolded_Br(idump, 1.0)
+        plot_fields_unfolded_Br(idump, 0.5)
         idump += 1
 
     diff_Br[:, :, :] = 0.0
