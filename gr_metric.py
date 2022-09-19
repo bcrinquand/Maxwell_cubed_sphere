@@ -51,14 +51,14 @@ def betaru(patch, r, xi, eta, spin):
 
 def g11d(patch, r, xi, eta, spin):
     fjac = (globals()["jacob_" + sphere[patch] + "_to_sph"])
-    if (xi == 0)and(eta == 0)and((patch == 4)or(patch == 5)):
+    if (xi == 0)and(eta == 0)and((sphere[patch] == 'N')or(sphere[patch] == 'S')):
         return r * r + spin * spin
     else:
         return gththd(patch, r, xi, eta, spin) * (fjac(xi, eta)[0, 0])**2 + gphphd(patch, r, xi, eta, spin) * (fjac(xi, eta)[1, 0])**2 
 
 def g22d(patch, r, xi, eta, spin):
     fjac = (globals()["jacob_" + sphere[patch] + "_to_sph"])
-    if (xi == 0)and(eta == 0)and((patch == 4)or(patch == 5)):
+    if (xi == 0)and(eta == 0)and((sphere[patch] == 'N')or(sphere[patch] == 'S')):
         return r * r + spin * spin
     else:
         return gththd(patch, r, xi, eta, spin) * (fjac(xi, eta)[0, 1])**2 + gphphd(patch, r, xi, eta, spin) * (fjac(xi, eta)[1, 1])**2 

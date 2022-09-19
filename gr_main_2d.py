@@ -158,7 +158,7 @@ INB1 = N.zeros((n_patches, Nxi_int, Neta_half))
 INB2 = N.zeros((n_patches, Nxi_half,  Neta_int))
 
 Jz = N.zeros_like(Dru)
-Jz[Sphere.N, :, :] = 50.0 * N.exp(- (xEr_grid**2 + yEr_grid**2) / 0.1**2)
+Jz[Sphere.D, :, :] = 0.0 * N.exp(- (xEr_grid**2 + yEr_grid**2) / 0.1**2)
 
 ########
 # Dump HDF5 output
@@ -742,24 +742,24 @@ def contra_to_cov_D(p, Drin, D1in, D2in):
 
     # Interior
     Drd[p, 1:-1, 1:-1] = hrrd[p, 1:-1, 1:-1, 0] * Drin[p, 1:-1, 1:-1] \
-                                      + 0.5 * hr1d[p, 1:-1, 1:-1, 0] * (D1in[p, 1:-2, 1:-1] + N.roll(D1in, 1, axis = 1)[p, 1:-2, 1:-1]) \
-                                      + 0.5 * hr2d[p, 1:-1, 1:-1, 0] * (D2in[p, 1:-1, 1:-2] + N.roll(D2in, 1, axis = 2)[p, 1:-1, 1:-2]) \
+                                      + 0.5 * hr1d[p, 1:-1, 1:-1, 0] * (D1in[p, 1:-2, 1:-1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:-1]) \
+                                      + 0.5 * hr2d[p, 1:-1, 1:-1, 0] * (D2in[p, 1:-1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:-1, 1:-2]) \
 
     # Left edge
     Drd[p, 0, 1:-1] = hrrd[p, 0, 1:-1, 0] * Drin[p, 0, 1:-1] \
                                    + hr1d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
-                                   + 0.5 * hr2d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, 1, axis = 2)[p, 0, 1:-2])
+                                   + 0.5 * hr2d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 0, 1:-2])
     # Right edge
     Drd[p, -1, 1:-1] = hrrd[p, -1, 1:-1, 0] * Drin[p, -1, 1:-1] \
                                     + hr1d[p, -1, 1:-1, 0] * D1in[p, -1, 1:-1] \
-                                    + 0.5 * hr2d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, 1, axis = 2)[p, -1, 1:-2])
+                                    + 0.5 * hr2d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, -1, 1:-2])
     # Bottom edge
     Drd[p, 1:-1, 0] = hrrd[p, 1:-1, 0, 0] * Drin[p, 1:-1, 0] \
-                                   + 0.5 * hr1d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, 1, axis = 1)[p, 1:-2, 0]) \
+                                   + 0.5 * hr1d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
                                    + hr2d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0]
     # Top edge
     Drd[p, 1:-1, -1] = hrrd[p, 1:-1, -1, 0] * Drin[p, 1:-1, -1] \
-                                    + 0.5 * hr1d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, 1, axis = 1)[p, 1:-2, -1]) \
+                                    + 0.5 * hr1d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, -1]) \
                                     + hr2d[p, 1:-1, -1, 0] * D2in[p, 1:-1, -1]
     # Bottom-left corner
     Drd[p, 0, 0] = hrrd[p, 0, 0, 0] * Drin[p, 0, 0] \
@@ -784,9 +784,9 @@ def contra_to_cov_D(p, Drin, D1in, D2in):
 
     # Interior
     D1d[p, 1:-1, 1:-1] = h11d[p, :-1, 1:-1, 1] * D1in[p, 1:-1, 1:-1] \
-                                      + 0.25 * h12d[p, :-1, 1:-1, 1] * (D2in[p, 1:, 1:-2] + N.roll(N.roll(D2in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
-                                                                                     +  N.roll(D2in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:, 1:-2]) \
-                                      + 0.5 * hr1d[p, :-1, 1:-1, 1] * (Drin[p, :-1, 1:-1] + N.roll(Drin, -1, axis = 1)[p, :-1, 1:-1])
+                       + 0.25 * h12d[p, :-1, 1:-1, 1] * (D2in[p, 1:, 1:-2] + N.roll(N.roll(D2in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
+                                                      +  N.roll(D2in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:, 1:-2]) \
+                       + 0.5  * hr1d[p, :-1, 1:-1, 1] * (Drin[p, 1:, 1:-1] + N.roll(Drin, 1, axis = 1)[p, 1:, 1:-1])
 
     # Left edge
     D1d[p, 0, 1:-1] = h11d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
@@ -799,11 +799,11 @@ def contra_to_cov_D(p, Drin, D1in, D2in):
     # Bottom edge
     D1d[p, 1:-1, 0] = h11d[p, :-1, 0, 1] * D1in[p, 1:-1, 0] \
                                    + 0.5 * h12d[p, :-1, 0, 1] * (D2in[p, 1:, 0] + N.roll(D2in, 1, axis = 1)[p, 1:, 0]) \
-                                   + 0.5 * hr1d[p, :-1, 0, 1] * (Drin[p, :-1, 0] + N.roll(Drin, -1, axis = 1)[p, :-1, 0])
+                                   + 0.5 * hr1d[p, :-1, 0, 1] * (Drin[p, 1:, 0] + N.roll(Drin, 1, axis = 1)[p, 1:, 0])
     # Top edge
     D1d[p, 1:-1, -1] = h11d[p, :-1, -1, 1] * D1in[p, 1:-1, -1] \
                                     + 0.5 * h12d[p, :-1, -1, 1] * (D2in[p, 1:, -1] + N.roll(D2in, 1, axis = 1)[p, 1:, -1]) \
-                                    + 0.5 * hr1d[p, :-1, -1, 1] * (Drin[p, :-1, -1] + N.roll(Drin, -1, axis = 1)[p, :-1, -1])
+                                    + 0.5 * hr1d[p, :-1, -1, 1] * (Drin[p, 1:, -1] + N.roll(Drin, 1, axis = 1)[p, 1:, -1])
     # Bottom-left corner
     D1d[p, 0, 0] = h11d[p, 0, 0, 0] * D1in[p, 0, 0] \
                                 + h12d[p, 0, 0, 0] * D2in[p, 0, 0] \
@@ -827,18 +827,18 @@ def contra_to_cov_D(p, Drin, D1in, D2in):
 
     # Interior
     D2d[p, 1:-1, 1:-1] = h22d[p, 1:-1, :-1, 2] * D2in[p, 1:-1, 1:-1] \
-                          + 0.25 * h12d[p, 1:-1, :-1, 2] * (D1in[p, 1:-2, 1:] + N.roll(N.roll(D1in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
-                          + N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(D1in, 1, axis = 2)[p, 1:-2, 1:]) \
-                          + 0.5 * hr2d[p, 1:-1, :-1, 2] * (Drin[p, 1:-1, :-1] + N.roll(Drin, 1, axis = 2)[p, 1:-1, :-1])
+                       + 0.25 * h12d[p, 1:-1, :-1, 2] * (D1in[p, 1:-2, 1:] + N.roll(N.roll(D1in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
+                                                      +  N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(D1in, 1, axis = 2)[p, 1:-2, 1:]) \
+                       + 0.5  * hr2d[p, 1:-1, :-1, 2] * (Drin[p, 1:-1, 1:] + N.roll(Drin, 1, axis = 2)[p, 1:-1, 1:])
 
     # Left edge
     D2d[p, 0, 1:-1] = h22d[p, 0, :-1, 2] * D2in[p, 0, 1:-1] \
                        + 0.5 * h12d[p, 0, :-1, 2] * (D1in[p, 0, 1:] + N.roll(D1in, 1, axis = 2)[p, 0, 1:]) \
-                       + 0.5 * hr2d[p, 0, :-1, 2] * (Drin[p, 0, :-1] + N.roll(Drin, 1, axis = 2)[p, 0, :-1])
+                       + 0.5 * hr2d[p, 0, :-1, 2] * (Drin[p, 0, 1:] + N.roll(Drin, 1, axis = 2)[p, 0, 1:])
     # Right edge
     D2d[p, -1, 1:-1] = h22d[p, -1, :-1, 2] * D2in[p, -1, 1:-1] \
                         + 0.5 * h12d[p, -1, :-1, 2] * (D1in[p, -1, 1:] + N.roll(D1in, 1, axis = 2)[p, -1, 1:]) \
-                        + 0.5 * hr2d[p, -1, :-1, 2] * (Drin[p, -1, :-1] + N.roll(Drin, 1, axis = 2)[p, -1, :-1])
+                        + 0.5 * hr2d[p, -1, :-1, 2] * (Drin[p, -1, 1:] + N.roll(Drin, 1, axis = 2)[p, -1, 1:])
     # Bottom edge
     D2d[p, 1:-1, 0] = h22d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0] \
                        + 0.5 * h12d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
@@ -899,25 +899,25 @@ def contra_to_cov_B(p, Brin, B1in, B2in):
 
     # Interior
     Brd[p, 1:-1, 1:-1] = hrrd[p, :-1, :-1, 3] * Brin[p, 1:-1, 1:-1] \
-                                      + 0.5 * hr1d[p, :-1, :-1, 3] * (B1in[p, :-1, 1:-1] + N.roll(B1in, -1, axis = 1)[p, :-1, 1:-1]) \
-                                      + 0.5 * hr2d[p, :-1, :-1, 3] * (B2in[p, 1:-1, :-1] + N.roll(B2in, -1, axis = 2)[p, 1:-1, :-1])
+                                      + 0.5 * hr1d[p, :-1, :-1, 3] * (B1in[p, 1:, 1:-1] + N.roll(B1in, 1, axis = 1)[p, 1:, 1:-1]) \
+                                      + 0.5 * hr2d[p, :-1, :-1, 3] * (B2in[p, 1:-1, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-1, 1:])
 
     # Left edge
     Brd[p, 0, 1:-1] = hrrd[p, 0, :-1, 2] * Brin[p, 0, 1:-1] \
                                       + hr1d[p, 0, :-1, 2] * B1in[p, 0, 1:-1] \
-                                      + 0.5 * hr2d[p, 0, :-1, 2] * (B2in[p, 0, :-1] + N.roll(B2in, -1, axis = 2)[p, 0, :-1])
+                                      + 0.5 * hr2d[p, 0, :-1, 2] * (B2in[p, 0, 1:] + N.roll(B2in, 1, axis = 2)[p, 0, 1:])
 
     # Right edge
     Brd[p, -1, 1:-1] = hrrd[p, -1, :-1, 2] * Brin[p, -1, 1:-1] \
                                       + hr1d[p, -1, :-1, 2] * B1in[p, -1, 1:-1] \
-                                      + 0.5 * hr2d[p, -1, :-1, 2] * (B2in[p, -1, :-1] + N.roll(B2in, -1, axis = 2)[p, -1, :-1])
+                                      + 0.5 * hr2d[p, -1, :-1, 2] * (B2in[p, -1, 1:] + N.roll(B2in, 1, axis = 2)[p, -1, 1:])
     # Bottom edge
     Brd[p, 1:-1, 0] = hrrd[p, :-1, 0, 1] * Brin[p, 1:-1, 0] \
-                                      + 0.5 * hr1d[p, :-1, 0, 1] * (B1in[p, :-1, 0] + N.roll(B1in, -1, axis = 1)[p, :-1, 0]) \
+                                      + 0.5 * hr1d[p, :-1, 0, 1] * (B1in[p, 1:, 0] + N.roll(B1in, 1, axis = 1)[p, 1:, 0]) \
                                       + hr2d[p, :-1, 0, 1] * B2in[p, 1:-1, 0]
     # Top edge
     Brd[p, 1:-1, -1] = hrrd[p, :-1, -1, 1] * Brin[p, 1:-1, -1] \
-                                      + 0.5 * hr1d[p, :-1, -1, 1] * (B1in[p, :-1, -1] + N.roll(B1in, -1, axis = 1)[p, :-1, -1]) \
+                                      + 0.5 * hr1d[p, :-1, -1, 1] * (B1in[p, 1:, -1] + N.roll(B1in, 1, axis = 1)[p, 1:, -1]) \
                                       + hr2d[p, :-1, -1, 1] * B2in[p, 1:-1, -1]
                                       
     # Bottom-left corner
@@ -956,11 +956,11 @@ def contra_to_cov_B(p, Brin, B1in, B2in):
                                    + hr1d[p, -1, :-1, 2] * Brin[p, -1, 1:-1]
     # Bottom edge
     B1d[p, 1:-1, 0] = h11d[p, 1:-1, 0, 0] * B1in[p, 1:-1, 0] \
-                                   + 0.5 * h12d[p, 1:-1, 0, 0] * (B2in[p, 1:-2, 0] +  N.roll(B2in, -1, axis = 1)[p, 1:-2, 0]) \
+                                   + 0.5 * h12d[p, 1:-1, 0, 0] * (B2in[p, 1:-2, 0] + N.roll(B2in, -1, axis = 1)[p, 1:-2, 0]) \
                                    + 0.5 * hr1d[p, 1:-1, 0, 0] * (Brin[p, 1:-2, 0] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 0])
     # Top edge
     B1d[p, 1:-1, -1] = h11d[p, 1:-1, -1, 0] * B1in[p, 1:-1, -1] \
-                                    + 0.5 * h12d[p, 1:-1, -1, 0] * (B2in[p, 1:-2, -1] +  N.roll(B2in, -1, axis = 1)[p, 1:-2, -1]) \
+                                    + 0.5 * h12d[p, 1:-1, -1, 0] * (B2in[p, 1:-2, -1] + N.roll(B2in, -1, axis = 1)[p, 1:-2, -1]) \
                                     + 0.5 * hr1d[p, 1:-1, -1, 0] * (Brin[p, 1:-2, -1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, -1])
 
     # Bottom-left corner
@@ -1068,7 +1068,7 @@ def compute_H_aux(p, Drin, D1in, D2in, Brin, B1in, B2in):
 # Compute interface terms
 ########
 
-sig_in  = 2.0
+sig_in  = 1.0
 
 def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -2230,7 +2230,7 @@ def penalty_edges_B(dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 # Define initial data
 ########
 
-B0 = 0.0
+B0 = 1.0
 tilt = 0.0 / 180.0 * N.pi
 
 def func_Br(r0, th0, ph0):
@@ -2251,11 +2251,21 @@ def InitialData():
         fvec = (globals()["vec_sph_to_" + sphere[patch]])
         fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
 
+        for i in range(Nxi_int):
+            for j in range(Neta_int):
+
+                th0, ph0 = fcoord(xi_int[i], eta_int[j])
+                DrTMP = func_Br(r0, th0, ph0)
+                # DrTMP = 0.0 
+
+                Dru[patch,  i, j] = DrTMP
+
         for i in range(Nxi_half):
             for j in range(Neta_half):
 
                 th0, ph0 = fcoord(xi_half[i], eta_half[j])
-                BrTMP = func_Br(r0, th0, ph0)
+                # BrTMP = func_Br(r0, th0, ph0)
+                BrTMP = 0.0
 
                 Bru[patch,  i, j] = BrTMP
                 INBr[patch, i, j] = BrTMP
@@ -2283,8 +2293,6 @@ def InitialData():
                     B2u[patch, i, j]  = BCStmp[1]
                     INB2[patch, i, j] = BCStmp[1]
                     D1u[patch, i, j]  = 0.0
-
-        Dru[patch, :, :] = 0.0
 
 InitialData()
 
@@ -2414,7 +2422,28 @@ def plot_fields_unfolded_B2(it, vm):
     figsave_png(fig, "snapshots_2d/B2u_" + str(it))
 
     P.close('all')
+    
+def plot_unfolded_metric(field):
+    
+    xi_grid_c, eta_grid_c = unflip_eq(xEr_grid, yEr_grid)
+    xi_grid_d, eta_grid_d = unflip_eq(xEr_grid, yEr_grid)
+    xi_grid_n, eta_grid_n = unflip_po(xEr_grid, yEr_grid)
+    
+    tab = (globals()[field])[:, :, :, 0]
 
+    vm = N.max(N.abs(tab))
+
+    fig = P.figure(1, facecolor='w')
+    ax = P.subplot(111)
+
+    ax.pcolormesh(xEr_grid, yEr_grid, tab[Sphere.A, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xEr_grid + N.pi / 2.0, yEr_grid, tab[Sphere.B, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xEr_grid, yEr_grid - N.pi / 2.0, tab[Sphere.S, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+
+    ax.pcolormesh(xi_grid_c + N.pi, eta_grid_c, tab[Sphere.C, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_d - N.pi / 2.0, eta_grid_d, tab[Sphere.D, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+    ax.pcolormesh(xi_grid_n, eta_grid_n + N.pi / 2.0, tab[Sphere.N, :, :], cmap = "RdBu_r", vmin = - vm, vmax = vm)
+        
 ########
 # Initialization
 ########
@@ -2443,7 +2472,7 @@ for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields_unfolded_Br(idump, 0.5)
         plot_fields_unfolded_D1(idump, 0.5/r0)
-        plot_fields_unfolded_Dr(idump, 0.1)
+        plot_fields_unfolded_Dr(idump, 0.4)
         plot_fields_unfolded_B1(idump, 1.0/r0)
         plot_fields_unfolded_B2(idump, 1.0/r0)
         # WriteAllFieldsHDF5(idump)
