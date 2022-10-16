@@ -62,14 +62,14 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.5
-Nxi  = 32
-Neta = 32
+cfl = 0.1
+Nxi  = 64
+Neta = 64
 
 # Spin parameter
-a = 0.95
+a = 0.9
 rh = 1.0 + N.sqrt(1.0 - a * a)
-r0 = 1.0 * rh
+r0 = 0.95 * rh
 
 Nxi_int = Nxi + 1 # Number of integer points
 Nxi_half = Nxi + 2 # Number of half-step points
@@ -169,7 +169,10 @@ INB1 = N.zeros((n_patches, Nxi_int, Neta_half))
 INB2 = N.zeros((n_patches, Nxi_half,  Neta_int))
 
 Jz = N.zeros_like(Dru)
-Jz[Sphere.D, :, :] = 0.0 * N.exp(- (xEr_grid**2 + yEr_grid**2) / 0.1**2)
+Jz[Sphere.S, :, :] = 0.0 * N.exp(- (xEr_grid**2 + yEr_grid**2) / 0.1**2)
+
+JzBr = N.zeros_like(Bru)
+JzBr[Sphere.S, :, :] = 0.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
 
 ########
 # Dump HDF5 output
@@ -795,6 +798,9 @@ def push_B(p, Brin, B1in, B2in, dtin, itime):
         # Right edge
         B2in[p, -1, :] += dtin * (dErd1[p, -1, :]) / sqrt_det_h[p, -1, :, 0]
 
+        # Current
+        Brin[p, :, :] += dtin * JzBr[p, :, :] * N.sin(20.0 * itime * dtin) * (1 + N.tanh(20 - itime/5.))/2.
+
 ########
 # Auxiliary field computation
 ########
@@ -1398,8 +1404,8 @@ def cov_to_contra_H(p, Brin, B1in, B2in):
 # Compute interface terms
 ########
 
-sig_in  = 1.0
-sig_cor = 1.0
+sig_in  = 0.8
+sig_cor = 0.8
 
 def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -1704,8 +1710,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'xx'):
 
 #         # Dr
-#         lambda_0 = alpha_int[p0, :, loc.right] * N.sqrt(h11u_int[p0, :, loc.right]) * sqrt_det_h_int[p0, :, loc.right]
-#         lambda_1 = alpha_int[p1, :, loc.left]  * N.sqrt(h11u_int[p1, :, loc.left])  * sqrt_det_h_int[p1, :, loc.left]
+#         lambda_0 = alpha_int[p0, :, loc.right] * N.sqrt(h11u_int[p0, :, loc.right])
+#         lambda_1 = alpha_int[p1, :, loc.left]  * N.sqrt(h11u_int[p1, :, loc.left]) 
 
 #         Dr_0 = Drin[p0, -1, :]
 #         D1_0 = D1in[p0, -1, :]
@@ -1726,8 +1732,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Dru[p1, 0, :]  += dtin * sig_in * 0.5 * (carac_1  * lambda_1 - carac_0 * lambda_0) / dxi / P_int_2[0]
 
 #         # D2
-#         lambda_0 = alpha_half[p0, :, loc.right] * N.sqrt(h11u_half[p0, :, loc.right]) * sqrt_det_h_half[p0, :, loc.right]
-#         lambda_1 = alpha_half[p1, :, loc.left]  * N.sqrt(h11u_half[p1, :, loc.left])  * sqrt_det_h_half[p1, :, loc.left]
+#         lambda_0 = alpha_half[p0, :, loc.right] * N.sqrt(h11u_half[p0, :, loc.right])
+#         lambda_1 = alpha_half[p1, :, loc.left]  * N.sqrt(h11u_half[p1, :, loc.left]) 
 
 #         D1_0 = interp(D1in[p0, -1, :], eta_int, eta_half)
 #         D2_0 = D2in[p0, -1, :]
@@ -1750,8 +1756,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'xy'):
 
 #         # Dr
-#         lambda_0 = alpha_int[p0, :, loc.right]  * N.sqrt(h11u_int[p0, :, loc.right])  * sqrt_det_h_int[p0, :, loc.right]
-#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom]) * sqrt_det_h_int[p1, :, loc.bottom]
+#         lambda_0 = alpha_int[p0, :, loc.right]  * N.sqrt(h11u_int[p0, :, loc.right]) 
+#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom])
 
 #         Dr_0 = Drin[p0, -1, :]
 #         D1_0 = D1in[p0, -1, :]
@@ -1772,8 +1778,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Dru[p1, :, 0]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0[::-1] * lambda_0[::-1]) / dxi / P_int_2[0]
 
 #         # D1, D2
-#         lambda_0 = alpha_half[p0, :, loc.right]  * N.sqrt(h11u_half[p0, :, loc.right])  * sqrt_det_h_half[p0, :, loc.right]
-#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom]) * sqrt_det_h_half[p1, :, loc.bottom]
+#         lambda_0 = alpha_half[p0, :, loc.right]  * N.sqrt(h11u_half[p0, :, loc.right]) 
+#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom])
 
 #         D1_0 = interp(D1in[p0, -1, :], eta_int, eta_half)
 #         D2_0 = D2in[p0, -1, :]
@@ -1796,8 +1802,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'yy'):
 
 #         # Dr
-#         lambda_0 = alpha_int[p0, :, loc.top]    * N.sqrt(h22u_int[p0, :, loc.top])    * sqrt_det_h_int[p0, :, loc.top]
-#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom]) * sqrt_det_h_int[p1, :, loc.bottom]
+#         lambda_0 = alpha_int[p0, :, loc.top]    * N.sqrt(h22u_int[p0, :, loc.top])   
+#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom])
 
 #         Dr_0 = Drin[p0, :, -1]
 #         D2_0 = D2in[p0, :, -1]
@@ -1818,8 +1824,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Dru[p1, :, 0]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0 * lambda_0) / dxi / P_int_2[0]
 
 #         # D1
-#         lambda_0 = alpha_half[p0, :, loc.top]    * N.sqrt(h22u_half[p0, :, loc.top])    * sqrt_det_h_half[p0, :, loc.top]
-#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom]) * sqrt_det_h_half[p1, :, loc.bottom]
+#         lambda_0 = alpha_half[p0, :, loc.top]    * N.sqrt(h22u_half[p0, :, loc.top])   
+#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom])
 
 #         D1_0 = D1in[p0, :, -1]
 #         D2_0 = interp(D2in[p0, :, -1], xi_int, xi_half)
@@ -1842,8 +1848,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'yx'):
 
 #         # Dr
-#         lambda_0 = alpha_int[p0, :, loc.top]  * N.sqrt(h22u_int[p0, :, loc.top])  * sqrt_det_h_int[p0, :, loc.top]
-#         lambda_1 = alpha_int[p1, :, loc.left] * N.sqrt(h11u_int[p1, :, loc.left]) * sqrt_det_h_int[p1, :, loc.left]
+#         lambda_0 = alpha_int[p0, :, loc.top]  * N.sqrt(h22u_int[p0, :, loc.top]) 
+#         lambda_1 = alpha_int[p1, :, loc.left] * N.sqrt(h11u_int[p1, :, loc.left])
         
 #         Dr_0 = Drin[p0, :, -1]
 #         D2_0 = D2in[p0, :, -1]
@@ -1864,8 +1870,8 @@ def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Dru[p1, 0, :]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0[::-1] * lambda_0[::-1]) / dxi / P_int_2[0]
 
 #         # D1, D2
-#         lambda_0 = alpha_half[p0, :, loc.top]  * N.sqrt(h22u_half[p0, :, loc.top])  * sqrt_det_h_half[p0, :, loc.top]
-#         lambda_1 = alpha_half[p1, :, loc.left] * N.sqrt(h11u_half[p1, :, loc.left]) * sqrt_det_h_half[p1, :, loc.left]
+#         lambda_0 = alpha_half[p0, :, loc.top]  * N.sqrt(h22u_half[p0, :, loc.top]) 
+#         lambda_1 = alpha_half[p1, :, loc.left] * N.sqrt(h11u_half[p1, :, loc.left])
 
 #         D1_0 = D1in[p0, :, -1]
 #         D2_0 = interp(D2in[p0, :, -1], xi_int, xi_half)
@@ -2290,8 +2296,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'xx'):
 
 #         # Br
-#         lambda_0 = alpha_half[p0, :, loc.right] * N.sqrt(h11u_half[p0, :, loc.right]) * sqrt_det_h_half[p0, :, loc.right]
-#         lambda_1 = alpha_half[p1, :, loc.left]  * N.sqrt(h11u_half[p1, :, loc.left])  * sqrt_det_h_half[p1, :, loc.left]
+#         lambda_0 = alpha_half[p0, :, loc.right] * N.sqrt(h11u_half[p0, :, loc.right])
+#         lambda_1 = alpha_half[p1, :, loc.left]  * N.sqrt(h11u_half[p1, :, loc.left]) 
 
 #         D2_0 = D2in[p0, -1, :]
 #         Br_0 = Brin[p0, -1, :]
@@ -2312,8 +2318,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Bru[p1, 0, :]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0 * lambda_0) / dxi / P_half_2[0]
 
 #         # B2
-#         lambda_0 = alpha_int[p0, :, loc.right] * N.sqrt(h11u_int[p0, :, loc.right]) * sqrt_det_h_int[p0, :, loc.right]
-#         lambda_1 = alpha_int[p1, :, loc.left]  * N.sqrt(h11u_int[p1, :, loc.left])  * sqrt_det_h_int[p1, :, loc.left]
+#         lambda_0 = alpha_int[p0, :, loc.right] * N.sqrt(h11u_int[p0, :, loc.right])
+#         lambda_1 = alpha_int[p1, :, loc.left]  * N.sqrt(h11u_int[p1, :, loc.left]) 
 
 #         Dr_0 = Drin[p0, -1, :]
 #         B1_0 = interp(B1in[p0, -1, :], eta_half, eta_int)
@@ -2336,8 +2342,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'xy'):
 
 #         # Br
-#         lambda_0 = alpha_half[p0, :, loc.right]  * N.sqrt(h11u_half[p0, :, loc.right])  * sqrt_det_h_half[p0, :, loc.right]
-#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom]) * sqrt_det_h_half[p1, :, loc.bottom]
+#         lambda_0 = alpha_half[p0, :, loc.right]  * N.sqrt(h11u_half[p0, :, loc.right]) 
+#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom])
 
 #         D2_0 = D2in[p0, -1, :]
 #         Br_0 = Brin[p0, -1, :]
@@ -2358,8 +2364,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Bru[p1, :, 0]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0[::-1] * lambda_0[::-1]) / dxi / P_half_2[0]
 
 #         # B1, B2
-#         lambda_0 = alpha_int[p0, :, loc.right]  * N.sqrt(h11u_int[p0, :, loc.right])  * sqrt_det_h_int[p0, :, loc.right]
-#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom]) * sqrt_det_h_int[p1, :, loc.bottom]
+#         lambda_0 = alpha_int[p0, :, loc.right]  * N.sqrt(h11u_int[p0, :, loc.right]) 
+#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom])
 
 #         Dr_0 = Drin[p0, -1, :]
 #         B1_0 = interp(B1in[p0, -1, :], eta_half, eta_int)
@@ -2382,8 +2388,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'yy'):
         
 #         # Br
-#         lambda_0 = alpha_half[p0, :, loc.top]    * N.sqrt(h22u_half[p0, :, loc.top])    * sqrt_det_h_half[p0, :, loc.top]
-#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom]) * sqrt_det_h_half[p1, :, loc.bottom]
+#         lambda_0 = alpha_half[p0, :, loc.top]    * N.sqrt(h22u_half[p0, :, loc.top])   
+#         lambda_1 = alpha_half[p1, :, loc.bottom] * N.sqrt(h22u_half[p1, :, loc.bottom])
         
 #         D1_0 = D1in[p0, :, -1]
 #         Br_0 = Brin[p0, :, -1]
@@ -2404,8 +2410,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Bru[p1, :, 0]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0 * lambda_0) / dxi / P_half_2[0]
 
 #         # B1
-#         lambda_0 = alpha_int[p0, :, loc.top]    * N.sqrt(h22u_int[p0, :, loc.top])    * sqrt_det_h_int[p0, :, loc.top]
-#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom]) * sqrt_det_h_int[p1, :, loc.bottom]
+#         lambda_0 = alpha_int[p0, :, loc.top]    * N.sqrt(h22u_int[p0, :, loc.top])   
+#         lambda_1 = alpha_int[p1, :, loc.bottom] * N.sqrt(h22u_int[p1, :, loc.bottom])
 
 #         Dr_0 = Drin[p0, :, -1]
 #         B1_0 = B1in[p0, :, -1]
@@ -2428,8 +2434,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #     if (top == 'yx'):
 
 #         # Br
-#         lambda_0 = alpha_half[p0, :, loc.top]  * N.sqrt(h22u_half[p0, :, loc.top])  * sqrt_det_h_half[p0, :, loc.top]
-#         lambda_1 = alpha_half[p1, :, loc.left] * N.sqrt(h11u_half[p1, :, loc.left]) * sqrt_det_h_half[p1, :, loc.left]
+#         lambda_0 = alpha_half[p0, :, loc.top]  * N.sqrt(h22u_half[p0, :, loc.top]) 
+#         lambda_1 = alpha_half[p1, :, loc.left] * N.sqrt(h11u_half[p1, :, loc.left])
         
 #         D1_0 = D1in[p0, :, -1]
 #         Br_0 = Brin[p0, :, -1]
@@ -2450,8 +2456,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 #         diff_Bru[p1, 0, :]  += dtin * sig_in * 0.5 * (carac_1 * lambda_1 - carac_0[::-1] * lambda_0[::-1]) / dxi / P_half_2[0]
 
 #         # B1, B2
-#         lambda_0 = alpha_int[p0, :, loc.top]  * N.sqrt(h22u_int[p0, :, loc.top])  * sqrt_det_h_int[p0, :, loc.top]
-#         lambda_1 = alpha_int[p1, :, loc.left] * N.sqrt(h11u_int[p1, :, loc.left]) * sqrt_det_h_int[p1, :, loc.left]
+#         lambda_0 = alpha_int[p0, :, loc.top]  * N.sqrt(h22u_int[p0, :, loc.top]) 
+#         lambda_1 = alpha_int[p1, :, loc.left] * N.sqrt(h11u_int[p1, :, loc.left])
         
 #         Dr_0 = Drin[p0, :, -1]
 #         B1_0 = B1in[p0, :, -1]
@@ -2834,14 +2840,14 @@ for it in tqdm(range(Nt), "Progression"):
     compute_diff_E(patches)
     push_B(patches, Bru, B1u, B2u, dt, it)
 
-    ##### TEST
-    contra_to_cov_B(patches, Bru1, B1u1, B2u1)
-    compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
-    cov_to_contra_H(patches, Hrd, H1d, H2d)
+    # ##### TEST
+    # contra_to_cov_B(patches, Bru1, B1u1, B2u1)
+    # compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
+    # cov_to_contra_H(patches, Hrd, H1d, H2d)
 
     # # Penalty terms
     # penalty_edges_B(dt, Erd, E1d, E2d, Hru, H1u, H2u, Bru, B1u, B2u)
-    # penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    # penalty_edges_B(dt, Drd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
     penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
 
     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
@@ -2866,10 +2872,10 @@ for it in tqdm(range(Nt), "Progression"):
     compute_diff_H(patches)
     push_D(patches, Dru, D1u, D2u, dt, it)
 
-    ##### TEST
-    contra_to_cov_D(patches, Dru1, D1u1, D2u1)
-    compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
-    cov_to_contra_E(patches, Erd, E1d, E2d)
+    # ##### TEST
+    # contra_to_cov_D(patches, Dru1, D1u1, D2u1)
+    # compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
+    # cov_to_contra_E(patches, Erd, E1d, E2d)
 
     # # Penalty terms
     # penalty_edges_D(dt, Eru, E1u, E2u, Hrd, H1d, H2d, Dru, D1u, D2u)
@@ -2877,11 +2883,11 @@ for it in tqdm(range(Nt), "Progression"):
     penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
 
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded_Br(idump, 0.5)
-        plot_fields_unfolded_D1(idump, 2.0)
-        plot_fields_unfolded_Dr(idump, 0.5)
-        plot_fields_unfolded_B1(idump, 0.5)
-        plot_fields_unfolded_B2(idump, 0.5)
+        plot_fields_unfolded_Br(idump, 0.8)
+        plot_fields_unfolded_D1(idump, 0.8)
+        plot_fields_unfolded_Dr(idump, 0.8)
+        plot_fields_unfolded_B1(idump, 0.8)
+        plot_fields_unfolded_B2(idump, 0.8)
         # WriteAllFieldsHDF5(idump)
         idump += 1
     

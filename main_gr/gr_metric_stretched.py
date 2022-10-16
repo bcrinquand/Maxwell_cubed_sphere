@@ -53,7 +53,7 @@ def betalu(patch, l, xi, eta, spin):
     theta = fcoord(xi, eta)[0]
     r = N.exp(l)
     z = 2.0 * r / (r * r + spin * spin * N.cos(theta)**2)
-    return z / (1.0 + z) / r
+    return 0.8 * z / (1.0 + z) / r
 
 def betald(patch, l, xi, eta, spin):
     fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])

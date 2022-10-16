@@ -65,9 +65,9 @@ n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
 cfl  = 0.4
-Nl0  = 100
-Nxi  = 16
-Neta = 16
+Nl0  = 32
+Nxi  = 32
+Neta = 32
 
 # Spin parameter
 a = 0.8

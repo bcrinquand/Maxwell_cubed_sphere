@@ -64,8 +64,8 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.2
-Nl = 100
+cfl = 0.4
+Nl = 64
 Nxi = 24
 Neta = 24
 
@@ -2459,8 +2459,8 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Penalty terms
     # penalty_edges_B(dt, Erd, E1d, E2d, Hru, H1u, H2u, Bru, B1u, B2u)
-    penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
-    # penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    # penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
 
     BC_Bu(patches, Bru, B1u, B2u)
     BC_B_absorb(patches, Bru, B1u, B2u)
@@ -2495,8 +2495,8 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Penalty terms
     # penalty_edges_D(dt, Eru, E1u, E2u, Hrd, H1d, H2d, Dru, D1u, D2u)
-    penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
-    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
+    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
+    penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
 
     BC_Du(patches, Dru, D1u, D2u)
     BC_D_absorb(patches, Dru, D1u, D2u)
