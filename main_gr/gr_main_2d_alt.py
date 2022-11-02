@@ -62,16 +62,16 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.1
-Nxi  = 64
-Neta = 64
+cfl = 0.2
+Nxi  = 32
+Neta = 32
 
 # Spin parameter
-a = 0.9
+a = 0.0
 rh = 1.0 + N.sqrt(1.0 - a * a)
 r0 = 0.95 * rh
 
-Nxi_int = Nxi + 1 # Number of integer points
+Nxi_int  = Nxi + 1 # Number of integer points
 Nxi_half = Nxi + 2 # Number of half-step points
 Neta_int = Neta + 1 # Number of integer points
 Neta_half = Neta + 2 # NUmber of half-step points
@@ -172,7 +172,7 @@ Jz = N.zeros_like(Dru)
 Jz[Sphere.S, :, :] = 0.0 * N.exp(- (xEr_grid**2 + yEr_grid**2) / 0.1**2)
 
 JzBr = N.zeros_like(Bru)
-JzBr[Sphere.S, :, :] = 0.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
+JzBr[Sphere.A, :, :] = 0.0 * N.exp(- (xBr_grid**2 + yBr_grid**2) / 0.1**2)
 
 ########
 # Dump HDF5 output
@@ -259,6 +259,176 @@ hrru_int = N.empty((n_patches, Nxi_int, 4))
 hr1u_int = N.empty((n_patches, Nxi_int, 4))
 hr2u_int = N.empty((n_patches, Nxi_int, 4))
 alpha_int = N.empty((n_patches, Nxi_int, 4))
+
+hrrd_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+hr1d_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+hr2d_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+h11d_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+h12d_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+h22d_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+alpha_Br      = N.empty((n_patches, Nxi_half, Neta_half))
+beta_Br       = N.empty((n_patches, Nxi_half, Neta_half))
+sqrt_det_h_Br = N.empty((n_patches, Nxi_half, Neta_half))
+
+hrrd_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+hr1d_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+hr2d_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+h11d_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+h12d_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+h22d_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+alpha_B1      = N.empty((n_patches, Nxi_int, Neta_half))
+beta_B1       = N.empty((n_patches, Nxi_int, Neta_half))
+sqrt_det_h_B1 = N.empty((n_patches, Nxi_int, Neta_half))
+
+hrrd_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+hr1d_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+hr2d_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+h11d_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+h12d_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+h22d_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+alpha_B2      = N.empty((n_patches, Nxi_half, Neta_int))
+beta_B2       = N.empty((n_patches, Nxi_half, Neta_int))
+sqrt_det_h_B2 = N.empty((n_patches, Nxi_half, Neta_int))
+
+hrrd_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+hr1d_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+hr2d_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+h11d_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+h12d_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+h22d_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+alpha_Dr      = N.empty((n_patches, Nxi_int, Neta_int))
+beta_Dr       = N.empty((n_patches, Nxi_int, Neta_int))
+sqrt_det_h_Dr = N.empty((n_patches, Nxi_int, Neta_int))
+
+hrrd_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+hr1d_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+hr2d_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+h11d_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+h12d_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+h22d_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+alpha_D1      = N.empty((n_patches, Nxi_half, Neta_int))
+beta_D1       = N.empty((n_patches, Nxi_half, Neta_int))
+sqrt_det_h_D1 = N.empty((n_patches, Nxi_half, Neta_int))
+
+hrrd_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+hr1d_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+hr2d_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+h11d_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+h12d_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+h22d_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+alpha_D2      = N.empty((n_patches, Nxi_int, Neta_half))
+beta_D2       = N.empty((n_patches, Nxi_int, Neta_half))
+sqrt_det_h_D2 = N.empty((n_patches, Nxi_int, Neta_half))
+
+for p in range(n_patches):
+    print(p)
+    for i in range(Nxi_int):
+        for j in range(Neta_int):
+
+            xi0 = xi_int[i]
+            eta0 = eta_int[j]
+            h11d_Dr[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_Dr[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_Dr[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_Dr[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_Dr[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_Dr[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_Dr[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_Dr[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+            
+            metric = N.array([[hrrd_Dr[p, i, j], hr1d_Dr[p, i, j], hr2d_Dr[p, i, j]], \
+                              [hr1d_Dr[p, i, j], h11d_Dr[p, i, j], h12d_Dr[p, i, j]], \
+                              [hr2d_Dr[p, i, j], h12d_Dr[p, i, j], h22d_Dr[p, i, j]]])
+            sqrt_det_h_Dr[p, i, j] = N.sqrt(N.linalg.det(metric))
+
+    for i in range(Nxi_half):
+        for j in range(Neta_int):
+
+            xi0 = xi_half[i]
+            eta0 = eta_int[j]
+            h11d_D1[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_D1[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_D1[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_D1[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_D1[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_D1[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_D1[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_D1[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+
+            metric = N.array([[hrrd_D1[p, i, j], hr1d_D1[p, i, j], hr2d_D1[p, i, j]], \
+                              [hr1d_D1[p, i, j], h11d_D1[p, i, j], h12d_D1[p, i, j]], \
+                              [hr2d_D1[p, i, j], h12d_D1[p, i, j], h22d_D1[p, i, j]]])
+            sqrt_det_h_D1[p, i, j] = N.sqrt(N.linalg.det(metric))
+
+            xi0 = xi_half[i]
+            eta0 = eta_int[j]
+            h11d_B2[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_B2[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_B2[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_B2[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_B2[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_B2[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_B2[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_B2[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+
+            metric = N.array([[hrrd_B2[p, i, j], hr1d_B2[p, i, j], hr2d_B2[p, i, j]], \
+                              [hr1d_B2[p, i, j], h11d_B2[p, i, j], h12d_B2[p, i, j]], \
+                              [hr2d_B2[p, i, j], h12d_B2[p, i, j], h22d_B2[p, i, j]]])
+            sqrt_det_h_B2[p, i, j] = N.sqrt(N.linalg.det(metric))
+
+    for i in range(Nxi_int):
+        for j in range(Neta_half):
+
+            xi0 = xi_int[i]
+            eta0 = eta_half[j]
+            h11d_D2[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_D2[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_D2[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_D2[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_D2[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_D2[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_D2[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_D2[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+
+            metric = N.array([[hrrd_D2[p, i, j], hr1d_D2[p, i, j], hr2d_D2[p, i, j]], \
+                              [hr1d_D2[p, i, j], h11d_D2[p, i, j], h12d_D2[p, i, j]], \
+                              [hr2d_D2[p, i, j], h12d_D2[p, i, j], h22d_D2[p, i, j]]])
+            sqrt_det_h_D2[p, i, j] = N.sqrt(N.linalg.det(metric))
+
+            xi0 = xi_int[i]
+            eta0 = eta_half[j]
+            h11d_B1[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_B1[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_B1[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_B1[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_B1[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_B1[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_B1[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_B1[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+
+            metric = N.array([[hrrd_B1[p, i, j], hr1d_B1[p, i, j], hr2d_B1[p, i, j]], \
+                              [hr1d_B1[p, i, j], h11d_B1[p, i, j], h12d_B1[p, i, j]], \
+                              [hr2d_B1[p, i, j], h12d_B1[p, i, j], h22d_B1[p, i, j]]])
+            sqrt_det_h_B1[p, i, j] = N.sqrt(N.linalg.det(metric))
+
+    for i in range(Nxi_half):
+        for j in range(Neta_half):
+
+            xi0 = xi_half[i]
+            eta0 = eta_half[j]
+            h11d_Br[p, i, j] = g11d(p, r0, xi0, eta0, a)
+            h22d_Br[p, i, j] = g22d(p, r0, xi0, eta0, a)
+            h12d_Br[p, i, j] = g12d(p, r0, xi0, eta0, a)
+            hrrd_Br[p, i, j] = grrd(p, r0, xi0, eta0, a)
+            hr1d_Br[p, i, j] = gr1d(p, r0, xi0, eta0, a)
+            hr2d_Br[p, i, j] = gr2d(p, r0, xi0, eta0, a)
+            alpha_Br[p, i, j]=  alphas(p, r0, xi0, eta0, a)
+            beta_Br[p, i, j] =  betaru(p, r0, xi0, eta0, a)
+
+            metric = N.array([[hrrd_Br[p, i, j], hr1d_Br[p, i, j], hr2d_Br[p, i, j]], \
+                              [hr1d_Br[p, i, j], h11d_Br[p, i, j], h12d_Br[p, i, j]], \
+                              [hr2d_Br[p, i, j], h12d_Br[p, i, j], h22d_Br[p, i, j]]])
+            sqrt_det_h_Br[p, i, j] = N.sqrt(N.linalg.det(metric))
 
 for p in range(n_patches):
     for i in range(Nxi_int):
@@ -738,6 +908,85 @@ def average_field(p, fieldrin0, field1in0, field2in0, fieldrin1, field1in1, fiel
     field1out[p, :, :] = 0.5 * (field1in0[p, :, :] + field1in1[p, :, :])
     field2out[p, :, :] = 0.5 * (field2in0[p, :, :] + field2in1[p, :, :])
 
+Ap = N.zeros((Nxi_int, Nxi_int))
+
+# Ap[0, 0:3] = N.array([2/5, -4/5, 2/5])
+Ap[0, 0:3] = N.array([4/5, -8/5, 4/5])
+Ap[1, 0:3] = N.array([3/5, -6/5, 3/5])
+Ap[2, 0:4] = N.array([1/5, 3/5, -9/5, 1])
+
+# Ap[-1, -3:] = N.array([2/5, -4/5, 2/5])
+Ap[-1, -3:] = N.array([4/5, -8/5, 4/5])
+Ap[-2, -3:] = N.array([3/5, -6/5, 3/5])
+Ap[-3, -4:] = N.array([1, -9/5, 3/5,1/5])
+
+# Ap[0, 0:3] = N.array([4.08, -3.76, -0.32])
+# Ap[1, 0:3] = N.array([-1.88,  2.36, -0.48])
+# Ap[2, 0:4] = N.array([-0.16, -0.48,  1.64, -1])
+
+# Ap[-1, -3:] = N.array([-0.32, -3.76,  4.08])
+# Ap[-2, -3:] = N.array([-0.48,  2.36, -1.88])
+# Ap[-3, -4:] = N.array([-1,  1.64, -0.48, -0.16])
+
+
+for i in range(3, Nxi_int-3):
+    Ap[i, (i-1):(i+2)] = N.array([1, -2, 1])
+
+Am = N.zeros((Nxi_half, Nxi_half))
+
+Am[0, 0:3] = N.array([1/2, -3/4, 1/4]) 
+Am[1, 0:3] = N.array([1/2, -3/4, 1/4]) 
+Am[2, 0:4] = N.array([0.5,  0.05, -1.35, 0.8]) 
+
+Am[-1, -3:] = N.array([1/4, -3/4, 1/2]) 
+Am[-2, -3:] = N.array([1/4, -3/4, 1/2]) 
+Am[-3, -4:] = N.array([0.8, -1.35,  0.05, 0.5]) 
+
+# Am[0, 0:3] = N.array([1, -3/2, 1/2]) 
+# Am[1, 0:3] = N.array([2, -3, 1]) 
+# Am[2, 0:4] = N.array([2/5, 1/25, -1.08, 0.64]) 
+
+# Am[-1, -3:] = N.array([1/2, -3/2, 1]) 
+# Am[-2, -3:] = N.array([1, -3, 2]) 
+# Am[-3, -4:] = N.array([0.64, -1.08, 1/25, 2/5]) 
+
+# Am[0, 0:3] = N.array([2.5, -0.75, -1.75]) 
+# Am[1, 0:3] = N.array([-1.5,  1.25,  0.25]) 
+# Am[2, 0:4] = N.array([-0.7,  0.05,  1.45, -0.8]) 
+
+# Am[-1, -3:] = N.array([-1.75, -0.75,  2.5]) 
+# Am[-2, -3:] = N.array([0.25,  1.25, -1.5]) 
+# Am[-3, -4:] = N.array([-0.8,  1.45,  0.05, -0.7]) 
+
+for i in range(3, Nxi_half-3):
+    Am[i, (i-1):(i+2)] = N.array([1, -2, 1])
+
+epsilon = 0.5
+
+def dissipate_D(p, dtin, Erin, E1in, E2in):
+    
+    for j in range(Nxi_half):
+        D1u[p, j, :] += dtin * epsilon * N.dot(Ap, E1in[p, j, :]) #/ dxi
+        D2u[p, :, j] += dtin * epsilon * N.dot(Ap, E2in[p, :, j]) #/ dxi
+
+    for j in range(Nxi_int):
+        D1u[p, :, j] += dtin * epsilon * N.dot(Am, E1in[p, :, j]) #/ dxi
+        D2u[p, j, :] += dtin * epsilon * N.dot(Am, E2in[p, j, :]) #/ dxi
+        Dru[p, j, :] += dtin * epsilon * N.dot(Ap, Erin[p, j, :]) #/ dxi
+        Dru[p, :, j] += dtin * epsilon * N.dot(Ap, Erin[p, :, j]) #/ dxi
+        
+def dissipate_B(p, dtin, Brin, B1in, B2in):
+    
+    for j in range(Nxi_half):
+        Bru[p, j, :] += dtin * epsilon * N.dot(Am, Brin[p, j, :]) #/ dxi
+        Bru[p, :, j] += dtin * epsilon * N.dot(Am, Brin[p, :, j]) #/ dxi
+        B1u[p, :, j] += dtin * epsilon * N.dot(Ap, B1in[p, :, j]) #/ dxi
+        B2u[p, j, :] += dtin * epsilon * N.dot(Ap, B2in[p, j, :]) #/ dxi
+        
+    for j in range(Nxi_int):
+        B1u[p, j, :] += dtin * epsilon * N.dot(Am, B1in[p, j, :]) #/ dxi
+        B2u[p, :, j] += dtin * epsilon * N.dot(Am, B2in[p, :, j]) #/ dxi
+        
 ########
 # Single-patch push routines
 ########
@@ -805,6 +1054,137 @@ def push_B(p, Brin, B1in, B2in, dtin, itime):
 # Auxiliary field computation
 ########
 
+# def contra_to_cov_D(p, Drin, D1in, D2in):
+
+#     ########
+#     # Dr
+#     ########
+
+#     # Interior
+#     Drd[p, 1:-1, 1:-1] = hrrd[p, 1:-1, 1:-1, 0] * Drin[p, 1:-1, 1:-1] \
+#                                       + 0.5 * hr1d[p, 1:-1, 1:-1, 0] * (D1in[p, 1:-2, 1:-1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:-1]) \
+#                                       + 0.5 * hr2d[p, 1:-1, 1:-1, 0] * (D2in[p, 1:-1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:-1, 1:-2]) \
+
+#     # Left edge
+#     Drd[p, 0, 1:-1] = hrrd[p, 0, 1:-1, 0] * Drin[p, 0, 1:-1] \
+#                                    + hr1d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
+#                                    + 0.5 * hr2d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 0, 1:-2])
+#     # Right edge
+#     Drd[p, -1, 1:-1] = hrrd[p, -1, 1:-1, 0] * Drin[p, -1, 1:-1] \
+#                                     + hr1d[p, -1, 1:-1, 0] * D1in[p, -1, 1:-1] \
+#                                     + 0.5 * hr2d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, -1, 1:-2])
+
+#     # Bottom edge
+#     Drd[p, 1:-1, 0] = hrrd[p, 1:-1, 0, 0] * Drin[p, 1:-1, 0] \
+#                                    + 0.5 * hr1d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
+#                                    + hr2d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0]
+#     # Top edge
+#     Drd[p, 1:-1, -1] = hrrd[p, 1:-1, -1, 0] * Drin[p, 1:-1, -1] \
+#                                     + 0.5 * hr1d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, -1]) \
+#                                     + hr2d[p, 1:-1, -1, 0] * D2in[p, 1:-1, -1]
+#     # Bottom-left corner
+#     Drd[p, 0, 0] = hrrd[p, 0, 0, 0] * Drin[p, 0, 0] \
+#                                 + hr1d[p, 0, 0, 0] * D1in[p, 0, 0] \
+#                                 + hr2d[p, 0, 0, 0] * D2in[p, 0, 0]
+#     # Top-left corner
+#     Drd[p, 0, -1] = hrrd[p, 0, -1, 0] * Drin[p, 0, -1] \
+#                                  + hr1d[p, 0, -1, 0] * D1in[p, 0, -1] \
+#                                  + hr2d[p, 0, -1, 0] * D2in[p, 0, -1]
+#     # Bottom-right corner
+#     Drd[p, -1, 0] = hrrd[p, -1, 0, 0] * Drin[p, -1, 0] \
+#                                  + hr1d[p, -1, 0, 0] * D1in[p, -1, 0] \
+#                                  + hr2d[p, -1, 0, 0] * D2in[p, -1, 0]
+#     # Top-right corner
+#     Drd[p, -1, -1] = hrrd[p, -1, -1, 0] * Drin[p, -1, -1] \
+#                                   + hr1d[p, -1, -1, 0] * D1in[p, -1, -1] \
+#                                   + hr2d[p, -1, -1, 0] * D2in[p, -1, -1]
+
+#     ########
+#     # Dxi
+#     ########
+
+#     # Interior
+#     D1d[p, 1:-1, 1:-1] = h11d[p, :-1, 1:-1, 1] * D1in[p, 1:-1, 1:-1] \
+#                        + 0.25 * h12d[p, :-1, 1:-1, 1] * (D2in[p, 1:, 1:-2] + N.roll(N.roll(D2in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
+#                                                       +  N.roll(D2in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:, 1:-2]) \
+#                        + 0.5  * hr1d[p, :-1, 1:-1, 1] * (Drin[p, 1:, 1:-1] + N.roll(Drin, 1, axis = 1)[p, 1:, 1:-1])
+
+#     # Left edge
+#     D1d[p, 0, 1:-1] = h11d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
+#                                    + 0.5 * h12d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 0, 1:-2]) \
+#                                    + hr1d[p, 0, 1:-1, 0] * Drin[p, 0, 1:-1]
+#     # Right edge
+#     D1d[p, -1, 1:-1] = h11d[p, -1, 1:-1, 0] * D1in[p, -1, 1:-1] \
+#                                     + 0.5 * h12d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, -1, 1:-2]) \
+#                                     + hr1d[p, -1, 1:-1, 0] * Drin[p, -1, 1:-1]
+#     # Bottom edge
+#     D1d[p, 1:-1, 0] = h11d[p, :-1, 0, 1] * D1in[p, 1:-1, 0] \
+#                                    + 0.5 * h12d[p, :-1, 0, 1] * (D2in[p, 1:, 0] + N.roll(D2in, 1, axis = 1)[p, 1:, 0]) \
+#                                    + 0.5 * hr1d[p, :-1, 0, 1] * (Drin[p, 1:, 0] + N.roll(Drin, 1, axis = 1)[p, 1:, 0])
+#     # Top edge
+#     D1d[p, 1:-1, -1] = h11d[p, :-1, -1, 1] * D1in[p, 1:-1, -1] \
+#                                     + 0.5 * h12d[p, :-1, -1, 1] * (D2in[p, 1:, -1] + N.roll(D2in, 1, axis = 1)[p, 1:, -1]) \
+#                                     + 0.5 * hr1d[p, :-1, -1, 1] * (Drin[p, 1:, -1] + N.roll(Drin, 1, axis = 1)[p, 1:, -1])
+#     # Bottom-left corner
+#     D1d[p, 0, 0] = h11d[p, 0, 0, 0] * D1in[p, 0, 0] \
+#                                 + h12d[p, 0, 0, 0] * D2in[p, 0, 0] \
+#                                 + hr1d[p, 0, 0, 0] * Drin[p, 0, 0]
+#     # Top-left corner
+#     D1d[p, 0, -1] = h11d[p, 0, -1, 0] * D1in[p, 0, -1] \
+#                                  + h12d[p, 0, -1, 0] * D2in[p, 0, -1] \
+#                                  + hr1d[p, 0, -1, 0] * Drin[p, 0, -1]
+#     # Bottom-right corner
+#     D1d[p, -1, 0] = h11d[p, -1, 0, 0] * D1in[p, -1, 0] \
+#                                  + h12d[p, -1, 0, 0] * D2in[p, -1, 0] \
+#                                  + hr1d[p, -1, 0, 0] * Drin[p, -1, 0]
+#     # Top-right corner
+#     D1d[p, -1, -1] = h11d[p, -1, -1, 0] * D1in[p, -1, -1] \
+#                                   + h12d[p, -1, -1, 0] * D2in[p, -1, -1] \
+#                                   + hr1d[p, -1, -1, 0] * Drin[p, -1, -1]
+
+#     ########
+#     # Deta
+#     ########
+
+#     # Interior
+#     D2d[p, 1:-1, 1:-1] = h22d[p, 1:-1, :-1, 2] * D2in[p, 1:-1, 1:-1] \
+#                        + 0.25 * h12d[p, 1:-1, :-1, 2] * (D1in[p, 1:-2, 1:] + N.roll(N.roll(D1in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
+#                                                       +  N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(D1in, 1, axis = 2)[p, 1:-2, 1:]) \
+#                        + 0.5  * hr2d[p, 1:-1, :-1, 2] * (Drin[p, 1:-1, 1:] + N.roll(Drin, 1, axis = 2)[p, 1:-1, 1:])
+
+#     # Left edge
+#     D2d[p, 0, 1:-1] = h22d[p, 0, :-1, 2] * D2in[p, 0, 1:-1] \
+#                        + 0.5 * h12d[p, 0, :-1, 2] * (D1in[p, 0, 1:] + N.roll(D1in, 1, axis = 2)[p, 0, 1:]) \
+#                        + 0.5 * hr2d[p, 0, :-1, 2] * (Drin[p, 0, 1:] + N.roll(Drin, 1, axis = 2)[p, 0, 1:])
+#     # Right edge
+#     D2d[p, -1, 1:-1] = h22d[p, -1, :-1, 2] * D2in[p, -1, 1:-1] \
+#                         + 0.5 * h12d[p, -1, :-1, 2] * (D1in[p, -1, 1:] + N.roll(D1in, 1, axis = 2)[p, -1, 1:]) \
+#                         + 0.5 * hr2d[p, -1, :-1, 2] * (Drin[p, -1, 1:] + N.roll(Drin, 1, axis = 2)[p, -1, 1:])
+#     # Bottom edge
+#     D2d[p, 1:-1, 0] = h22d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0] \
+#                        + 0.5 * h12d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
+#                        + hr2d[p, 1:-1, 0, 0] * Drin[p, 1:-1, 0]
+#     # Top edge
+#     D2d[p, 1:-1, -1] = h22d[p, 1:-1, -1, 0] * D2in[p, 1:-1, -1] \
+#                         + 0.5 * h12d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, -1]) \
+#                         + hr2d[p, 1:-1, -1, 0] * Drin[p, 1:-1, -1]
+#     # Bottom-left corner
+#     D2d[p, 0, 0] = h22d[p, 0, 0, 0] * D2in[p, 0, 0] \
+#                                 + h12d[p, 0, 0, 0] * D1in[p, 0, 0] \
+#                                 + hr2d[p, 0, 0, 0] * Drin[p, 0, 0]
+#     # Top-left corner
+#     D2d[p, 0, -1] = h22d[p, 0, -1, 0] * D2in[p, 0, -1] \
+#                                  + h12d[p, 0, -1, 0] * D1in[p, 0, -1] \
+#                                  + hr2d[p, 0, -1, 0] * Drin[p, 0, -1]
+#     # Bottom-right corner
+#     D2d[p, -1, 0] = h22d[p, -1, 0, 0] * D2in[p, -1, 0] \
+#                                  + h12d[p, -1, 0, 0] * D1in[p, -1, 0] \
+#                                  + hr2d[p, -1, 0, 0] * Drin[p, -1, 0]
+#     # Top-right corner
+#     D2d[p, -1, -1] = h22d[p, -1, -1, 0] * D2in[p, -1, -1] \
+#                                   + h12d[p, -1, -1, 0] * D1in[p, -1, -1] \
+#                                   + hr2d[p, -1, -1, 0] * Drin[p, -1, -1]
+
 def contra_to_cov_D(p, Drin, D1in, D2in):
 
     ########
@@ -812,129 +1192,129 @@ def contra_to_cov_D(p, Drin, D1in, D2in):
     ########
 
     # Interior
-    Drd[p, 1:-1, 1:-1] = hrrd[p, 1:-1, 1:-1, 0] * Drin[p, 1:-1, 1:-1] \
-                                      + 0.5 * hr1d[p, 1:-1, 1:-1, 0] * (D1in[p, 1:-2, 1:-1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:-1]) \
-                                      + 0.5 * hr2d[p, 1:-1, 1:-1, 0] * (D2in[p, 1:-1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:-1, 1:-2]) \
+    Drd[p, 1:-1, 1:-1] = (hrrd_Dr*Drin)[p, 1:-1, 1:-1] \
+                        + 0.5 * ((hr1d_D1*D1in)[p, 1:-2, 1:-1] + N.roll(D1in*hr1d_D1, -1, axis = 1)[p, 1:-2, 1:-1]) \
+                        + 0.5 * ((hr2d_D2*D2in)[p, 1:-1, 1:-2] + N.roll(D2in*hr2d_D2, -1, axis = 2)[p, 1:-1, 1:-2]) \
 
     # Left edge
-    Drd[p, 0, 1:-1] = hrrd[p, 0, 1:-1, 0] * Drin[p, 0, 1:-1] \
-                                   + hr1d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
-                                   + 0.5 * hr2d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 0, 1:-2])
+    Drd[p, 0, 1:-1] = (hrrd_Dr*Drin)[p, 0, 1:-1] \
+                                   + (hr1d_D1*D1in)[p, 0, 1:-1] \
+                                   + 0.5 * ((hr2d_D2*D2in)[p, 0, 1:-2] + N.roll(hr2d_D2*D2in, -1, axis = 2)[p, 0, 1:-2])
     # Right edge
-    Drd[p, -1, 1:-1] = hrrd[p, -1, 1:-1, 0] * Drin[p, -1, 1:-1] \
-                                    + hr1d[p, -1, 1:-1, 0] * D1in[p, -1, 1:-1] \
-                                    + 0.5 * hr2d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, -1, 1:-2])
+    Drd[p, -1, 1:-1] = (hrrd_Dr*Drin)[p, -1, 1:-1] \
+                                    + (hr1d_D1*D1in)[p, -1, 1:-1] \
+                                    + 0.5 * ((hr2d_D2*D2in)[p, -1, 1:-2] + N.roll(hr2d_D2*D2in, -1, axis = 2)[p, -1, 1:-2])
 
     # Bottom edge
-    Drd[p, 1:-1, 0] = hrrd[p, 1:-1, 0, 0] * Drin[p, 1:-1, 0] \
-                                   + 0.5 * hr1d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
-                                   + hr2d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0]
+    Drd[p, 1:-1, 0] = (hrrd_Dr*Drin)[p, 1:-1, 0] \
+                                   + 0.5 * ((hr1d_D1*D1in)[p, 1:-2, 0] + N.roll(hr1d_D1*D1in, -1, axis = 1)[p, 1:-2, 0]) \
+                                   + (hr2d_D2*D2in)[p, 1:-1, 0]
     # Top edge
-    Drd[p, 1:-1, -1] = hrrd[p, 1:-1, -1, 0] * Drin[p, 1:-1, -1] \
-                                    + 0.5 * hr1d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, -1]) \
-                                    + hr2d[p, 1:-1, -1, 0] * D2in[p, 1:-1, -1]
+    Drd[p, 1:-1, -1] = (hrrd_Dr*Drin)[p, 1:-1, -1] \
+                                    + 0.5 * ((hr1d_D1*D1in)[p, 1:-2, -1] + N.roll(hr1d_D1*D1in, -1, axis = 1)[p, 1:-2, -1]) \
+                                    + (hr2d_D2*D2in)[p, 1:-1, -1]
     # Bottom-left corner
-    Drd[p, 0, 0] = hrrd[p, 0, 0, 0] * Drin[p, 0, 0] \
-                                + hr1d[p, 0, 0, 0] * D1in[p, 0, 0] \
-                                + hr2d[p, 0, 0, 0] * D2in[p, 0, 0]
+    Drd[p, 0, 0] = hrrd_Dr[p, 0, 0] * Drin[p, 0, 0] \
+                                + hr1d_D1[p, 0, 0] * D1in[p, 0, 0] \
+                                + hr2d_D2[p, 0, 0] * D2in[p, 0, 0]
     # Top-left corner
-    Drd[p, 0, -1] = hrrd[p, 0, -1, 0] * Drin[p, 0, -1] \
-                                 + hr1d[p, 0, -1, 0] * D1in[p, 0, -1] \
-                                 + hr2d[p, 0, -1, 0] * D2in[p, 0, -1]
+    Drd[p, 0, -1] = hrrd_Dr[p, 0, -1] * Drin[p, 0, -1] \
+                                 + hr1d_D1[p, 0, -1] * D1in[p, 0, -1] \
+                                 + hr2d_D2[p, 0, -1] * D2in[p, 0, -1]
     # Bottom-right corner
-    Drd[p, -1, 0] = hrrd[p, -1, 0, 0] * Drin[p, -1, 0] \
-                                 + hr1d[p, -1, 0, 0] * D1in[p, -1, 0] \
-                                 + hr2d[p, -1, 0, 0] * D2in[p, -1, 0]
+    Drd[p, -1, 0] = hrrd_Dr[p, -1, 0] * Drin[p, -1, 0] \
+                                 + hr1d_D1[p, -1, 0] * D1in[p, -1, 0] \
+                                 + hr2d_D2[p, -1, 0] * D2in[p, -1, 0]
     # Top-right corner
-    Drd[p, -1, -1] = hrrd[p, -1, -1, 0] * Drin[p, -1, -1] \
-                                  + hr1d[p, -1, -1, 0] * D1in[p, -1, -1] \
-                                  + hr2d[p, -1, -1, 0] * D2in[p, -1, -1]
+    Drd[p, -1, -1] = hrrd_Dr[p, -1, -1] * Drin[p, -1, -1] \
+                                  + hr1d_D1[p, -1, -1] * D1in[p, -1, -1] \
+                                  + hr2d_D2[p, -1, -1] * D2in[p, -1, -1]
 
     ########
     # Dxi
     ########
 
     # Interior
-    D1d[p, 1:-1, 1:-1] = h11d[p, :-1, 1:-1, 1] * D1in[p, 1:-1, 1:-1] \
-                       + 0.25 * h12d[p, :-1, 1:-1, 1] * (D2in[p, 1:, 1:-2] + N.roll(N.roll(D2in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
-                                                      +  N.roll(D2in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 1:, 1:-2]) \
-                       + 0.5  * hr1d[p, :-1, 1:-1, 1] * (Drin[p, 1:, 1:-1] + N.roll(Drin, 1, axis = 1)[p, 1:, 1:-1])
+    D1d[p, 1:-1, 1:-1] = (h11d_D1*D1in)[p, 1:-1, 1:-1] \
+                       + 0.25 * ((h12d_D2*D2in)[p, 1:, 1:-2] + N.roll(N.roll(h12d_D2*D2in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
+                       + N.roll(h12d_D2*D2in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(h12d_D2*D2in, -1, axis = 2)[p, 1:, 1:-2]) \
+                       + 0.5  * ((hr1d_Dr*Drin)[p, 1:, 1:-1] + N.roll(hr1d_Dr*Drin, 1, axis = 1)[p, 1:, 1:-1])
 
     # Left edge
-    D1d[p, 0, 1:-1] = h11d[p, 0, 1:-1, 0] * D1in[p, 0, 1:-1] \
-                                   + 0.5 * h12d[p, 0, 1:-1, 0] * (D2in[p, 0, 1:-2] + N.roll(D2in, -1, axis = 2)[p, 0, 1:-2]) \
-                                   + hr1d[p, 0, 1:-1, 0] * Drin[p, 0, 1:-1]
+    D1d[p, 0, 1:-1] = (h11d_D1*D1in)[p, 0, 1:-1] \
+                                   + 0.5 * ((h12d_D2*D2in)[p, 0, 1:-2] +  N.roll(h12d_D2*D2in, -1, axis = 2)[p, 0, 1:-2]) \
+                                   + (hr1d_Dr*Drin)[p, 0, 1:-1]
     # Right edge
-    D1d[p, -1, 1:-1] = h11d[p, -1, 1:-1, 0] * D1in[p, -1, 1:-1] \
-                                    + 0.5 * h12d[p, -1, 1:-1, 0] * (D2in[p, -1, 1:-2] + N.roll(D2in, -1, axis = 2)[p, -1, 1:-2]) \
-                                    + hr1d[p, -1, 1:-1, 0] * Drin[p, -1, 1:-1]
+    D1d[p, -1, 1:-1] = (h11d_D1*D1in)[p, -1, 1:-1] \
+                                    + 0.5 * ((h12d_D2*D2in)[p, -1, 1:-2] + N.roll(h12d_D2*D2in, -1, axis = 2)[p, -1, 1:-2]) \
+                                    + (hr1d_Dr*Drin)[p, -1, 1:-1]
     # Bottom edge
-    D1d[p, 1:-1, 0] = h11d[p, :-1, 0, 1] * D1in[p, 1:-1, 0] \
-                                   + 0.5 * h12d[p, :-1, 0, 1] * (D2in[p, 1:, 0] + N.roll(D2in, 1, axis = 1)[p, 1:, 0]) \
-                                   + 0.5 * hr1d[p, :-1, 0, 1] * (Drin[p, 1:, 0] + N.roll(Drin, 1, axis = 1)[p, 1:, 0])
+    D1d[p, 1:-1, 0] = (h11d_D1*D1in)[p, 1:-1, 0] \
+                                   + 0.5 * ((h12d_D2*D2in)[p, 1:, 0] + N.roll(h12d_D2*D2in, 1, axis = 1)[p, 1:, 0]) \
+                                   + 0.5 * ((hr1d_Dr*Drin)[p, 1:, 0] + N.roll(hr1d_Dr*Drin, 1, axis = 1)[p, 1:, 0])
     # Top edge
-    D1d[p, 1:-1, -1] = h11d[p, :-1, -1, 1] * D1in[p, 1:-1, -1] \
-                                    + 0.5 * h12d[p, :-1, -1, 1] * (D2in[p, 1:, -1] + N.roll(D2in, 1, axis = 1)[p, 1:, -1]) \
-                                    + 0.5 * hr1d[p, :-1, -1, 1] * (Drin[p, 1:, -1] + N.roll(Drin, 1, axis = 1)[p, 1:, -1])
+    D1d[p, 1:-1, -1] = (h11d_D1*D1in)[p, 1:-1, -1] \
+                                    + 0.5 * ((h12d_D2*D2in)[p, 1:, -1] + N.roll(h12d_D2*D2in, 1, axis = 1)[p, 1:, -1]) \
+                                    + 0.5 * ((hr1d_Dr*Drin)[p, 1:, -1] + N.roll(hr1d_Dr*Drin, 1, axis = 1)[p, 1:, -1])
     # Bottom-left corner
-    D1d[p, 0, 0] = h11d[p, 0, 0, 0] * D1in[p, 0, 0] \
-                                + h12d[p, 0, 0, 0] * D2in[p, 0, 0] \
-                                + hr1d[p, 0, 0, 0] * Drin[p, 0, 0]
+    D1d[p, 0, 0] = h11d_D1[p, 0, 0] * D1in[p, 0, 0] \
+                                + h12d_D2[p, 0, 0] * D2in[p, 0, 0] \
+                                + hr1d_Dr[p, 0, 0] * Drin[p, 0, 0]
     # Top-left corner
-    D1d[p, 0, -1] = h11d[p, 0, -1, 0] * D1in[p, 0, -1] \
-                                 + h12d[p, 0, -1, 0] * D2in[p, 0, -1] \
-                                 + hr1d[p, 0, -1, 0] * Drin[p, 0, -1]
+    D1d[p, 0, -1] = h11d_D1[p, 0, -1] * D1in[p, 0, -1] \
+                                 + h12d_D2[p, 0, -1] * D2in[p, 0, -1] \
+                                 + hr1d_Dr[p, 0, -1] * Drin[p, 0, -1]
     # Bottom-right corner
-    D1d[p, -1, 0] = h11d[p, -1, 0, 0] * D1in[p, -1, 0] \
-                                 + h12d[p, -1, 0, 0] * D2in[p, -1, 0] \
-                                 + hr1d[p, -1, 0, 0] * Drin[p, -1, 0]
+    D1d[p, -1, 0] = h11d_D1[p, -1, 0] * D1in[p, -1, 0] \
+                                 + h12d_D2[p, -1, 0] * D2in[p, -1, 0] \
+                                 + hr1d_Dr[p, -1, 0] * Drin[p, -1, 0]
     # Top-right corner
-    D1d[p, -1, -1] = h11d[p, -1, -1, 0] * D1in[p, -1, -1] \
-                                  + h12d[p, -1, -1, 0] * D2in[p, -1, -1] \
-                                  + hr1d[p, -1, -1, 0] * Drin[p, -1, -1]
+    D1d[p, -1, -1] = h11d_D1[p, -1, -1] * D1in[p, -1, -1] \
+                                  + h12d_D2[p, -1, -1] * D2in[p, -1, -1] \
+                                  + hr1d_Dr[p, -1, -1] * Drin[p, -1, -1]
 
     ########
     # Deta
     ########
 
     # Interior
-    D2d[p, 1:-1, 1:-1] = h22d[p, 1:-1, :-1, 2] * D2in[p, 1:-1, 1:-1] \
-                       + 0.25 * h12d[p, 1:-1, :-1, 2] * (D1in[p, 1:-2, 1:] + N.roll(N.roll(D1in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
-                                                      +  N.roll(D1in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(D1in, 1, axis = 2)[p, 1:-2, 1:]) \
-                       + 0.5  * hr2d[p, 1:-1, :-1, 2] * (Drin[p, 1:-1, 1:] + N.roll(Drin, 1, axis = 2)[p, 1:-1, 1:])
+    D2d[p, 1:-1, 1:-1] = (h22d_D2*D2in)[p, 1:-1, 1:-1] \
+                       + 0.25 * ((h12d_D1*D1in)[p, 1:-2, 1:] + N.roll(N.roll(h12d_D1*D1in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
+                       + N.roll(h12d_D1*D1in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(h12d_D1*D1in, 1, axis = 2)[p, 1:-2, 1:]) \
+                       + 0.5  * ((hr2d_Dr*Drin)[p, 1:-1, 1:] + N.roll(hr2d_Dr*Drin, 1, axis = 2)[p, 1:-1, 1:])
 
     # Left edge
-    D2d[p, 0, 1:-1] = h22d[p, 0, :-1, 2] * D2in[p, 0, 1:-1] \
-                       + 0.5 * h12d[p, 0, :-1, 2] * (D1in[p, 0, 1:] + N.roll(D1in, 1, axis = 2)[p, 0, 1:]) \
-                       + 0.5 * hr2d[p, 0, :-1, 2] * (Drin[p, 0, 1:] + N.roll(Drin, 1, axis = 2)[p, 0, 1:])
+    D2d[p, 0, 1:-1] = (h22d_D2*D2in)[p, 0, 1:-1] \
+                       + 0.5 * ((h12d_D1*D1in)[p, 0, 1:] + N.roll(h12d_D1*D1in, 1, axis = 2)[p, 0, 1:]) \
+                       + 0.5 * ((hr2d_Dr*Drin)[p, 0, 1:] + N.roll(hr2d_Dr*Drin, 1, axis = 2)[p, 0, 1:])
     # Right edge
-    D2d[p, -1, 1:-1] = h22d[p, -1, :-1, 2] * D2in[p, -1, 1:-1] \
-                        + 0.5 * h12d[p, -1, :-1, 2] * (D1in[p, -1, 1:] + N.roll(D1in, 1, axis = 2)[p, -1, 1:]) \
-                        + 0.5 * hr2d[p, -1, :-1, 2] * (Drin[p, -1, 1:] + N.roll(Drin, 1, axis = 2)[p, -1, 1:])
+    D2d[p, -1, 1:-1] = (h22d_D2*D2in)[p, -1, 1:-1] \
+                        + 0.5 * ((h12d_D1*D1in)[p, -1, 1:] + N.roll(h12d_D1*D1in, 1, axis = 2)[p, -1, 1:]) \
+                        + 0.5 * ((hr2d_Dr*Drin)[p, -1, 1:] + N.roll(hr2d_Dr*Drin, 1, axis = 2)[p, -1, 1:])
     # Bottom edge
-    D2d[p, 1:-1, 0] = h22d[p, 1:-1, 0, 0] * D2in[p, 1:-1, 0] \
-                       + 0.5 * h12d[p, 1:-1, 0, 0] * (D1in[p, 1:-2, 0] + N.roll(D1in, -1, axis = 1)[p, 1:-2, 0]) \
-                       + hr2d[p, 1:-1, 0, 0] * Drin[p, 1:-1, 0]
+    D2d[p, 1:-1, 0] = (h22d_D2*D2in)[p, 1:-1, 0] \
+                       + 0.5 * ((h12d_D1*D1in)[p, 1:-2, 0] + N.roll(h12d_D1*D1in, -1, axis = 1)[p, 1:-2, 0]) \
+                       + (hr2d_Dr*Drin)[p, 1:-1, 0]
     # Top edge
-    D2d[p, 1:-1, -1] = h22d[p, 1:-1, -1, 0] * D2in[p, 1:-1, -1] \
-                        + 0.5 * h12d[p, 1:-1, -1, 0] * (D1in[p, 1:-2, -1] + N.roll(D1in, -1, axis = 1)[p, 1:-2, -1]) \
-                        + hr2d[p, 1:-1, -1, 0] * Drin[p, 1:-1, -1]
+    D2d[p, 1:-1, -1] = (h22d_D2*D2in)[p, 1:-1, -1] \
+                        + 0.5 * ((h12d_D1*D1in)[p, 1:-2, -1] + N.roll(h12d_D1*D1in, -1, axis = 1)[p, 1:-2, -1]) \
+                        + (hr2d_Dr*Drin)[p, 1:-1, -1]
     # Bottom-left corner
-    D2d[p, 0, 0] = h22d[p, 0, 0, 0] * D2in[p, 0, 0] \
-                                + h12d[p, 0, 0, 0] * D1in[p, 0, 0] \
-                                + hr2d[p, 0, 0, 0] * Drin[p, 0, 0]
+    D2d[p, 0, 0] = h22d_D2[p, 0, 0] * D2in[p, 0, 0] \
+                                + h12d_D1[p, 0, 0] * D1in[p, 0, 0] \
+                                + hr2d_Dr[p, 0, 0] * Drin[p, 0, 0]
     # Top-left corner
-    D2d[p, 0, -1] = h22d[p, 0, -1, 0] * D2in[p, 0, -1] \
-                                 + h12d[p, 0, -1, 0] * D1in[p, 0, -1] \
-                                 + hr2d[p, 0, -1, 0] * Drin[p, 0, -1]
+    D2d[p, 0, -1] = h22d_D2[p, 0, -1] * D2in[p, 0, -1] \
+                                 + h12d_D1[p, 0, -1] * D1in[p, 0, -1] \
+                                 + hr2d_Dr[p, 0, -1] * Drin[p, 0, -1]
     # Bottom-right corner
-    D2d[p, -1, 0] = h22d[p, -1, 0, 0] * D2in[p, -1, 0] \
-                                 + h12d[p, -1, 0, 0] * D1in[p, -1, 0] \
-                                 + hr2d[p, -1, 0, 0] * Drin[p, -1, 0]
+    D2d[p, -1, 0] = h22d_D2[p, -1, 0] * D2in[p, -1, 0] \
+                                 + h12d_D1[p, -1, 0] * D1in[p, -1, 0] \
+                                 + hr2d_Dr[p, -1, 0] * Drin[p, -1, 0]
     # Top-right corner
-    D2d[p, -1, -1] = h22d[p, -1, -1, 0] * D2in[p, -1, -1] \
-                                  + h12d[p, -1, -1, 0] * D1in[p, -1, -1] \
-                                  + hr2d[p, -1, -1, 0] * Drin[p, -1, -1]
+    D2d[p, -1, -1] = h22d_D2[p, -1, -1] * D2in[p, -1, -1] \
+                                  + h12d_D1[p, -1, -1] * D1in[p, -1, -1] \
+                                  + hr2d_Dr[p, -1, -1] * Drin[p, -1, -1]
 
 def compute_E_aux(p, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -1095,6 +1475,150 @@ def cov_to_contra_E(p, Drin, D1in, D2in):
                                   + hr2u[p, -1, -1, 0] * Drin[p, -1, -1]
 
 
+# def contra_to_cov_B(p, Brin, B1in, B2in):
+
+#     ########
+#     # Br
+#     ########
+
+#     # Interior
+#     Brd[p, 1:-1, 1:-1] = hrrd[p, :-1, :-1, 3] * Brin[p, 1:-1, 1:-1] \
+#                                       + 0.5 * hr1d[p, :-1, :-1, 3] * (B1in[p, 1:, 1:-1] + N.roll(B1in, 1, axis = 1)[p, 1:, 1:-1]) \
+#                                       + 0.5 * hr2d[p, :-1, :-1, 3] * (B2in[p, 1:-1, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-1, 1:])
+
+#     # Left edge
+#     Brd[p, 0, 1:-1] = hrrd[p, 0, :-1, 2] * Brin[p, 0, 1:-1] \
+#                                       + hr1d[p, 0, :-1, 2] * B1in[p, 0, 1:-1] \
+#                                       + 0.5 * hr2d[p, 0, :-1, 2] * (B2in[p, 0, 1:] + N.roll(B2in, 1, axis = 2)[p, 0, 1:])
+
+#     # Right edge
+#     Brd[p, -1, 1:-1] = hrrd[p, -1, :-1, 2] * Brin[p, -1, 1:-1] \
+#                                       + hr1d[p, -1, :-1, 2] * B1in[p, -1, 1:-1] \
+#                                       + 0.5 * hr2d[p, -1, :-1, 2] * (B2in[p, -1, 1:] + N.roll(B2in, 1, axis = 2)[p, -1, 1:])
+#     # Bottom edge
+#     Brd[p, 1:-1, 0] = hrrd[p, :-1, 0, 1] * Brin[p, 1:-1, 0] \
+#                                       + 0.5 * hr1d[p, :-1, 0, 1] * (B1in[p, 1:, 0] + N.roll(B1in, 1, axis = 1)[p, 1:, 0]) \
+#                                       + hr2d[p, :-1, 0, 1] * B2in[p, 1:-1, 0]
+#     # Top edge
+#     Brd[p, 1:-1, -1] = hrrd[p, :-1, -1, 1] * Brin[p, 1:-1, -1] \
+#                                       + 0.5 * hr1d[p, :-1, -1, 1] * (B1in[p, 1:, -1] + N.roll(B1in, 1, axis = 1)[p, 1:, -1]) \
+#                                       + hr2d[p, :-1, -1, 1] * B2in[p, 1:-1, -1]
+                                      
+#     # Bottom-left corner
+#     Brd[p, 0, 0] = hrrd[p, 0, 0, 0] * Brin[p, 0, 0] \
+#                                 + hr1d[p, 0, 0, 0] * B1in[p, 0, 0] \
+#                                 + hr2d[p, 0, 0, 0] * B2in[p, 0, 0]
+#     # Top-left corner
+#     Brd[p, 0, -1] = hrrd[p, 0, -1, 0] * Brin[p, 0, -1] \
+#                                  + hr1d[p, 0, -1, 0] * B1in[p, 0, -1] \
+#                                  + hr2d[p, 0, -1, 0] * B2in[p, 0, -1]
+#     # Bottom-right corner
+#     Brd[p, -1, 0] = hrrd[p, -1, 0, 0] * Brin[p, -1, 0] \
+#                                  + hr1d[p, -1, 0, 0] * B1in[p, -1, 0] \
+#                                  + hr2d[p, -1, 0, 0] * B2in[p, -1, 0]
+#     # Top-right corner
+#     Brd[p, -1, -1] = hrrd[p, -1, -1, 0] * Brin[p, -1, -1] \
+#                                   + hr1d[p, -1, -1, 0] * B1in[p, -1, -1] \
+#                                   + hr2d[p, -1, -1, 0] * B2in[p, -1, -1]
+
+#     ########
+#     # Bxi
+#     ########
+
+#     # B1d[p, 1:-1, 1:-1] = (h11d_B1*B1in)[p, 1:-1, 1:-1] \
+#     #                     + 0.25 * (h12d_B2[p, 1:-2, 1:]  * (B2in[p, 1:-2, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-2, 1:]) \
+#     #                     +  N.roll(h12d_B2, -1, axis = 1)[p, 1:-2, 1:] * N.roll((B2in + N.roll(B2in, 1, axis = 2)), -1, axis = 1)[p, 1:-2, 1:]) \
+#     #                     + hr1d_B1[p, 1:-1, 1:-1] * 0.5 * ((Brin)[p, 1:-2, 1:-1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 1:-1])
+
+
+#     # Interior
+#     B1d[p, 1:-1, 1:-1] = h11d[p, 1:-1, :-1, 2] * B1in[p, 1:-1, 1:-1] \
+#                                       + 0.25 * h12d[p, 1:-1, :-1, 2] * (B2in[p, 1:-2, 1:] + N.roll(N.roll(B2in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
+#                                                                                     +  N.roll(B2in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-2, 1:]) \
+#                                       + 0.5 * hr1d[p, 1:-1, :-1, 2] * (Brin[p, 1:-2, 1:-1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 1:-1])
+
+#     # Left edge
+#     B1d[p, 0, 1:-1] = h11d[p, 0, :-1, 2] * B1in[p, 0, 1:-1] \
+#                                    + 0.5 * h12d[p, 0, :-1, 2] * (B2in[p, 0, 1:] + N.roll(B2in, 1, axis = 2)[p, 0, 1:]) \
+#                                    + hr1d[p, 0, :-1, 2] * Brin[p, 0, 1:-1]
+#     # Right edge
+#     B1d[p, -1, 1:-1] = h11d[p, -1, :-1, 2] * B1in[p, -1, 1:-1] \
+#                                    + 0.5 * h12d[p, -1, :-1, 2] * (B2in[p, -1, 1:] + N.roll(B2in, 1, axis = 2)[p, -1, 1:]) \
+#                                    + hr1d[p, -1, :-1, 2] * Brin[p, -1, 1:-1]
+#     # Bottom edge
+#     B1d[p, 1:-1, 0] = h11d[p, 1:-1, 0, 0] * B1in[p, 1:-1, 0] \
+#                                    + 0.5 * h12d[p, 1:-1, 0, 0] * (B2in[p, 1:-2, 0] + N.roll(B2in, -1, axis = 1)[p, 1:-2, 0]) \
+#                                    + 0.5 * hr1d[p, 1:-1, 0, 0] * (Brin[p, 1:-2, 0] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 0])
+#     # Top edge
+#     B1d[p, 1:-1, -1] = h11d[p, 1:-1, -1, 0] * B1in[p, 1:-1, -1] \
+#                                     + 0.5 * h12d[p, 1:-1, -1, 0] * (B2in[p, 1:-2, -1] + N.roll(B2in, -1, axis = 1)[p, 1:-2, -1]) \
+#                                     + 0.5 * hr1d[p, 1:-1, -1, 0] * (Brin[p, 1:-2, -1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, -1])
+
+#     # Bottom-left corner
+#     B1d[p, 0, 0] = h11d[p, 0, 0, 0] * B1in[p, 0, 0] \
+#                                 + h12d[p, 0, 0, 0] * B2in[p, 0, 0] \
+#                                 + hr1d[p, 0, 0, 0] * Brin[p, 0, 0]
+#     # Top-left corner
+#     B1d[p, 0, -1] = h11d[p, 0, -1, 0] * B1in[p, 0, -1] \
+#                                  + h12d[p, 0, -1, 0] * B2in[p, 0, -1] \
+#                                  + hr1d[p, 0, -1, 0] * Brin[p, 0, -1]
+#     # Bottom-right corner
+#     B1d[p, -1, 0] = h11d[p, -1, 0, 0] * B1in[p, -1, 0] \
+#                                  + h12d[p, -1, 0, 0] * B2in[p, -1, 0] \
+#                                  + hr1d[p, -1, 0, 0] * Brin[p, -1, 0]
+#     # Top-right corner
+#     B1d[p, -1, -1] = h11d[p, -1, -1, 0] * B1in[p, -1, -1] \
+#                                   + h12d[p, -1, -1, 0] * B2in[p, -1, -1] \
+#                                   + hr1d[p, -1, -1, 0] * Brin[p, -1, -1]
+
+#     ########
+#     # Beta
+#     ########
+
+#     # B2d[p, 1:-1, 1:-1] = (h22d_B2*B2in)[p, 1:-1, 1:-1] \
+#     #                     + 0.25 * (h12d_B1[p, 1:, 1:-2] * (B1in[p, 1:, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 1:, 1:-2]) \
+#     #                     + N.roll(h12d_B1, 1, axis = 1)[p, 1:, 1:-2] * N.roll((B1in + N.roll(B1in, -1, axis = 2)), 1, axis = 1)[p, 1:, 1:-2]) \
+#     #                     + hr2d_B2[p, 1:-1, 1:-1] * 0.5 * ((Brin)[p, 1:-1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 1:-1, 1:-2])
+
+#     # Interior
+#     B2d[p, 1:-1, 1:-1] = h22d[p, :-1, 1:-1, 1] * B2in[p, 1:-1, 1:-1] \
+#                                       + 0.25 * h12d[p, :-1, 1:-1, 1] * (B1in[p, 1:, 1:-2] + N.roll(N.roll(B1in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
+#                                                                                      + N.roll(B1in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 1:, 1:-2]) \
+#                                       + 0.5 * hr2d[p, :-1, 1:-1, 1] * (Brin[p, 1:-1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 1:-1, 1:-2])
+
+#     # Left edge
+#     B2d[p, 0, 1:-1] = h22d[p, 0, 1:-1, 0] * B2in[p, 0, 1:-1] \
+#                                    + 0.5 * h12d[p, 0, 1:-1, 0] * (B1in[p, 0, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 0, 1:-2]) \
+#                                    + 0.5 * hr2d[p, 0, 1:-1, 0] * (Brin[p, 0, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 0, 1:-2])
+#     # Right edge
+#     B2d[p, -1, 1:-1] = h22d[p, -1, 1:-1, 0] * B2in[p, -1, 1:-1] \
+#                                     + 0.5 * h12d[p, -1, 1:-1, 0] * (B1in[p, -1, 1:-2] + N.roll(B1in, -1, axis = 2)[p, -1, 1:-2]) \
+#                                     + 0.5 * hr2d[p, -1, 1:-1, 0] * (Brin[p, -1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, -1, 1:-2])
+#     # Bottom edge
+#     B2d[p, 1:-1, 0] = h22d[p, :-1, 0, 1] * B2in[p, 1:-1, 0] \
+#                                    + 0.5 * h12d[p, :-1, 0, 1] * (B1in[p, 1:, 0] + N.roll(B1in, 1, axis = 1)[p, 1:, 0]) \
+#                                    + hr2d[p, :-1, 0, 1] * Brin[p, 1:-1, 0]
+#     # Top edge
+#     B2d[p, 1:-1, -1] = h22d[p, :-1, -1, 1] * B2in[p, 1:-1, -1] \
+#                                    + 0.5 * h12d[p, :-1, -1, 1] * (B1in[p, 1:, -1] + N.roll(B1in, 1, axis = 1)[p, 1:, -1]) \
+#                                    + hr2d[p, :-1, -1, 1] * Brin[p, 1:-1, -1]
+#     # Bottom-left corner
+#     B2d[p, 0, 0] = h22d[p, 0, 0, 0] * B2in[p, 0, 0] \
+#                                 + h12d[p, 0, 0, 0] * B1in[p, 0, 0] \
+#                                 + hr2d[p, 0, 0, 0] * Brin[p, 0, 0]
+#     # Top-left corner
+#     B2d[p, 0, -1] = h22d[p, 0, -1, 0] * B2in[p, 0, -1] \
+#                                  + h12d[p, 0, -1, 0] * B1in[p, 0, -1] \
+#                                  + hr2d[p, 0, -1, 0] * Brin[p, 0, -1]
+#     # Bottom-right corner
+#     B2d[p, -1, 0] = h22d[p, -1, 0, 0] * B2in[p, -1, 0] \
+#                                  + h12d[p, -1, 0, 0] * B1in[p, -1, 0] \
+#                                  + hr2d[p, -1, 0, 0] * Brin[p, -1, 0]
+#     # Top-right corner
+#     B2d[p, -1, -1] = h22d[p, -1, -1, 0] * B2in[p, -1, -1] \
+#                                   + h12d[p, -1, -1, 0] * B1in[p, -1, -1] \
+#                                   + hr2d[p, -1, -1, 0] * Brin[p, -1, -1]
+
 def contra_to_cov_B(p, Brin, B1in, B2in):
 
     ########
@@ -1102,129 +1626,141 @@ def contra_to_cov_B(p, Brin, B1in, B2in):
     ########
 
     # Interior
-    Brd[p, 1:-1, 1:-1] = hrrd[p, :-1, :-1, 3] * Brin[p, 1:-1, 1:-1] \
-                                      + 0.5 * hr1d[p, :-1, :-1, 3] * (B1in[p, 1:, 1:-1] + N.roll(B1in, 1, axis = 1)[p, 1:, 1:-1]) \
-                                      + 0.5 * hr2d[p, :-1, :-1, 3] * (B2in[p, 1:-1, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-1, 1:])
+    Brd[p, 1:-1, 1:-1] = (hrrd_Br*Brin)[p, 1:-1, 1:-1] \
+                                      + 0.5 * ((hr1d_B1*B1in)[p, 1:, 1:-1] + N.roll(hr1d_B1*B1in, 1, axis = 1)[p, 1:, 1:-1]) \
+                                      + 0.5 * ((hr2d_B2*B2in)[p, 1:-1, 1:] + N.roll(hr2d_B2*B2in, 1, axis = 2)[p, 1:-1, 1:])
 
     # Left edge
-    Brd[p, 0, 1:-1] = hrrd[p, 0, :-1, 2] * Brin[p, 0, 1:-1] \
-                                      + hr1d[p, 0, :-1, 2] * B1in[p, 0, 1:-1] \
-                                      + 0.5 * hr2d[p, 0, :-1, 2] * (B2in[p, 0, 1:] + N.roll(B2in, 1, axis = 2)[p, 0, 1:])
+    Brd[p, 0, 1:-1] = (hrrd_Br*Brin)[p, 0, 1:-1] \
+                                      + (hr1d_B1*B1in)[p, 0, 1:-1] \
+                                      + 0.5 * ((hr2d_B2*B2in)[p, 0, 1:] + N.roll(hr2d_B2*B2in, 1, axis = 2)[p, 0, 1:])
 
     # Right edge
-    Brd[p, -1, 1:-1] = hrrd[p, -1, :-1, 2] * Brin[p, -1, 1:-1] \
-                                      + hr1d[p, -1, :-1, 2] * B1in[p, -1, 1:-1] \
-                                      + 0.5 * hr2d[p, -1, :-1, 2] * (B2in[p, -1, 1:] + N.roll(B2in, 1, axis = 2)[p, -1, 1:])
+    Brd[p, -1, 1:-1] = (hrrd_Br*Brin)[p, -1, 1:-1] \
+                                      + (hr1d_B1*B1in)[p, -1, 1:-1] \
+                                      + 0.5 * ((hr2d_B2*B2in)[p, -1, 1:] + N.roll(hr2d_B2*B2in, 1, axis = 2)[p, -1, 1:])
     # Bottom edge
-    Brd[p, 1:-1, 0] = hrrd[p, :-1, 0, 1] * Brin[p, 1:-1, 0] \
-                                      + 0.5 * hr1d[p, :-1, 0, 1] * (B1in[p, 1:, 0] + N.roll(B1in, 1, axis = 1)[p, 1:, 0]) \
-                                      + hr2d[p, :-1, 0, 1] * B2in[p, 1:-1, 0]
+    Brd[p, 1:-1, 0] = (hrrd_Br*Brin)[p, 1:-1, 0] \
+                                      + 0.5 * ((hr1d_B1*B1in)[p, 1:, 0] + N.roll(hr1d_B1*B1in, 1, axis = 1)[p, 1:, 0]) \
+                                      + (hr2d_B2*B2in)[p, 1:-1, 0]
     # Top edge
-    Brd[p, 1:-1, -1] = hrrd[p, :-1, -1, 1] * Brin[p, 1:-1, -1] \
-                                      + 0.5 * hr1d[p, :-1, -1, 1] * (B1in[p, 1:, -1] + N.roll(B1in, 1, axis = 1)[p, 1:, -1]) \
-                                      + hr2d[p, :-1, -1, 1] * B2in[p, 1:-1, -1]
+    Brd[p, 1:-1, -1] = (hrrd_Br*Brin)[p, 1:-1, -1] \
+                                      + 0.5 * ((hr1d_B1*B1in)[p, 1:, -1] + N.roll(hr1d_B1*B1in, 1, axis = 1)[p, 1:, -1]) \
+                                      + (hr2d_B2*B2in)[p, 1:-1, -1]
                                       
     # Bottom-left corner
-    Brd[p, 0, 0] = hrrd[p, 0, 0, 0] * Brin[p, 0, 0] \
-                                + hr1d[p, 0, 0, 0] * B1in[p, 0, 0] \
-                                + hr2d[p, 0, 0, 0] * B2in[p, 0, 0]
+    Brd[p, 0, 0] = hrrd_Br[p, 0, 0] * Brin[p, 0, 0] \
+                                + hr1d_B1[p, 0, 0] * B1in[p, 0, 0] \
+                                + hr2d_B2[p, 0, 0] * B2in[p, 0, 0]
     # Top-left corner
-    Brd[p, 0, -1] = hrrd[p, 0, -1, 0] * Brin[p, 0, -1] \
-                                 + hr1d[p, 0, -1, 0] * B1in[p, 0, -1] \
-                                 + hr2d[p, 0, -1, 0] * B2in[p, 0, -1]
+    Brd[p, 0, -1] = hrrd_Br[p, 0, -1] * Brin[p, 0, -1] \
+                                 + hr1d_B1[p, 0, -1] * B1in[p, 0, -1] \
+                                 + hr2d_B2[p, 0, -1] * B2in[p, 0, -1]
     # Bottom-right corner
-    Brd[p, -1, 0] = hrrd[p, -1, 0, 0] * Brin[p, -1, 0] \
-                                 + hr1d[p, -1, 0, 0] * B1in[p, -1, 0] \
-                                 + hr2d[p, -1, 0, 0] * B2in[p, -1, 0]
+    Brd[p, -1, 0] = hrrd_Br[p, -1, 0] * Brin[p, -1, 0] \
+                                 + hr1d_B1[p, -1, 0] * B1in[p, -1, 0] \
+                                 + hr2d_B2[p, -1, 0] * B2in[p, -1, 0]
     # Top-right corner
-    Brd[p, -1, -1] = hrrd[p, -1, -1, 0] * Brin[p, -1, -1] \
-                                  + hr1d[p, -1, -1, 0] * B1in[p, -1, -1] \
-                                  + hr2d[p, -1, -1, 0] * B2in[p, -1, -1]
+    Brd[p, -1, -1] = hrrd_Br[p, -1, -1] * Brin[p, -1, -1] \
+                                  + hr1d_B1[p, -1, -1] * B1in[p, -1, -1] \
+                                  + hr2d_B2[p, -1, -1] * B2in[p, -1, -1]
 
     ########
     # Bxi
     ########
 
     # Interior
-    B1d[p, 1:-1, 1:-1] = h11d[p, 1:-1, :-1, 2] * B1in[p, 1:-1, 1:-1] \
-                                      + 0.25 * h12d[p, 1:-1, :-1, 2] * (B2in[p, 1:-2, 1:] + N.roll(N.roll(B2in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
-                                                                                    +  N.roll(B2in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-2, 1:]) \
-                                      + 0.5 * hr1d[p, 1:-1, :-1, 2] * (Brin[p, 1:-2, 1:-1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 1:-1])
+    B1d[p, 1:-1, 1:-1] = (h11d_B1*B1in)[p, 1:-1, 1:-1] \
+                                      + 0.25 * ((h12d_B2*B2in)[p, 1:-2, 1:] + N.roll(N.roll(h12d_B2*B2in, -1, axis = 1), 1, axis = 2)[p, 1:-2, 1:] \
+                                                                                    +  N.roll(h12d_B2*B2in, -1, axis = 1)[p, 1:-2, 1:] + N.roll(h12d_B2*B2in, 1, axis = 2)[p, 1:-2, 1:]) \
+                                      + 0.5 * ((hr1d_Br*Brin)[p, 1:-2, 1:-1] + N.roll(hr1d_Br*Brin, -1, axis = 1)[p, 1:-2, 1:-1])
+
+    # B1d[p, 1:-1, 1:-1] = (h11d_B1*B1in)[p, 1:-1, 1:-1] \
+    #                     + 0.25 * (h12d_B2[p, 1:-2, 1:]  * (B2in[p, 1:-2, 1:] + N.roll(B2in, 1, axis = 2)[p, 1:-2, 1:]) \
+    #                     +  N.roll(h12d_B2, -1, axis = 1)[p, 1:-2, 1:] * N.roll((B2in + N.roll(B2in, 1, axis = 2)), -1, axis = 1)[p, 1:-2, 1:]) \
+    #                     + hr1d_B1[p, 1:-1, 1:-1] * 0.5 * ((Brin)[p, 1:-2, 1:-1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 1:-1])
+
     # Left edge
-    B1d[p, 0, 1:-1] = h11d[p, 0, :-1, 2] * B1in[p, 0, 1:-1] \
-                                   + 0.5 * h12d[p, 0, :-1, 2] * (B2in[p, 0, 1:] + N.roll(B2in, 1, axis = 2)[p, 0, 1:]) \
-                                   + hr1d[p, 0, :-1, 2] * Brin[p, 0, 1:-1]
+    B1d[p, 0, 1:-1] = (h11d_B1*B1in)[p, 0, 1:-1] \
+                                   + 0.5 * ((h12d_B2*B2in)[p, 0, 1:] + N.roll(h12d_B2*B2in, 1, axis = 2)[p, 0, 1:]) \
+                                   + (hr1d_Br*Brin)[p, 0, 1:-1]
     # Right edge
-    B1d[p, -1, 1:-1] = h11d[p, -1, :-1, 2] * B1in[p, -1, 1:-1] \
-                                   + 0.5 * h12d[p, -1, :-1, 2] * (B2in[p, -1, 1:] + N.roll(B2in, 1, axis = 2)[p, -1, 1:]) \
-                                   + hr1d[p, -1, :-1, 2] * Brin[p, -1, 1:-1]
+    B1d[p, -1, 1:-1] = (h11d_B1*B1in)[p, -1, 1:-1] \
+                                   + 0.5 * ((h12d_B2*B2in)[p, -1, 1:] + N.roll(h12d_B2*B2in, 1, axis = 2)[p, -1, 1:]) \
+                                   + (hr1d_Br*Brin)[p, -1, 1:-1]
     # Bottom edge
-    B1d[p, 1:-1, 0] = h11d[p, 1:-1, 0, 0] * B1in[p, 1:-1, 0] \
-                                   + 0.5 * h12d[p, 1:-1, 0, 0] * (B2in[p, 1:-2, 0] + N.roll(B2in, -1, axis = 1)[p, 1:-2, 0]) \
-                                   + 0.5 * hr1d[p, 1:-1, 0, 0] * (Brin[p, 1:-2, 0] + N.roll(Brin, -1, axis = 1)[p, 1:-2, 0])
+    B1d[p, 1:-1, 0] = (h11d_B1*B1in)[p, 1:-1, 0] \
+                                   + 0.5 * ((h12d_B2*B2in)[p, 1:-2, 0] + N.roll(h12d_B2*B2in, -1, axis = 1)[p, 1:-2, 0]) \
+                                   + 0.5 * ((hr1d_Br*Brin)[p, 1:-2, 0] + N.roll(hr1d_Br*Brin, -1, axis = 1)[p, 1:-2, 0])
     # Top edge
-    B1d[p, 1:-1, -1] = h11d[p, 1:-1, -1, 0] * B1in[p, 1:-1, -1] \
-                                    + 0.5 * h12d[p, 1:-1, -1, 0] * (B2in[p, 1:-2, -1] + N.roll(B2in, -1, axis = 1)[p, 1:-2, -1]) \
-                                    + 0.5 * hr1d[p, 1:-1, -1, 0] * (Brin[p, 1:-2, -1] + N.roll(Brin, -1, axis = 1)[p, 1:-2, -1])
+    B1d[p, 1:-1, -1] = (h11d_B1*B1in)[p, 1:-1, -1] \
+                                    + 0.5 * ((h12d_B2*B2in)[p, 1:-2, -1] + N.roll(h12d_B2*B2in, -1, axis = 1)[p, 1:-2, -1]) \
+                                    + 0.5 * ((hr1d_Br*Brin)[p, 1:-2, -1] + N.roll(hr1d_Br*Brin, -1, axis = 1)[p, 1:-2, -1])
 
     # Bottom-left corner
-    B1d[p, 0, 0] = h11d[p, 0, 0, 0] * B1in[p, 0, 0] \
-                                + h12d[p, 0, 0, 0] * B2in[p, 0, 0] \
-                                + hr1d[p, 0, 0, 0] * Brin[p, 0, 0]
+    B1d[p, 0, 0] = h11d_B1[p, 0, 0] * B1in[p, 0, 0] \
+                                + h12d_B2[p, 0, 0] * B2in[p, 0, 0] \
+                                + hr1d_Br[p, 0, 0] * Brin[p, 0, 0]
     # Top-left corner
-    B1d[p, 0, -1] = h11d[p, 0, -1, 0] * B1in[p, 0, -1] \
-                                 + h12d[p, 0, -1, 0] * B2in[p, 0, -1] \
-                                 + hr1d[p, 0, -1, 0] * Brin[p, 0, -1]
+    B1d[p, 0, -1] = h11d_B1[p, 0, -1] * B1in[p, 0, -1] \
+                                 + h12d_B2[p, 0, -1] * B2in[p, 0, -1] \
+                                 + hr1d_Br[p, 0, -1] * Brin[p, 0, -1]
     # Bottom-right corner
-    B1d[p, -1, 0] = h11d[p, -1, 0, 0] * B1in[p, -1, 0] \
-                                 + h12d[p, -1, 0, 0] * B2in[p, -1, 0] \
-                                 + hr1d[p, -1, 0, 0] * Brin[p, -1, 0]
+    B1d[p, -1, 0] = h11d_B1[p, -1, 0] * B1in[p, -1, 0] \
+                                 + h12d_B2[p, -1, 0] * B2in[p, -1, 0] \
+                                 + hr1d_Br[p, -1, 0] * Brin[p, -1, 0]
     # Top-right corner
-    B1d[p, -1, -1] = h11d[p, -1, -1, 0] * B1in[p, -1, -1] \
-                                  + h12d[p, -1, -1, 0] * B2in[p, -1, -1] \
-                                  + hr1d[p, -1, -1, 0] * Brin[p, -1, -1]
+    B1d[p, -1, -1] = h11d_B1[p, -1, -1] * B1in[p, -1, -1] \
+                                  + h12d_B2[p, -1, -1] * B2in[p, -1, -1] \
+                                  + hr1d_Br[p, -1, -1] * Brin[p, -1, -1]
 
     ########
     # Beta
     ########
 
     # Interior
-    B2d[p, 1:-1, 1:-1] = h22d[p, :-1, 1:-1, 1] * B2in[p, 1:-1, 1:-1] \
-                                      + 0.25 * h12d[p, :-1, 1:-1, 1] * (B1in[p, 1:, 1:-2] + N.roll(N.roll(B1in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
-                                                                                     + N.roll(B1in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 1:, 1:-2]) \
-                                      + 0.5 * hr2d[p, :-1, 1:-1, 1] * (Brin[p, 1:-1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 1:-1, 1:-2])
+    B2d[p, 1:-1, 1:-1] = (h22d_B2*B2in)[p, 1:-1, 1:-1] \
+                                      + 0.25 * ((h12d_B1*B1in)[p, 1:, 1:-2] + N.roll(N.roll(h12d_B1*B1in, 1, axis = 1), -1, axis = 2)[p, 1:, 1:-2] \
+                                                                                     + N.roll(h12d_B1*B1in, 1, axis = 1)[p, 1:, 1:-2] + N.roll(h12d_B1*B1in, -1, axis = 2)[p, 1:, 1:-2]) \
+                                      + 0.5 * ((hr2d_Br*Brin)[p, 1:-1, 1:-2] + N.roll(hr2d_Br*Brin, -1, axis = 2)[p, 1:-1, 1:-2])
+
+    # B2d[p, 1:-1, 1:-1] = (h22d_B2*B2in)[p, 1:-1, 1:-1] \
+    #                     + 0.25 * (h12d_B1[p, 1:, 1:-2] * (B1in[p, 1:, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 1:, 1:-2]) \
+    #                     + N.roll(h12d_B1, 1, axis = 1)[p, 1:, 1:-2] * N.roll((B1in + N.roll(B1in, -1, axis = 2)), 1, axis = 1)[p, 1:, 1:-2]) \
+    #                     + hr2d_B2[p, 1:-1, 1:-1] * 0.5 * ((Brin)[p, 1:-1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 1:-1, 1:-2])
+
     # Left edge
-    B2d[p, 0, 1:-1] = h22d[p, 0, 1:-1, 0] * B2in[p, 0, 1:-1] \
-                                   + 0.5 * h12d[p, 0, 1:-1, 0] * (B1in[p, 0, 1:-2] + N.roll(B1in, -1, axis = 2)[p, 0, 1:-2]) \
-                                   + 0.5 * hr2d[p, 0, 1:-1, 0] * (Brin[p, 0, 1:-2] + N.roll(Brin, -1, axis = 2)[p, 0, 1:-2])
+    B2d[p, 0, 1:-1] = (h22d_B2*B2in)[p, 0, 1:-1] \
+                                   + 0.5 * ((h12d_B1*B1in)[p, 0, 1:-2] + N.roll(h12d_B1*B1in, -1, axis = 2)[p, 0, 1:-2]) \
+                                   + 0.5 * ((hr2d_Br*Brin)[p, 0, 1:-2] + N.roll(hr2d_Br*Brin, -1, axis = 2)[p, 0, 1:-2])
     # Right edge
-    B2d[p, -1, 1:-1] = h22d[p, -1, 1:-1, 0] * B2in[p, -1, 1:-1] \
-                                    + 0.5 * h12d[p, -1, 1:-1, 0] * (B1in[p, -1, 1:-2] + N.roll(B1in, -1, axis = 2)[p, -1, 1:-2]) \
-                                    + 0.5 * hr2d[p, -1, 1:-1, 0] * (Brin[p, -1, 1:-2] + N.roll(Brin, -1, axis = 2)[p, -1, 1:-2])
+    B2d[p, -1, 1:-1] = (h22d_B2*B2in)[p, -1, 1:-1] \
+                                    + 0.5 * ((h12d_B1*B1in)[p, -1, 1:-2] + N.roll(h12d_B1*B1in, -1, axis = 2)[p, -1, 1:-2]) \
+                                    + 0.5 * ((hr2d_Br*Brin)[p, -1, 1:-2] + N.roll(hr2d_Br*Brin, -1, axis = 2)[p, -1, 1:-2])
     # Bottom edge
-    B2d[p, 1:-1, 0] = h22d[p, :-1, 0, 1] * B2in[p, 1:-1, 0] \
-                                   + 0.5 * h12d[p, :-1, 0, 1] * (B1in[p, 1:, 0] + N.roll(B1in, 1, axis = 1)[p, 1:, 0]) \
-                                   + hr2d[p, :-1, 0, 1] * Brin[p, 1:-1, 0]
+    B2d[p, 1:-1, 0] = (h22d_B2*B2in)[p, 1:-1, 0] \
+                                   + 0.5 * ((h12d_B1*B1in)[p, 1:, 0] + N.roll(h12d_B1*B1in, 1, axis = 1)[p, 1:, 0]) \
+                                   + (hr2d_Br*Brin)[p, 1:-1, 0]
     # Top edge
-    B2d[p, 1:-1, -1] = h22d[p, :-1, -1, 1] * B2in[p, 1:-1, -1] \
-                                   + 0.5 * h12d[p, :-1, -1, 1] * (B1in[p, 1:, -1] + N.roll(B1in, 1, axis = 1)[p, 1:, -1]) \
-                                   + hr2d[p, :-1, -1, 1] * Brin[p, 1:-1, -1]
+    B2d[p, 1:-1, -1] = (h22d_B2*B2in)[p, 1:-1, -1] \
+                                   + 0.5 * ((h12d_B1*B1in)[p, 1:, -1] + N.roll(h12d_B1*B1in, 1, axis = 1)[p, 1:, -1]) \
+                                   + (hr2d_Br*Brin)[p, 1:-1, -1]
     # Bottom-left corner
-    B2d[p, 0, 0] = h22d[p, 0, 0, 0] * B2in[p, 0, 0] \
-                                + h12d[p, 0, 0, 0] * B1in[p, 0, 0] \
-                                + hr2d[p, 0, 0, 0] * Brin[p, 0, 0]
+    B2d[p, 0, 0] = h22d_B2[p, 0, 0] * B2in[p, 0, 0] \
+                                + h12d_B1[p, 0, 0] * B1in[p, 0, 0] \
+                                + hr2d_Br[p, 0, 0] * Brin[p, 0, 0]
     # Top-left corner
-    B2d[p, 0, -1] = h22d[p, 0, -1, 0] * B2in[p, 0, -1] \
-                                 + h12d[p, 0, -1, 0] * B1in[p, 0, -1] \
-                                 + hr2d[p, 0, -1, 0] * Brin[p, 0, -1]
+    B2d[p, 0, -1] = h22d_B2[p, 0, -1] * B2in[p, 0, -1] \
+                                 + h12d_B1[p, 0, -1] * B1in[p, 0, -1] \
+                                 + hr2d_Br[p, 0, -1] * Brin[p, 0, -1]
     # Bottom-right corner
-    B2d[p, -1, 0] = h22d[p, -1, 0, 0] * B2in[p, -1, 0] \
-                                 + h12d[p, -1, 0, 0] * B1in[p, -1, 0] \
-                                 + hr2d[p, -1, 0, 0] * Brin[p, -1, 0]
+    B2d[p, -1, 0] = h22d_B2[p, -1, 0] * B2in[p, -1, 0] \
+                                 + h12d_B1[p, -1, 0] * B1in[p, -1, 0] \
+                                 + hr2d_Br[p, -1, 0] * Brin[p, -1, 0]
     # Top-right corner
-    B2d[p, -1, -1] = h22d[p, -1, -1, 0] * B2in[p, -1, -1] \
-                                  + h12d[p, -1, -1, 0] * B1in[p, -1, -1] \
-                                  + hr2d[p, -1, -1, 0] * Brin[p, -1, -1]
+    B2d[p, -1, -1] = h22d_B2[p, -1, -1] * B2in[p, -1, -1] \
+                                  + h12d_B1[p, -1, -1] * B1in[p, -1, -1] \
+                                  + hr2d_Br[p, -1, -1] * Brin[p, -1, -1]
 
 def compute_H_aux(p, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -1404,8 +1940,8 @@ def cov_to_contra_H(p, Brin, B1in, B2in):
 # Compute interface terms
 ########
 
-sig_in  = 0.8
-sig_cor = 0.8
+sig_in  = 1.0
+sig_cor = 1.0
 
 def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -1900,33 +2436,37 @@ def interface_D(p0, p1, Drin, D1in, D2in):
 
     top = topology[p0, p1]
     
-    if (top == 'xx'):
-        Drin[p0, -1, i0:i1_int] -= diff_Dru[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
-        Drin[p1, 0, i0:i1_int]  -= diff_Dru[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
+    # if (top == 'xx'):
+    #     Drin[p0, -1, i0:i1_int] -= diff_Dru[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
+    #     Drin[p1, 0, i0:i1_int]  -= diff_Dru[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
         
-        D2in[p0, -1, i0:i1_half] -= diff_D2u[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
-        D2in[p1, 0, i0:i1_half]  -= diff_D2u[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
+    #     D2in[p0, -1, i0:i1_half] -= diff_D2u[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
+    #     D2in[p1, 0, i0:i1_half]  -= diff_D2u[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
 
-    if (top == 'xy'):
-        Drin[p0, -1, i0:i1_int] -= diff_Dru[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
-        Drin[p1, i0:i1_int, 0]  -= diff_Dru[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
+    # if (top == 'xy'):
+    #     Drin[p0, -1, i0:i1_int] -= diff_Dru[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
+    #     Drin[p1, i0:i1_int, 0]  -= diff_Dru[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
 
-        D2in[p0, -1, i0:i1_half] -= diff_D2u[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
-        D1in[p1, i0:i1_half, 0]  -= diff_D1u[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
+    #     D2in[p0, -1, i0:i1_half] -= diff_D2u[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
+    #     D1in[p1, i0:i1_half, 0]  -= diff_D1u[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
 
-    if (top == 'yy'):
-        Drin[p0, i0:i1_int, -1] -= diff_Dru[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
-        Drin[p1, i0:i1_int, 0]  -= diff_Dru[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
+    # if (top == 'yy'):
+    #     Drin[p0, i0:i1_int, -1] -= diff_Dru[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
+    #     Drin[p1, i0:i1_int, 0]  -= diff_Dru[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
 
-        D1in[p0, i0:i1_half, -1] -= diff_D1u[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
-        D1in[p1, i0:i1_half, 0]  -= diff_D1u[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
+    #     D1in[p0, i0:i1_half, -1] -= diff_D1u[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
+    #     D1in[p1, i0:i1_half, 0]  -= diff_D1u[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
 
-    if (top == 'yx'):
-        Drin[p0, i0:i1_int, -1] -= diff_Dru[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
-        Drin[p1, 0, i0:i1_int]  -= diff_Dru[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
+    # if (top == 'yx'):
+    #     Drin[p0, i0:i1_int, -1] -= diff_Dru[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
+    #     Drin[p1, 0, i0:i1_int]  -= diff_Dru[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
 
-        D1in[p0, i0:i1_half, -1] -= diff_D1u[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
-        D2in[p1, 0, i0:i1_half]  -= diff_D2u[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
+    #     D1in[p0, i0:i1_half, -1] -= diff_D1u[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
+    #     D2in[p1, 0, i0:i1_half]  -= diff_D2u[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
+
+    Drin[p0, :, :] -= diff_Dru[p0, :, :]
+    D1in[p0, :, :] -= diff_D1u[p0, :, :]
+    D2in[p0, :, :] -= diff_D2u[p0, :, :]
 
 def corners_D(p0, Drin, D1in, D2in):
     
@@ -2127,8 +2667,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
         Br_1 = Brin[p1, :, 0]
         B2_1 = B2in[p1, :, 0]
 
-        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_half**2 * h11u_half)[p1, :, loc.bottom] + Br_1 - hr2u_half[p1, :, loc.bottom] / h22u_half[p1, :, loc.bottom] * B2_1)
-        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_half**2 * h11u_half)[p1, :, loc.bottom] + Br_0 - hr2u_half[p1, :, loc.bottom] / h22u_half[p1, :, loc.bottom] * B2_0)
+        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_half**2 * h22u_half)[p1, :, loc.bottom] + Br_1 - hr2u_half[p1, :, loc.bottom] / h22u_half[p1, :, loc.bottom] * B2_1)
+        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_half**2 * h22u_half)[p1, :, loc.bottom] + Br_0 - hr2u_half[p1, :, loc.bottom] / h22u_half[p1, :, loc.bottom] * B2_0)
         
         diff_Bru[p1, :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_1 / dxi / P_half_2[0]
 
@@ -2486,33 +3026,38 @@ def interface_B(p0, p1, Brin, B1in, B2in):
 
     top = topology[p0, p1]
     
-    if (top == 'xx'):
-        Brin[p0, -1, i0:i1_half] -= diff_Bru[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
-        Brin[p1, 0, i0:i1_half]  -= diff_Bru[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
+    # if (top == 'xx'):
+    #     Brin[p0, -1, i0:i1_half] -= diff_Bru[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
+    #     Brin[p1, 0, i0:i1_half]  -= diff_Bru[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
 
-        B2in[p0, -1, i0:i1_int] -= diff_B2u[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
-        B2in[p1, 0, i0:i1_int]  -= diff_B2u[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
+    #     B2in[p0, -1, i0:i1_int] -= diff_B2u[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
+    #     B2in[p1, 0, i0:i1_int]  -= diff_B2u[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
 
-    if (top == 'xy'):
-        Brin[p0, -1, i0:i1_half] -= diff_Bru[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
-        Brin[p1, i0:i1_half, 0]  -= diff_Bru[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
+    # if (top == 'xy'):
+    #     Brin[p0, -1, i0:i1_half] -= diff_Bru[p0, -1, i0:i1_half] #/ sqrt_det_h_half[p0, i0:i1_half, loc.right]
+    #     Brin[p1, i0:i1_half, 0]  -= diff_Bru[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
 
-        B2in[p0, -1, i0:i1_int] -= diff_B2u[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
-        B1in[p1, i0:i1_int, 0]  -= diff_B1u[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
+    #     B2in[p0, -1, i0:i1_int] -= diff_B2u[p0, -1, i0:i1_int] #/ sqrt_det_h_int[p0, i0:i1_int, loc.right]
+    #     B1in[p1, i0:i1_int, 0]  -= diff_B1u[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
 
-    if (top == 'yy'):
-        Brin[p0, i0:i1_half, -1] -= diff_Bru[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
-        Brin[p1, i0:i1_half, 0]  -= diff_Bru[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
+    # if (top == 'yy'):
+    #     Brin[p0, i0:i1_half, -1] -= diff_Bru[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
+    #     Brin[p1, i0:i1_half, 0]  -= diff_Bru[p1, i0:i1_half, 0]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.bottom]
 
-        B1in[p0, i0:i1_int, -1] -= diff_B1u[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
-        B1in[p1, i0:i1_int, 0]  -= diff_B1u[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
+    #     B1in[p0, i0:i1_int, -1] -= diff_B1u[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
+    #     B1in[p1, i0:i1_int, 0]  -= diff_B1u[p1, i0:i1_int, 0]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.bottom]
 
-    if (top == 'yx'):
-        Brin[p0, i0:i1_half, -1] -= diff_Bru[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
-        Brin[p1, 0, i0:i1_half]  -= diff_Bru[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
+    # if (top == 'yx'):
+    #     Brin[p0, i0:i1_half, -1] -= diff_Bru[p0, i0:i1_half, -1] #/ sqrt_det_h_half[p0, i0:i1_half, loc.top]
+    #     Brin[p1, 0, i0:i1_half]  -= diff_Bru[p1, 0, i0:i1_half]  #/ sqrt_det_h_half[p1, i0:i1_half, loc.left]
 
-        B1in[p0, i0:i1_int, -1] -= diff_B1u[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
-        B2in[p1, 0, i0:i1_int]  -= diff_B2u[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
+    #     B1in[p0, i0:i1_int, -1] -= diff_B1u[p0, i0:i1_int, -1] #/ sqrt_det_h_int[p0, i0:i1_int, loc.top]
+    #     B2in[p1, 0, i0:i1_int]  -= diff_B2u[p1, 0, i0:i1_int]  #/ sqrt_det_h_int[p1, i0:i1_int, loc.left]
+
+    Brin[p0, :, :] -= diff_Bru[p0, :, :]
+    B1in[p0, :, :] -= diff_B1u[p0, :, :]
+    B2in[p0, :, :] -= diff_B2u[p0, :, :]
+
 
 def corners_B(p0, Brin, B1in, B2in):
 
@@ -2542,11 +3087,13 @@ def penalty_edges_D(dtin, Drin, D1in, D2in, Brin, B1in, B2in, Drout, D1out, D2ou
         p0, p1 = index_row[i], index_col[i]
         compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
-        interface_D(p0, p1, Drout, D1out, D2out)
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     interface_D(p0, p1, Drout, D1out, D2out)
 
-    corners_D(patches, Drout, D1out, D2out)
+    interface_D(patches, 0, Drout, D1out, D2out)
+
+    # corners_D(patches, Drout, D1out, D2out)
 
 def penalty_edges_B(dtin, Drin, D1in, D2in, Brin, B1in, B2in, Brout, B1out, B2out):
 
@@ -2558,11 +3105,13 @@ def penalty_edges_B(dtin, Drin, D1in, D2in, Brin, B1in, B2in, Brout, B1out, B2ou
         p0, p1 = index_row[i], index_col[i]
         compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in)
 
-    for i in range(n_zeros):
-        p0, p1 = index_row[i], index_col[i]
-        interface_B(p0, p1, Brout, B1out, B2out)
+    # for i in range(n_zeros):
+    #     p0, p1 = index_row[i], index_col[i]
+    #     interface_B(p0, p1, Brout, B1out, B2out)
+    
+    interface_B(patches, 0, Brout, B1out, B2out)
 
-    corners_B(patches, Brout, B1out, B2out)
+    # corners_B(patches, Brout, B1out, B2out)
 
 ########
 # Define initial data
@@ -2797,7 +3346,7 @@ def plot_unfolded_metric(field):
 
 idump = 0
 
-Nt = 20000 # Number of iterations
+Nt = 35000 # Number of iterations
 FDUMP = 100 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
@@ -2809,17 +3358,38 @@ Dru0[:, :, :] = Dru[:, :, :]
 D1u0[:, :, :] = D1u[:, :, :]
 D2u0[:, :, :] = D2u[:, :, :]
 
+Bru1[:, :, :] = Bru[:, :, :]
+B1u1[:, :, :] = B1u[:, :, :]
+B2u1[:, :, :] = B2u[:, :, :]
+Dru1[:, :, :] = Dru[:, :, :]
+D1u1[:, :, :] = D1u[:, :, :]
+D2u1[:, :, :] = D2u[:, :, :]
+
+diffBr0=N.zeros_like(diff_Bru)
+diffB10=N.zeros_like(diff_B1u)
+diffB20=N.zeros_like(diff_B2u)
+diffDr0=N.zeros_like(diff_Dru)
+diffD10=N.zeros_like(diff_D1u)
+diffD20=N.zeros_like(diff_D2u)
+
 WriteCoordsHDF5()
 
 ########
 # Main routine
 ########
 
+# # Sasha's version
+# contra_to_cov_D(patches, Dru, D1u, D2u)
+# compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
+
+# contra_to_cov_B(patches, Bru, B1u, B2u)
+# compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
+
 for it in tqdm(range(Nt), "Progression"):
-    
+
     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
     average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru1, D1u1, D2u1)
-    
+
     contra_to_cov_D(patches, Dru1, D1u1, D2u1)
     compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
 
@@ -2829,6 +3399,7 @@ for it in tqdm(range(Nt), "Progression"):
     # # Penalty terms
     # penalty_edges_B(dt, Erd, E1d, E2d, Bru, B1u, B2u, Bru1, B1u1, B2u1)
     # penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru1, B1u1, B2u1)
+    # penalty_edges_B(dt, Drd, D1d, D2d, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
     
     contra_to_cov_D(patches, Dru, D1u, D2u)
     compute_E_aux(patches, Drd, D1d, D2d, Bru1, B1u1, B2u1)
@@ -2840,15 +3411,18 @@ for it in tqdm(range(Nt), "Progression"):
     compute_diff_E(patches)
     push_B(patches, Bru, B1u, B2u, dt, it)
 
-    # ##### TEST
-    # contra_to_cov_B(patches, Bru1, B1u1, B2u1)
-    # compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
-    # cov_to_contra_H(patches, Hrd, H1d, H2d)
-
     # # Penalty terms
     # penalty_edges_B(dt, Erd, E1d, E2d, Hru, H1u, H2u, Bru, B1u, B2u)
-    # penalty_edges_B(dt, Drd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
-    penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    # penalty_edges_B(dt, Erd, E1d, E2d, Bru, B1u, B2u, Bru, B1u, B2u)
+
+    # penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru, B1u, B2u)
+
+    for p0 in patches:
+        dissipate_B(p0, dt, Bru, B1u, B2u)
+
+
+    # penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    penalty_edges_B(dt, Erd, E1d, E2d, Bru, B1u, B2u, Bru, B1u, B2u)
 
     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
 
@@ -2860,7 +3434,7 @@ for it in tqdm(range(Nt), "Progression"):
 
     # # Penalty terms
     # penalty_edges_D(dt, Dru, D1u, D2u, Hrd, H1d, H2d, Dru1, D1u1, D2u1)
-    # penalty_edges_D(dt, Dru, D1u, D2u, Brd, B1d, B2d, Dru1, D1u1, D2u1)
+    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
 
     contra_to_cov_B(patches, Bru, B1u, B2u)
     compute_H_aux(patches, Dru1, D1u1, D2u1, Brd, B1d, B2d)
@@ -2868,19 +3442,86 @@ for it in tqdm(range(Nt), "Progression"):
     Dru0[:, :, :] = Dru[:, :, :]
     D1u0[:, :, :] = D1u[:, :, :]
     D2u0[:, :, :] = D2u[:, :, :]
-
+    
     compute_diff_H(patches)
     push_D(patches, Dru, D1u, D2u, dt, it)
 
-    # ##### TEST
-    # contra_to_cov_D(patches, Dru1, D1u1, D2u1)
-    # compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
-    # cov_to_contra_E(patches, Erd, E1d, E2d)
+    for p0 in patches:
+        dissipate_D(p0, dt, Dru, D1u, D2u)
+
+    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
+    penalty_edges_D(dt, Dru, D1u, D2u, Hrd, H1d, H2d, Dru, D1u, D2u)
 
     # # Penalty terms
     # penalty_edges_D(dt, Eru, E1u, E2u, Hrd, H1d, H2d, Dru, D1u, D2u)
-    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
-    penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
+    # penalty_edges_D(dt, Dru, D1u, D2u, Hrd, H1d, H2d, Dru, D1u, D2u)
+
+    # average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru1, D1u1, D2u1)
+
+
+# ######### Sasha's version
+
+#     # # Penalty terms
+#     penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru, B1u, B2u)
+#     penalty_edges_D(dt, Dru, D1u, D2u, Brd, B1d, B2d, Dru, D1u, D2u)
+    
+#     Bru0[:, :, :] = Bru[:, :, :]
+#     B1u0[:, :, :] = B1u[:, :, :]
+#     B2u0[:, :, :] = B2u[:, :, :]
+#     Dru0[:, :, :] = Dru[:, :, :]
+#     D1u0[:, :, :] = D1u[:, :, :]
+#     D2u0[:, :, :] = D2u[:, :, :]
+
+#     compute_diff_E(patches)
+#     push_B(patches, Bru0, B1u0, B2u0, dt, it)
+
+#     compute_diff_H(patches)
+#     push_D(patches, Dru0, D1u0, D2u0, dt, it)
+
+#     # # Penalty terms
+#     # penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru0, B1u0, B2u0)
+#     # penalty_edges_D(dt, Dru, D1u, D2u, Brd, B1d, B2d, Dru0, D1u0, D2u0)
+
+#     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru, B1u, B2u)
+#     average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru, D1u, D2u)
+
+#     contra_to_cov_D(patches, Dru, D1u, D2u)
+#     compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
+
+#     contra_to_cov_B(patches, Bru, B1u, B2u)
+#     compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
+
+#     compute_diff_E(patches)
+#     push_B(patches, Bru0, B1u0, B2u0, dt, it)
+
+#     compute_diff_H(patches)
+#     push_D(patches, Dru0, D1u0, D2u0, dt, it)
+
+#     # # Penalty terms
+#     # penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru0, B1u0, B2u0)
+#     # penalty_edges_D(dt, Dru, D1u, D2u, Brd, B1d, B2d, Dru0, D1u0, D2u0)
+
+#     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru, B1u, B2u)
+#     average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru, D1u, D2u)
+
+#     contra_to_cov_D(patches, Dru, D1u, D2u)
+#     compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
+
+#     contra_to_cov_B(patches, Bru, B1u, B2u)
+#     compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
+
+#     compute_diff_E(patches)
+#     push_B(patches, Bru0, B1u0, B2u0, dt, it)
+
+#     compute_diff_H(patches)
+#     push_D(patches, Dru0, D1u0, D2u0, dt, it)
+    
+#     contra_to_cov_D(patches, Dru, D1u, D2u)
+#     compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
+
+#     contra_to_cov_B(patches, Bru, B1u, B2u)
+#     compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
+
 
     if ((it % FDUMP) == 0):
         plot_fields_unfolded_Br(idump, 0.8)

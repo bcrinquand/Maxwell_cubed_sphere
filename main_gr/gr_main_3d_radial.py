@@ -64,13 +64,13 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl  = 0.4
-Nl0  = 32
-Nxi  = 32
-Neta = 32
+cfl  = 0.4 #0.1 for a=0.99
+Nl0  = 60
+Nxi  = 24
+Neta = 24
 
 # Spin parameter
-a = 0.8
+a = 0.5
 rh = 1.0 + N.sqrt(1.0 - a * a)
 
 Nxi_int   = Nxi + 1  # Number of integer points
@@ -81,7 +81,7 @@ Neta_half = Neta + 2 # NUmber of half-step points
 NG = 1            # Radial ghost cells
 Nl = Nl0 + 2 * NG # Total number of radial points
 
-r_min, r_max     = 0.9 * rh, 2.0 * rh
+r_min, r_max     = 0.85 * rh, 4.0 * rh
 l_min, l_max     = N.log(r_min), N.log(r_max)
 xi_min, xi_max   = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
@@ -177,6 +177,9 @@ diff_D2u = N.zeros((n_patches, Nl, Nxi_int, Neta_half))
 INBr = N.zeros((n_patches, Nl, Nxi_half, Neta_half))
 INB1 = N.zeros((n_patches, Nl, Nxi_int, Neta_half))
 INB2 = N.zeros((n_patches, Nl, Nxi_half,  Neta_int))
+INDr = N.zeros((n_patches, Nl, Nxi_int, Neta_int))
+IND1 = N.zeros((n_patches, Nl, Nxi_half, Neta_int))
+IND2 = N.zeros((n_patches, Nl, Nxi_int,  Neta_half))
 
 ########
 # Dump HDF5 output
@@ -1408,7 +1411,7 @@ def BC_Bd(patch, Brin, B1in, B2in):
 # Compute interface terms
 ########
 
-sig_in  = 2.0
+sig_in  = 1.0
 
 def compute_penalty_D(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
 
@@ -1923,8 +1926,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
         Br_1 = Brin[p1, ir1:ir2,  :, 0]
         B2_1 = interp_ryee_to_r(B2in)[p1, :,  :, 0]
 
-        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_half**2 * h11u_half)[p1, ir1:ir2,  :, loc.bottom] + Br_1 - hl2u_half[p1, ir1:ir2,  :, loc.bottom] / h22u_half[p1, ir1:ir2,  :, loc.bottom] * B2_1)
-        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_half**2 * h11u_half)[p1, ir1:ir2,  :, loc.bottom] + Br_0 - hl2u_half[p1, ir1:ir2,  :, loc.bottom] / h22u_half[p1, ir1:ir2,  :, loc.bottom] * B2_0)
+        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_half**2 * h22u_half)[p1, ir1:ir2,  :, loc.bottom] + Br_1 - hl2u_half[p1, ir1:ir2,  :, loc.bottom] / h22u_half[p1, ir1:ir2,  :, loc.bottom] * B2_1)
+        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_half**2 * h22u_half)[p1, ir1:ir2,  :, loc.bottom] + Br_0 - hl2u_half[p1, ir1:ir2,  :, loc.bottom] / h22u_half[p1, ir1:ir2,  :, loc.bottom] * B2_0)
         
         diff_Bru[p1, ir1:ir2,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_1 / dxi / P_half_2[0]
 
@@ -1963,7 +1966,7 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
         carac_1 = (Dr_1 / N.sqrt(sqrt_det_h_int**2 * h22u_int)[p1, ir1:ir2,  :, loc.bottom] + B1_1 - h12u_int[p1, ir1:ir2,  :, loc.bottom] / h22u_int[p1, ir1:ir2,  :, loc.bottom] * B2_1)
         carac_0 = (Dr_0 / N.sqrt(sqrt_det_h_int**2 * h22u_int)[p1, ir1:ir2,  :, loc.bottom] + B1_0 - h12u_int[p1, ir1:ir2,  :, loc.bottom] / h22u_int[p1, ir1:ir2,  :, loc.bottom] * B2_0)
 
-        diff_B1u[p1, ir1:ir2,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_0 / dxi / P_int_2[0]
+        diff_B1u[p1, ir1:ir2,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_1 / dxi / P_int_2[0]
         
     if (top == 'yx'):
 
@@ -2214,10 +2217,10 @@ def penalty_edges_B(dtin, Drin, D1in, D2in, Brin, B1in, B2in, Brout, B1out, B2ou
 # Absorbing boundary conditions at r_max
 ########
 
-i_abs = 2 # Thickness of absorbing layer in number of cells
+i_abs = 6 # Thickness of absorbing layer in number of cells
 
 r_abs_out = r[Nl - i_abs]
-kappa_out = 10.0 
+kappa_out = 5.0 
 
 delta = ((r - r_abs_out) / (r_max - r_abs_out)) * N.heaviside(r - r_abs_out, 0.0)
 sigma_out = N.exp(- kappa_out * delta**3)
@@ -2225,20 +2228,42 @@ sigma_out = N.exp(- kappa_out * delta**3)
 delta = ((r_yee - r_abs_out) / (r_max - r_abs_out)) * N.heaviside(r_yee - r_abs_out, 0.0)
 sigma_yee_out = N.exp(- kappa_out * delta**3)
 
+r_abs_in = 0.92 * rh
+# r_abs_in = r[i_abs]
+kappa_in = 5.0 
+
+delta = ((r_abs_in - r) / (r_abs_in - r_min)) * N.heaviside(r_abs_in - r, 0.0)
+sigma_in = N.exp(- kappa_in * delta**3)
+
+delta = ((r_abs_in - r_yee) / (r_abs_in - r_min)) * N.heaviside(r_abs_in - r_yee, 0.0)
+sigma_yee_in = N.exp(- kappa_in * delta**3)
+
 def BC_D_absorb(patch, Drin, D1in, D2in):
-    Drin[patch, :, :, :] *= sigma_yee_out[:, None, None]
-    D1in[patch, :, :, :] *= sigma_out[:, None, None]
-    D2in[patch, :, :, :] *= sigma_out[:, None, None]
+    # Drin[patch, :, :, :] *= sigma_yee_out[:, None, None]
+    # D1in[patch, :, :, :] *= sigma_out[:, None, None]
+    # D2in[patch, :, :, :] *= sigma_out[:, None, None]
+    Drin[patch, :, :, :] = INDr[patch, :, :, :] + (Drin[patch, :, :, :] - INDr[patch, :, :, :]) * sigma_yee_out[:, None, None]
+    D1in[patch, :, :, :] = IND1[patch, :, :, :] + (D1in[patch, :, :, :] - IND1[patch, :, :, :]) * sigma_out[:, None, None]
+    D2in[patch, :, :, :] = IND2[patch, :, :, :] + (D2in[patch, :, :, :] - IND2[patch, :, :, :]) * sigma_out[:, None, None]
+    return
+
+def BC_D_absorb_in(patch, Drin, D1in, D2in):
+    Drin[patch, :, :, :] *= sigma_yee_in[:, None, None]
+    D1in[patch, :, :, :] *= sigma_in[:, None, None]
+    D2in[patch, :, :, :] *= sigma_in[:, None, None]
+    return
 
 def BC_B_absorb(patch, Brin, B1in, B2in):
     Brin[patch, :, :, :] = INBr[patch, :, :, :] + (Brin[patch, :, :, :] - INBr[patch, :, :, :]) * sigma_out[:, None, None]
     B1in[patch, :, :, :] = INB1[patch, :, :, :] + (B1in[patch, :, :, :] - INB1[patch, :, :, :]) * sigma_yee_out[:, None, None]
     B2in[patch, :, :, :] = INB2[patch, :, :, :] + (B2in[patch, :, :, :] - INB2[patch, :, :, :]) * sigma_yee_out[:, None, None]
+    return
 
-# def BC_B_absorb(patch, Brin, B1in, B2in):
-#     Brin[patch, :, :, :] *= sigma_out[:, None, None]
-#     B1in[patch, :, :, :] *= sigma_yee_out[:, None, None]
-#     B2in[patch, :, :, :] *= sigma_yee_out[:, None, None]
+def BC_B_absorb_in(patch, Brin, B1in, B2in):
+    # Brin[patch, :, :, :] *= sigma_in[:, None, None]
+    # B1in[patch, :, :, :] *= sigma_yee_in[:, None, None]
+    # B2in[patch, :, :, :] *= sigma_yee_in[:, None, None]
+    return
 
 ########
 # Define initial data
@@ -2257,12 +2282,18 @@ tilt = 0.0 / 180.0 * N.pi
 # Divide by r0 if strecthed metric!
 def func_Br(r0, th0, ph0):
     # return 2.0 * B0 * (N.cos(th0) * N.cos(tilt) + N.sin(th0) * N.sin(ph0) * N.sin(tilt)) / r0**3
-    return B0 * r0 * r0 * N.cos(th0) * N.sin(th0) / sqrtdeth(r0, th0, ph0, a) / r0
+    if (N.sin(th0)<1e-10):
+        return B0 * r0 * r0 * N.cos(th0) / (r0 * r0 + a * a) / r0
+    else:
+        return B0 * r0 * r0 * N.cos(th0) * N.sin(th0) / sqrtdeth(r0, th0, ph0, a) / r0
     # return B0 * N.sin(th0) / sqrtdeth(r0, th0, ph0, a)
 
 def func_Bth(r0, th0, ph0):
 #    return B0 * (N.cos(tilt) * N.sin(th0) - N.cos(th0) * N.sin(ph0) * N.sin(tilt)) / r0**4
-   return - B0 * r0 * N.sin(th0)**2 / sqrtdeth(r0, th0, ph0, a)
+    if (N.sin(th0)<1e-10):
+        return 0.0
+    else:
+       return - B0 * r0 * N.sin(th0)**2 / sqrtdeth(r0, th0, ph0, a)
     # return 0.0
 
 def func_Bph(r0, th0, ph0):
@@ -2298,6 +2329,7 @@ def InitialData():
                     B1u[patch, :, i, j]  = BCStmp[0]
                     INB1[patch, :, i, j] = BCStmp[0]
                     D2u[patch, :, i, j] = 0.0
+                    IND2[patch, :, i, j] = 0.0
 
         for i in range(Nxi_half):
             for j in range(Neta_int):
@@ -2311,8 +2343,73 @@ def InitialData():
                     B2u[patch, :, i, j]  = BCStmp[1]
                     INB2[patch, :, i, j] = BCStmp[1]
                     D1u[patch, :, i, j]  = 0.0
+                    IND1[patch, :, i, j]  = 0.0
 
-        Dru[patch, :, :, :] = 0.0
+        for i in range(Nxi_int):
+            for j in range(Neta_int):
+
+                r0 = r_yee[:]
+                th0, ph0 = fcoord(xi_int[i], eta_int[j])
+                BtTMP = func_Bth(r0, th0, ph0)
+                BpTMP = func_Bph(r0, th0, ph0)
+                BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
+
+                Dru[patch, :, i, j]  = 0.0
+                INDr[patch, :, i, j]  = 0.0
+
+# def InitialData():
+
+#     for patch in range(n_patches):
+
+#         fvec = (globals()["vec_sph_to_" + sphere[patch]])
+#         fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
+
+#         for i in range(Nxi_half):
+#             for j in range(Neta_half):
+
+#                 r0 = r[:]
+#                 th0, ph0 = fcoord(xi_half[i], eta_half[j])
+
+#                 Bru[patch, :, i, j] = 0.0
+#                 INBr[patch,:, i, j] = 0.0
+                    
+#         for i in range(Nxi_int):
+#             for j in range(Neta_half):
+
+#                     r0 = r_yee[:]
+#                     th0, ph0 = fcoord(xi_int[i], eta_half[j])
+#                     BtTMP = func_Bth(r0, th0, ph0)
+#                     BpTMP = func_Bph(r0, th0, ph0)
+#                     BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
+
+#                     B1u[patch, :, i, j]  = 0.0
+#                     INB1[patch, :, i, j] = 0.0
+#                     D2u[patch, :, i, j]  = BCStmp[1]
+#                     IND2[patch, :, i, j] = BCStmp[1]
+
+#         for i in range(Nxi_half):
+#             for j in range(Neta_int):
+
+#                     r0 = r_yee[:]
+#                     th0, ph0 = fcoord(xi_half[i], eta_int[j])
+#                     BtTMP = func_Bth(r0, th0, ph0)
+#                     BpTMP = func_Bph(r0, th0, ph0)
+#                     BCStmp = fvec(th0, ph0, BtTMP, BpTMP)
+
+#                     B2u[patch, :, i, j]  = 0.0 
+#                     INB2[patch, :, i, j] = 0.0
+#                     D1u[patch, :, i, j]  = BCStmp[0]
+#                     IND1[patch, :, i, j] = BCStmp[0]
+
+#         for i in range(Nxi_int):
+#             for j in range(Neta_int):
+
+#                 r0 = r_yee[:]
+#                 th0, ph0 = fcoord(xi_int[i], eta_int[j])
+#                 DrTMP = func_Br(r0, th0, ph0)
+
+#                 Dru[patch, :, i, j]  = DrTMP
+#                 INDr[patch, :, i, j] = DrTMP
 
 InitialData()
 
@@ -2426,7 +2523,7 @@ def plot_fields_unfolded_D2(it, vm, ir):
 
 idump = 0 # Number of iterations
 
-Nt = 40000 # Number of iterations
+Nt = 15000 # Number of iterations
 FDUMP = 50 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
@@ -2446,16 +2543,16 @@ D2u0[:, :, :, :] = D2u[:, :, :, :]
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded_Br(idump, 1.0, 1)
-        plot_fields_unfolded_B1(idump, 1.0, 1)
-        plot_fields_unfolded_B2(idump, 1.0, 1)
-        plot_fields_unfolded_D2(idump, 1.0, 1)
+        plot_fields_unfolded_Br(idump, 2.0, 10)
+        plot_fields_unfolded_B1(idump, 2.0, 10)
+        plot_fields_unfolded_B2(idump, 2.0, 10)
+        plot_fields_unfolded_D2(idump, 2.0, 10)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
     average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru1, D1u1, D2u1)
-    
+
     contra_to_cov_D(patches, Dru1, D1u1, D2u1)
     BC_Dd(patches, Drd, D1d, D2d)
     compute_E_aux(patches, Drd, D1d, D2d, Bru, B1u, B2u)
@@ -2469,11 +2566,17 @@ for it in tqdm(range(Nt), "Progression"):
 
     BC_Bu(patches, Bru1, B1u1, B2u1)
     BC_B_absorb(patches, Bru1, B1u1, B2u1)
+    BC_B_absorb_in(patches, Bru1, B1u1, B2u1)
 
     contra_to_cov_D(patches, Dru, D1u, D2u)
     BC_Dd(patches, Drd, D1d, D2d)
     compute_E_aux(patches, Drd, D1d, D2d, Bru1, B1u1, B2u1)
     BC_Ed(patches, Erd, E1d, E2d)
+
+    # ### USeful??
+    # BC_Du(patches, Erd, E1d, E2d)
+    # BC_D_absorb(patches, Erd, E1d, E2d)
+    # BC_D_absorb_in(patches, Erd, E1d, E2d)
 
     Bru0[:, :, :, :] = Bru[:, :, :, :]
     B1u0[:, :, :, :] = B1u[:, :, :, :]
@@ -2482,12 +2585,14 @@ for it in tqdm(range(Nt), "Progression"):
     compute_diff_E(patches)
     push_B(patches, Bru, B1u, B2u, dt)
 
-    # Penalty terms
+    # # Penalty terms
     penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
-    # penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    # # penalty_edges_B(dt, Erd, E1d, E2d, Bru0, B1u0, B2u0, Bru, B1u, B2u)
+    # # penalty_edges_B(dt, Drd, D1d, D2d, Bru, B1u, B2u, Bru, B1u, B2u)
 
     BC_Bu(patches, Bru, B1u, B2u)
     BC_B_absorb(patches, Bru, B1u, B2u)
+    BC_B_absorb_in(patches, Bru, B1u, B2u)
 
     average_field(patches, Bru, B1u, B2u, Bru0, B1u0, B2u0, Bru1, B1u1, B2u1)
 
@@ -2504,11 +2609,17 @@ for it in tqdm(range(Nt), "Progression"):
 
     BC_Du(patches, Dru1, D1u1, D2u1)
     BC_D_absorb(patches, Dru1, D1u1, D2u1)
+    BC_D_absorb_in(patches, Dru1, D1u1, D2u1)
 
     contra_to_cov_B(patches, Bru, B1u, B2u)
     BC_Bd(patches, Brd, B1d, B2d)
     compute_H_aux(patches, Dru1, D1u1, D2u1, Brd, B1d, B2d)
     BC_Hd(patches, Hrd, H1d, H2d)
+    
+    # ### USeful??
+    # BC_Bu(patches, Hrd, H1d, H2d)
+    # BC_B_absorb(patches, Hrd, H1d, H2d)
+    # BC_B_absorb_in(patches, Hrd, H1d, H2d)
 
     Dru0[:, :, :, :] = Dru[:, :, :, :]
     D1u0[:, :, :, :] = D1u[:, :, :, :]
@@ -2519,7 +2630,9 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Penalty terms
     penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
-    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
+    # penalty_edges_D(dt, Dru, D1u, D2u, Hrd, H1d, H2d, Dru, D1u, D2u)
+    # penalty_edges_D(dt, Dru, D1u, D2u, Brd, B1d, B2d, Dru, D1u, D2u)
 
     BC_Du(patches, Dru, D1u, D2u)
     BC_D_absorb(patches, Dru, D1u, D2u)
+    BC_D_absorb_in(patches, Dru, D1u, D2u)

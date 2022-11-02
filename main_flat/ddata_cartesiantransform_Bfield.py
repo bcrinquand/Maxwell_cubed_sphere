@@ -26,9 +26,9 @@ outdir = '/home/bcrinqua/GitHub/Maxwell_cubed_sphere/data_3d/'
 
 num = sys.argv[1]
 
-ONt = 100
-ONp = 200
-Nxyz = 100
+ONt = 50
+ONp = 50
+Nxyz = 50
 
 n_patches = 6
 # Connect patch indices and names
@@ -311,9 +311,9 @@ Br_tor = BrS[:, int(ONt/2), :]
 Bth_tor = BtS[:, int(ONt/2), :]
 Bph_tor = BpS[:, int(ONt/2), :]
 
-h5f = h5py.File(outdir+'Bsq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-h5f.create_dataset('Bsq', data=Bsq)
-h5f.close()
+#h5f = h5py.File(outdir+'Bsq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+#h5f.create_dataset('Bsq', data=Bsq)
+#h5f.close()
 
 h5f = h5py.File(outdir+'Bxyz'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
 h5f.create_dataset('Bx', data=datax)
@@ -330,11 +330,11 @@ h5f.create_dataset('Bth_tor', data=Bth_tor)
 h5f.create_dataset('Bph_tor', data=Bph_tor)
 h5f.close()
 
-# h5f = h5py.File(outdir+'Brthph_cart'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-# h5f.create_dataset('Br', data=datar)
-# h5f.create_dataset('Bth', data=datat)
-# h5f.create_dataset('Bph', data=datap)
-# h5f.close()
+h5f = h5py.File(outdir+'Brthph_sph'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+h5f.create_dataset('Br', data=BrS)
+h5f.create_dataset('Bth', data=BtS)
+h5f.create_dataset('Bph', data=BpS)
+h5f.close()
 
 h5f = h5py.File(outdir+'grid_xyz.h5', 'w')
 h5f.create_dataset('xpos', data=xi)

@@ -26,9 +26,9 @@ outdir = '/home/bcrinqua/GitHub/Maxwell_cubed_sphere/data_3d/'
 
 num = sys.argv[1]
 
-ONt = 100
-ONp = 200
-Nxyz = 100
+ONt = 50
+ONp = 50
+Nxyz = 50
 
 n_patches = 6
 # Connect patch indices and names
@@ -316,9 +316,9 @@ Er_tor  = ErS[:, int(ONt/2), :]
 Eth_tor = EtS[:, int(ONt/2), :]
 Eph_tor = EpS[:, int(ONt/2), :]
 
-h5f = h5py.File(outdir+'Esq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-h5f.create_dataset('Bsq', data=Esq)
-h5f.close()
+#h5f = h5py.File(outdir+'Esq'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+#h5f.create_dataset('Bsq', data=Esq)
+#h5f.close()
 
 h5f = h5py.File(outdir+'Exyz'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
 h5f.create_dataset('Ex', data=datax)
@@ -335,8 +335,10 @@ h5f.create_dataset('Eth_tor', data=Eth_tor)
 h5f.create_dataset('Eph_tor', data=Eph_tor)
 h5f.close()
 
-# h5f = h5py.File(outdir+'Erthph_cart'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
-# h5f.create_dataset('Er', data=datar)
-# h5f.create_dataset('Eth', data=datat)
-# h5f.create_dataset('Eph', data=datap)
-# h5f.close()
+h5f = h5py.File(outdir+'Erthph_sph'+'_'+ str(num).rjust(5, '0') +'.h5', 'w')
+h5f.create_dataset('Er', data=ErS)
+h5f.create_dataset('Eth', data=EtS)
+h5f.create_dataset('Eph', data=EpS)
+h5f.close()
+
+

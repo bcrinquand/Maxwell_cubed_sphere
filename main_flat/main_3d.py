@@ -58,9 +58,9 @@ n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
 cfl = 0.6
-Nr0 = 60
-Nxi = 64
-Neta = 64
+Nr0 = 50
+Nxi = 50 #32
+Neta = 50 #32
 
 Nxi_int = Nxi + 1 # Number of integer points
 Nxi_half = Nxi + 2 # Number of half-step points
@@ -70,7 +70,7 @@ Neta_half = Neta + 2 # NUmber of half-step points
 NG = 1 # Radial ghost cells
 Nr = Nr0 + 2 * NG # Total number of radial points
 
-r_min, r_max = 1.0, 12.0
+r_min, r_max = 1.0, 15.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
 
@@ -894,13 +894,13 @@ def corners_B(p0):
 # Absorbing boundary conditions at r_max
 ########
 
-i_abs = 5 # Thickness of absorbing layer in number of cells
+i_abs = 8 # Thickness of absorbing layer in number of cells
 r_abs = r[Nr - i_abs]
 delta = ((r - r_abs) / (r_max - r_abs)) * N.heaviside(r - r_abs, 0.0)
-sigma = N.exp(- 10.0 * delta**3)
+sigma = N.exp(- 2.0 * delta**3)
 
 delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
-sigma_yee = N.exp(- 10.0 * delta**3)
+sigma_yee = N.exp(- 2.0 * delta**3)
 
 # def BC_B_absorb(patch):
 #     for k in range(Nr - i_abs, Nr):
@@ -915,9 +915,9 @@ sigma_yee = N.exp(- 10.0 * delta**3)
 #         E2u[patch, k, :, :] *= sigma[k]
 
 def BC_B_absorb(patch):
-    Br[patch, :, :, :]  = Br0[patch, :, :, :] + (Br[patch, :, :, :] - Br0[patch, :, :, :]) * sigma[:, None, None]
-    B1u[patch, :, :, :] = B1u0[patch, :, :, :] + (B1u[patch, :, :, :] - B1u0[patch, :, :, :]) * sigma_yee[:, None, None]
-    B2u[patch, :, :, :] = B2u0[patch, :, :, :] + (B2u[patch, :, :, :] - B2u0[patch, :, :, :]) * sigma_yee[:, None, None]
+    Br[patch, :, :, :] *= sigma[:, None, None]
+    B1u[patch, :, :, :] *= sigma_yee[:, None, None]
+    B2u[patch, :, :, :] *= sigma_yee[:, None, None]
 
 def BC_E_absorb(patch):
     Er[patch, :, :, :]  *= sigma_yee[:, None, None]
@@ -954,8 +954,8 @@ def func_Bth(r0, th0, ph0):
 #    return 0.0
 
 def func_Bph(r0, th0, ph0):
-    # return B0 * (N.sin(tilt) * N.sin(ph0) / N.sin(th0)) / r0**4
-    return 0.0
+    return B0 * (N.sin(tilt) * N.sin(ph0) / N.sin(th0)) / r0**4
+    # return 0.0
 
 def InitialData():
 
@@ -1008,10 +1008,12 @@ InitialData()
 # Boundary conditions at r_min
 ########
 
-rlc = 3.0 # Light cylinder radius
-omega = 0.0 #1.0 / rlc # Spin velocity of the conductor at r_min
+rlc = 2.0 # Light cylinder radius
+omega = 1.0 / rlc # Spin velocity of the conductor at r_min
+period = 2.0 * N.pi / omega
+pem = (2.0/3.0)*(omega**4)*N.sin(tilt)**2
 
-def func_Br_a(r0, th0, ph0, t):
+def func_Br_a(r0, th0, ph0):
     return 2.0 * B0 * N.sin(tilt) * N.sin(th0) * N.cos(ph0) / r0**3
 
 def func_Br_b(r0, th0, ph0):
@@ -1101,18 +1103,20 @@ for patch in range(6):
 ########
 
 def BC_B_metal_rmin(it, patch):
-    Br[patch, NG, :, :]   = Br_surf_a[patch, :, :] * N.cos(omega * it * dt) + Br_surf_b[patch, :, :] * N.sin(omega * it * dt) + Br_surf_c[patch, :, :]
-    B1u[patch, :NG, :, :] = 0.0
-    B2u[patch, :NG, :, :] = 0.0
+    t0 = omega * it * dt
+    Br[patch, NG, :, :]   = Br_surf_a[patch, :, :] * N.cos(t0) + Br_surf_b[patch, :, :] * N.sin(t0) + Br_surf_c[patch, :, :]
+    # B1u[patch, :NG, :, :] = 0.0
+    # B2u[patch, :NG, :, :] = 0.0
 
 def BC_E_metal_rmin(it, patch):
-    Er[patch, :NG, :, :] = 0.0
-    E1u[patch, NG, :, :] = E1_surf_a[patch, :, :] * N.cos(omega * it * dt) + E1_surf_b[patch, :, :] * N.sin(omega * it * dt) + E1_surf_c[patch, :, :]
-    E2u[patch, NG, :, :] = E2_surf_a[patch, :, :] * N.cos(omega * it * dt) + E2_surf_b[patch, :, :] * N.sin(omega * it * dt) + E2_surf_c[patch, :, :]
+    t0 = omega * it * dt
+    # Er[patch, :NG, :, :] = 0.0
+    E1u[patch, NG, :, :] = E1_surf_a[patch, :, :] * N.cos(t0) + E1_surf_b[patch, :, :] * N.sin(t0) + E1_surf_c[patch, :, :]
+    E2u[patch, NG, :, :] = E2_surf_a[patch, :, :] * N.cos(t0) + E2_surf_b[patch, :, :] * N.sin(t0) + E2_surf_c[patch, :, :]
 
     # NS rotation profile to avoid high frequency waves in FD solver    
-    E1u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
-    E2u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(5.0 - it / 0.5))
+    E1u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(2.0 - it*dt / 0.5))
+    E2u[patch, NG, :, :] *= 0.5 * (1.0 - N.tanh(2.0 - it*dt / 0.5))
 
 ########
 # Plotting fields on an unfolded sphere
@@ -1226,7 +1230,7 @@ def plot_fields_unfolded_E2(it, vm, ir):
 idump = 0
 
 Nt = 10001 # Number of iterations
-FDUMP = 20 # Dump frequency
+FDUMP = 100 # Dump frequency
 time = dt * N.arange(Nt)
 energy = N.zeros((n_patches, Nt))
 

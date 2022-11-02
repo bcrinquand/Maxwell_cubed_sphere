@@ -32,7 +32,7 @@ ONt = 60
 ONp = 60
 Nxyz = 60
 
-a = 0.95
+a = 0.5
 
 n_patches = 6
 # Connect patch indices and names

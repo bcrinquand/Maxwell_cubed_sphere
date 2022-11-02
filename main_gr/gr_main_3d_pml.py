@@ -64,13 +64,13 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.4
-Nl = 64
-Nxi = 24
+cfl  = 0.8
+Nl   = 60
+Nxi  = 24
 Neta = 24
 
 # Spin parameter
-a = 0.8
+a = 0.95
 rh = 1.0 + N.sqrt(1.0 - a * a)
 
 Nxi_int   = Nxi + 1  # Number of integer points
@@ -1820,8 +1820,8 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
         Br_1 = Brin[p1, :,  :, 0]
         B2_1 = interp_half_to_int(B2in[p1, :,  :, 0])
 
-        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_Br**2 * h11u_Br)[p1, :,  :, 0] + Br_1 - hr2u_Br[p1, :,  :, 0] / h22u_Br[p1, :,  :, 0] * B2_1)
-        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_Br**2 * h11u_Br)[p1, :,  :, 0] + Br_0 - hr2u_Br[p1, :,  :, 0] / h22u_Br[p1, :,  :, 0] * B2_0)
+        carac_1 = (- D1_1 / N.sqrt(sqrt_det_h_Br**2 * h22u_Br)[p1, :,  :, 0] + Br_1 - hr2u_Br[p1, :,  :, 0] / h22u_Br[p1, :,  :, 0] * B2_1)
+        carac_0 = (- D1_0 / N.sqrt(sqrt_det_h_Br**2 * h22u_Br)[p1, :,  :, 0] + Br_0 - hr2u_Br[p1, :,  :, 0] / h22u_Br[p1, :,  :, 0] * B2_0)
         
         diff_Bru[p1, :,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_1 / dxi / P_half_2[0]
 
@@ -1857,7 +1857,7 @@ def compute_penalty_B(p0, p1, dtin, Drin, D1in, D2in, Brin, B1in, B2in):
         carac_1 = (Dr_1 / N.sqrt(sqrt_det_h_B1**2 * h22u_B1)[p1, :,  :, 0] + B1_1 - h12u_B1[p1, :,  :, 0] / h22u_B1[p1, :,  :, 0] * B2_1)
         carac_0 = (Dr_0 / N.sqrt(sqrt_det_h_B1**2 * h22u_B1)[p1, :,  :, 0] + B1_0 - h12u_B1[p1, :,  :, 0] / h22u_B1[p1, :,  :, 0] * B2_0)
 
-        diff_B1u[p1, :,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_0 / dxi / P_int_2[0]
+        diff_B1u[p1, :,  :, 0]  += dtin * sig_in * 0.5 * (carac_1 - carac_0) * lambda_1 / dxi / P_int_2[0]
         
     if (top == 'yx'):
 
@@ -2119,10 +2119,10 @@ def penalty_edges_B(dtin, Drin, D1in, D2in, Brin, B1in, B2in, Brout, B1out, B2ou
 # Absorbing boundary conditions at r_max
 ########
 
-i_abs = 3 # Thickness of absorbing layer in number of cells
+i_abs = 5 # Thickness of absorbing layer in number of cells
 
 r_abs_out = r_int[Nl_int - i_abs]
-kappa_out = 10.0 
+kappa_out = 5.0 
 
 delta = ((r_int - r_abs_out) / (r_max - r_abs_out)) * N.heaviside(r_int - r_abs_out, 0.0)
 sigma_int = N.exp(- kappa_out * delta**3)
@@ -2130,8 +2130,9 @@ sigma_int = N.exp(- kappa_out * delta**3)
 delta = ((r_half - r_abs_out) / (r_max - r_abs_out)) * N.heaviside(r_half - r_abs_out, 0.0)
 sigma_half = N.exp(- kappa_out * delta**3)
 
+# r_abs_in = 0.99*rh
 r_abs_in = r_int[i_abs]
-kappa_in = 0.0 
+kappa_in = 5.0 
 
 delta = ((r_abs_in - r_int) / (r_abs_in - r_min)) * N.heaviside(r_abs_in - r_int, 0.0)
 sigma_int2 = N.exp(- kappa_in * delta**3)
@@ -2144,9 +2145,9 @@ def BC_D_absorb(patch, Drin, D1in, D2in):
     D1in[patch, :, :, :] *= sigma_int[:, None, None]
     D2in[patch, :, :, :] *= sigma_int[:, None, None]
 
-    Drin[patch, :, :, :] *= sigma_half2[:, None, None]
-    D1in[patch, :, :, :] *= sigma_int2[:, None, None]
-    D2in[patch, :, :, :] *= sigma_int2[:, None, None]
+    # Drin[patch, :, :, :] *= sigma_half2[:, None, None]
+    # D1in[patch, :, :, :] *= sigma_int2[:, None, None]
+    # D2in[patch, :, :, :] *= sigma_int2[:, None, None]
 
 def BC_B_absorb(patch, Brin, B1in, B2in):
     Brin[patch, :, :, :] = INBr[patch, :, :, :] + (Brin[patch, :, :, :] - INBr[patch, :, :, :]) * sigma_int[:, None, None]
@@ -2154,8 +2155,8 @@ def BC_B_absorb(patch, Brin, B1in, B2in):
     B2in[patch, :, :, :] = INB2[patch, :, :, :] + (B2in[patch, :, :, :] - INB2[patch, :, :, :]) * sigma_half[:, None, None]
 
     Brin[patch, :, :, :] *= sigma_int2[:, None, None]
-    B1in[patch, :, :, :] *= sigma_half2[:, None, None]
-    B2in[patch, :, :, :] *= sigma_half2[:, None, None]
+    # B1in[patch, :, :, :] *= sigma_half2[:, None, None]
+    # B2in[patch, :, :, :] *= sigma_half2[:, None, None]
 
 ########
 # Define initial data
@@ -2362,10 +2363,10 @@ D2u0[:, :, :, :] = D2u[:, :, :, :]
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded_Br(idump, 1.0, 4)
-        plot_fields_unfolded_B1(idump, 1.0, 4)
-        plot_fields_unfolded_B2(idump, 1.0, 4)
-        plot_fields_unfolded_D2(idump, 1.0, 4)
+        plot_fields_unfolded_Br(idump, 2.0, 10)
+        plot_fields_unfolded_B1(idump, 2.0, 10)
+        plot_fields_unfolded_B2(idump, 2.0, 10)
+        plot_fields_unfolded_D2(idump, 2.0, 10)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
@@ -2459,9 +2460,9 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Penalty terms
     # penalty_edges_B(dt, Erd, E1d, E2d, Hru, H1u, H2u, Bru, B1u, B2u)
-    # penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
-    penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
-
+    penalty_edges_B(dt, Erd, E1d, E2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    # penalty_edges_B(dt, Drd, D1d, D2d, Bru1, B1u1, B2u1, Bru, B1u, B2u)
+    
     BC_Bu(patches, Bru, B1u, B2u)
     BC_B_absorb(patches, Bru, B1u, B2u)
 
@@ -2495,8 +2496,11 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Penalty terms
     # penalty_edges_D(dt, Eru, E1u, E2u, Hrd, H1d, H2d, Dru, D1u, D2u)
-    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
-    penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
+    penalty_edges_D(dt, Dru1, D1u1, D2u1, Hrd, H1d, H2d, Dru, D1u, D2u)
+    # penalty_edges_D(dt, Dru1, D1u1, D2u1, Brd, B1d, B2d, Dru, D1u, D2u)
 
     BC_Du(patches, Dru, D1u, D2u)
     BC_D_absorb(patches, Dru, D1u, D2u)
+
+    # average_field(patches, Dru, D1u, D2u, Dru0, D1u0, D2u0, Dru1, D1u1, D2u1)
+

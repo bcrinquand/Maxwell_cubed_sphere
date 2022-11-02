@@ -47,7 +47,7 @@ def betaru(patch, r, xi, eta, spin):
     fcoord = (globals()["coord_" + sphere[patch] + "_to_sph"])
     theta = fcoord(xi, eta)[0]
     z = 2.0 * r / (r * r + spin * spin * N.cos(theta)**2)
-    return 0.9 * z / (1.0 + z)
+    return z / (1.0 + z)
 
 ########
 # Define metric in patch coordinates
