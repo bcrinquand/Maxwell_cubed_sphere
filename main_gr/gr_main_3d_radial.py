@@ -66,11 +66,11 @@ n_zeros = N.size(index_row) # Total number of interactions (12)
 # Parameters
 cfl  = 0.4 #0.1 for a=0.99
 Nl0  = 60
-Nxi  = 24
-Neta = 24
+Nxi  = 40
+Neta = 40
 
 # Spin parameter
-a = 0.5
+a = 0.99
 rh = 1.0 + N.sqrt(1.0 - a * a)
 
 Nxi_int   = Nxi + 1  # Number of integer points
@@ -2228,7 +2228,7 @@ sigma_out = N.exp(- kappa_out * delta**3)
 delta = ((r_yee - r_abs_out) / (r_max - r_abs_out)) * N.heaviside(r_yee - r_abs_out, 0.0)
 sigma_yee_out = N.exp(- kappa_out * delta**3)
 
-r_abs_in = 0.92 * rh
+r_abs_in = 0.90 * rh #0.92*rh #for a=0.95
 # r_abs_in = r[i_abs]
 kappa_in = 5.0 
 

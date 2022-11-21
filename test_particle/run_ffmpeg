@@ -1,0 +1,5 @@
+#!/bin/bash
+
+ffmpeg -f image2 -s 2000x2000 -r 12 -i ../snapshots_penalty/fields_%d.png ./movie_pic.mp4
+
+## rm ./snapshots/${field}_*.png
