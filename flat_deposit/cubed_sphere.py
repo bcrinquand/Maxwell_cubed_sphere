@@ -14,7 +14,7 @@ Ny_half = Ny + 2  # NUmber of hlaf-step points
 
 q = 1e-2  # Absolute value of charge
 
-Nt = 200  # Number of iterations
+Nt = 500  # Number of iterations
 FDUMP = 1  # Dump frequency
 
 x_min, x_max = 0.0, 1.0
@@ -818,28 +818,28 @@ def filter_current(p, iter):
 flux0 = N.zeros(Nt)
 flux1 = N.zeros(Nt)
 
-# Boundaries of Gauss' theorem diagnostic in patch 0 and 1
-x0l = 0.7
-x0r = 0.9
-x1l = 0.3
-x1r = 0.5
+# # Boundaries of Gauss' theorem diagnostic in patch 0 and 1
+# x0l = 0.96
+# x0r = 0.98
+# x1l = 0.3
+# x1r = 0.5
 
-i0l = N.argmin(N.abs(x_half - x0l))
-i0r = N.argmin(N.abs(x_half - x0r))
-i1l = N.argmin(N.abs(x_half - x1l))
-i1r = N.argmin(N.abs(x_half - x1r))
+# i0l = N.argmin(N.abs(x_half - x0l))
+# i0r = N.argmin(N.abs(x_half - x0r))
+# i1l = N.argmin(N.abs(x_half - x1l))
+# i1r = N.argmin(N.abs(x_half - x1r))
 
-# Computes enclosed charge
+# # Computes enclosed charge
 
 
-def compute_charge(it):
-    flux0[it] = spi.simps(Ex[0, i0r, :], x=y_int) - spi.simps(Ex[0, i0l, :], x=y_int) \
-        + spi.simps(Ey[0, i0l:i0r, -1], x=x_int[i0l:i0r]) - \
-        spi.simps(Ey[0, i0l:i0r, 0], x=x_int[i0l:i0r])
-    flux1[it] = spi.simps(Ex[1, i1r, :], x=y_int) - spi.simps(Ex[1, i1l, :], x=y_int) \
-        + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - \
-        spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i0l:i0r])
-    return
+# def compute_charge(it):
+#     flux0[it] = spi.simps(Ex[0, i0r, :], x=y_int) - spi.simps(Ex[0, i0l, :], x=y_int) \
+#         + spi.simps(Ey[0, i0l:i0r, -1], x=x_int[i0l:i0r]) - \
+#         spi.simps(Ey[0, i0l:i0r, 0], x=x_int[i0l:i0r])
+#     flux1[it] = spi.simps(Ex[1, i1r, :], x=y_int) - spi.simps(Ex[1, i1l, :], x=y_int) \
+#         + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - \
+#         spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i1l:i1r])
+#     return
 
 ########
 # Boundary conditions

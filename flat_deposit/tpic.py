@@ -13,8 +13,8 @@ energy = N.zeros((n_patches, Nt))
 patches = N.array(range(n_patches))
 
 PARAMS = {
-    'use_implicit': False,
-    'sigma': 1.0
+    'use_implicit': True,
+    'sigma': 1
 }
 
 # Fields at previous time steps
@@ -22,7 +22,7 @@ Ex0 = N.zeros_like(Ex)
 Ey0 = N.zeros_like(Ey)
 Bz0 = N.zeros_like(Bz)
 
-output_dir = 'frames_explicit'
+output_dir = 'frames_impl'
 
 
 def clear_dir(output_dir):
@@ -37,11 +37,31 @@ clear_dir(output_dir)
 
 for it in tqdm(N.arange(Nt)):
     if ((it % FDUMP) == 0):
+        region_A = (0.97, 0.98, 0.7, 0.74)
+        indices_A = (
+            N.argmin(N.abs(x_half - region_A[0])),
+            N.argmin(N.abs(x_half - region_A[1])),
+            N.argmin(N.abs(y_int - region_A[2])),
+            N.argmin(N.abs(y_int - region_A[3])),
+        )
+        x_slice = slice(indices_A[0], indices_A[1])
+        y_slice = slice(indices_A[2], indices_A[3])
+        flux0[it] = spi.simps(Ex[0, indices_A[0], y_slice], x=y_int[y_slice]) -\
+            spi.simps(Ex[0, indices_A[1], y_slice], x=y_int[y_slice]) +\
+            spi.simps(Ey[0, x_slice, indices_A[2]], x=x_half[x_slice]) - \
+            spi.simps(Ey[0, x_slice, indices_A[3]], x=x_half[x_slice])
+        # flux1[it] = spi.simps(Ex[1, i1r, :], x=y_int) - spi.simps(Ex[1, i1l, :], x=y_int) \
+        #     + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - \
+        #     spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i1l:i1r])
+        actual_region_A = (x_half[indices_A[0]], x_half[indices_A[1]],
+                           y_int[indices_A[2]], y_int[indices_A[3]])
         newplot(output_dir, idump, it,
                 x_right=x_max,
                 dx=dx, dy=dy,
                 Ex=Ex,
                 prtls=(tag, xp, yp, wp, np),
+                fluxes=(actual_region_A, time, flux0, flux1),
+                charge=q,
                 xEx_grid=xEx_grid, yEx_grid=yEx_grid)
         idump += 1
 
@@ -122,10 +142,10 @@ for it in tqdm(N.arange(Nt)):
         BC_penalty_E(dt, PARAMS['sigma'], 0.5 *
                      (Ex0 + Ex), 0.5 * (Ey0 + Ey), Bz)
 
-    compute_divE(patches, Ex, Ey)
+    # compute_divE(patches, Ex, Ey)
 
-    energy[0, it] = dx * dy * \
-        N.sum(Bz[0, :, :]**2) + N.sum(Ex[0, :, :]**2) + N.sum(Ey[0, :, :]**2)
-    energy[1, it] = dx * dy * \
-        N.sum(Bz[1, :, :]**2) + N.sum(Ex[1, :, :]**2) + N.sum(Ey[1, :, :]**2)
-    compute_charge(it)
+    # energy[0, it] = dx * dy * \
+    #     N.sum(Bz[0, :, :]**2) + N.sum(Ex[0, :, :]**2) + N.sum(Ey[0, :, :]**2)
+    # energy[1, it] = dx * dy * \
+    #     N.sum(Bz[1, :, :]**2) + N.sum(Ex[1, :, :]**2) + N.sum(Ey[1, :, :]**2)
+so

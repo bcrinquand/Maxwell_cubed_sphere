@@ -33,6 +33,9 @@ def newplot(path, index, time_it, **kwargs):
     dy = kwargs.get('dy', None)
     x_right = kwargs.get('x_right', None)
     particles = kwargs.get('prtls', None)
+    charge = kwargs.get('charge', None)
+    region_A, time, flux0, flux1 = kwargs.get(
+        'fluxes', (None, None, None, None))
     # xmin, xmax = xEx_grid.min(), xEx_grid.max() + dx
     # ymin, ymax = yEx_grid.min(), yEx_grid.max() + dy
 
@@ -40,7 +43,8 @@ def newplot(path, index, time_it, **kwargs):
     gs = mpl.gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[1, 1])
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0])
-    ax3 = fig.add_subplot(gs[:, -1])
+    ax3 = fig.add_subplot(gs[0, -1])
+    ax4 = fig.add_subplot(gs[1, -1])
 
     fieldplot(ax1, QLOG(Ex)[0].swapaxes(1, 0),
               xlim=(xEx_grid[:, 0].min() - dx, xEx_grid[:, 0].max() + dx),
@@ -81,11 +85,19 @@ def newplot(path, index, time_it, **kwargs):
                 ax2.scatter(xs[time_it, ip] + x_right, ys[time_it, ip],
                             s=10, c=f"C{int(wei[time_it, ip] * 0.5 + 0.5)}")
 
-    # center = (1.0, 0.72)
-    # del_s = 0.05
-    # ax.set(xlim=center[0] + del_s * np.array([-1, 1]),
-    #        ylim=center[1] + del_s * np.array([-1, 1]),
-    #        title=r'$E_x$ (zoom)')
+    if flux0 is not None:
+        ax4.plot(time[:time_it], flux0[:time_it] / (4.0 * np.pi * charge), c='magenta')
+        ax4.axhline(0, c='k', ls='--', lw=0.25)
+        ax1.add_patch(
+            mpl.patches.Rectangle(
+                (region_A[0], region_A[2]), 
+                region_A[1] - region_A[0], 
+                region_A[3] - region_A[2],
+                facecolor='none', edgecolor='magenta', lw=1.0
+            )
+        )
+        # ax4.plot(time[:time_it], flux1[:time_it] / (4.0 * np.pi * charge),
+        #         color=[0.8, 0.0, 0.0], ls='-')
 
     fig.savefig(f"{path}/fields_{index}.png", bbox_inches='tight', dpi=200)
     plt.close()
