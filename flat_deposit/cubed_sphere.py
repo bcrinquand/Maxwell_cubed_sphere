@@ -14,7 +14,7 @@ Ny_half = Ny + 2  # NUmber of hlaf-step points
 
 q = 1e-2  # Absolute value of charge
 
-Nt = 4000  # Number of iterations
+Nt = 200  # Number of iterations
 FDUMP = 1  # Dump frequency
 
 x_min, x_max = 0.0, 1.0
@@ -846,35 +846,36 @@ def compute_charge(it):
 ########
 
 
-sig_abs = 0.5
+# sig_abs = 0.5
 
 
-def BC_conducting_B(dtin, Exin, Eyin, Bzin):
+# def BC_conducting_B(dtin, Exin, Eyin, Bzin):
 
-    # Bz[0, :, 0]  += dtin * sig_abs * Exin[0, :, 0]  / dx / P_half_2[0]
-    # Bz[0, :, -1] -= dtin * sig_abs * Exin[0, :, -1] / dx / P_half_2[-1]
+#     # Bz[0, :, 0]  += dtin * sig_abs * Exin[0, :, 0]  / dx / P_half_2[0]
+#     # Bz[0, :, -1] -= dtin * sig_abs * Exin[0, :, -1] / dx / P_half_2[-1]
 
-    # Bz[1, :, 0]  += dtin * sig_abs * Exin[1, :, 0]  / dx / P_half_2[0]
-    # Bz[1, :, -1] -= dtin * sig_abs * Exin[1, :, -1] / dx / P_half_2[-1]
+#     # Bz[1, :, 0]  += dtin * sig_abs * Exin[1, :, 0]  / dx / P_half_2[0]
+#     # Bz[1, :, -1] -= dtin * sig_abs * Exin[1, :, -1] / dx / P_half_2[-1]
 
-    # Bz[0, 0, :]  -= dtin * sig_abs * Eyin[0, 0, :]  / dx / P_half_2[0]
-    # Bz[0, -1, :] += dtin * sig_abs * Eyin[0, -1, :] / dx / P_half_2[-1]
+#     # Bz[0, 0, :]  -= dtin * sig_abs * Eyin[0, 0, :]  / dx / P_half_2[0]
+#     # Bz[0, -1, :] += dtin * sig_abs * Eyin[0, -1, :] / dx / P_half_2[-1]
 
-    # Bz[0, 0, :]  = 0.0
-    # Bz[0, -1, :] = 0.0
+#     # Bz[0, 0, :]  = 0.0
+#     # Bz[0, -1, :] = 0.0
 
-    # Bz[1, :, 0]  += dtin * sig_abs * Exin[1, :, 0] / P_half_2[0]
-    # Bz[1, :, -1] -= dtin * sig_abs * Exin[1, :, -1] / P_half_2[-1]
-    # Bz[1, -1, :] += dtin * sig_abs * Eyin[1, -1, :] / P_half_2[-1]
+#     # Bz[1, :, 0]  += dtin * sig_abs * Exin[1, :, 0] / P_half_2[0]
+#     # Bz[1, :, -1] -= dtin * sig_abs * Exin[1, :, -1] / P_half_2[-1]
+#     # Bz[1, -1, :] += dtin * sig_abs * Eyin[1, -1, :] / P_half_2[-1]
 
-    return
+#     return
 
 
-def BC_conducting_E(dtin, Exin, Eyin, Bzin):
-    return
+# def BC_conducting_E(dtin, Exin, Eyin, Bzin):
+#     return
 
 # Absorbing outer boundaries
 
+sig_abs = 1.0
 
 def BC_absorbing_B(dtin, Exin, Eyin, Bzin):
     Bz[0, 0, :] -= dtin * sig_abs * \
@@ -913,23 +914,20 @@ def BC_absorbing_E(dtin, Exin, Eyin, Bzin):
         (Exin[1, :, -1] + Bzin[1, :, -1]) / (dx * P_half_2[-1])
     # Ey[1, 0, :] -= dtin * sig_abs * (Eyin[1, 0, :] + Bzin[1, 0, :]) / dx / P_half_2[0]
 
-    return
 
-
-def BC_penalty_B(dtin, Exin, Eyin, Bzin):
-    Bz[0, -1, :] -= dtin * sig_abs * \
+def BC_penalty_B(dtin, sigma, Exin, Eyin, Bzin):
+    Bz[0, -1, :] -= dtin * sigma * \
         (Bzin[0, -1, :] - Eyin[0, -1, :] -
-         (Bzin[1, 0, :] - Eyin[1, 0, :])) / dx / P_half_2[-1]
-    Bz[1, 0, :] -= dtin * sig_abs * \
+         (Bzin[1, 0, :] - Eyin[1, 0, :])) / (dx * P_half_2[-1])
+    Bz[1, 0, :] -= dtin * sigma * \
         (Bzin[1, 0, :] + Eyin[1, 0, :] -
-         (Bzin[0, -1, :] + Eyin[0, -1, :])) / dx / P_half_2[0]
-    return
+         (Bzin[0, -1, :] + Eyin[0, -1, :])) / (dx * P_half_2[0])
 
 
-def BC_penalty_E(dtin, Exin, Eyin, Bzin):
-    Ey[0, -1, :] -= dtin * sig_abs * \
+def BC_penalty_E(dtin, sigma, Exin, Eyin, Bzin):
+    Ey[0, -1, :] -= dtin * sigma * \
         (Eyin[0, -1, :] - Bzin[0, -1, :] -
          (Eyin[1, 0, :] - Bzin[1, 0, :])) / (dx * P_half_2[-1])
-    Ey[1, 0, :] -= dtin * sig_abs * \
+    Ey[1, 0, :] -= dtin * sigma * \
         (Eyin[1, 0, :] + Bzin[1, 0, :] -
          (Eyin[0, -1, :] + Bzin[0, -1, :])) / (dx * P_half_2[0])

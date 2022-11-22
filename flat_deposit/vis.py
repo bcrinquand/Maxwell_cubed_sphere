@@ -7,7 +7,7 @@ def fieldplot(ax, field, xlim, ylim, **kwargs):
     xmin, xmax = xlim
     ymin, ymax = ylim
     ax.imshow(field,
-              vmin=kwargs.get("vmin", -0.1), vmax=kwargs.get("vmin", 0.1),
+              vmin=kwargs.get("vmin", -0.1), vmax=kwargs.get("vmax", 0.1),
               cmap=kwargs.get("cmap", 'RdBu_r'),
               origin='lower', interpolation='nearest',
               extent=[xmin, xmax, ymin, ymax])
@@ -21,6 +21,10 @@ def fieldplot(ax, field, xlim, ylim, **kwargs):
     ax.set(title=kwargs.get('title', None))
 
 
+def QLOG(value):
+    return np.sign(value) * np.abs(value)**0.25
+
+
 def newplot(path, index, time_it, **kwargs):
     Ex = kwargs.get('Ex', None)
     xEx_grid = kwargs.get('xEx_grid', None)
@@ -28,6 +32,7 @@ def newplot(path, index, time_it, **kwargs):
     dx = kwargs.get('dx', None)
     dy = kwargs.get('dy', None)
     x_right = kwargs.get('x_right', None)
+    particles = kwargs.get('prtls', None)
     # xmin, xmax = xEx_grid.min(), xEx_grid.max() + dx
     # ymin, ymax = yEx_grid.min(), yEx_grid.max() + dy
 
@@ -37,28 +42,44 @@ def newplot(path, index, time_it, **kwargs):
     ax2 = fig.add_subplot(gs[1, 0])
     ax3 = fig.add_subplot(gs[:, -1])
 
-    fieldplot(ax1, Ex[0].swapaxes(1, 0),
+    fieldplot(ax1, QLOG(Ex)[0].swapaxes(1, 0),
               xlim=(xEx_grid[:, 0].min() - dx, xEx_grid[:, 0].max() + dx),
               ylim=(yEx_grid[0].min(), yEx_grid[0].max() + dy),
               title=r"$E_x^A$ (zoom)",
+              vmin=-1, vmax=1,
               zoom=((0.98, 0.72), 0.05)
               )
     ax1.axvline(xEx_grid[-1, 0], c='k', lw=0.5)
-    
-    fieldplot(ax2, Ex[1].swapaxes(1, 0),
+
+    fieldplot(ax2, QLOG(Ex)[1].swapaxes(1, 0),
               xlim=(xEx_grid[:, 0].min() + x_right - dx,
                     xEx_grid[:, 0].max() + x_right + dx),
-              ylim=(yEx_grid[0].min(), yEx_grid[0].max()),
+              ylim=(yEx_grid[0].min(), yEx_grid[0].max() + dy),
               title=r"$E_x^B$ (zoom)",
+              vmin=-1, vmax=1,
               zoom=((1.02, 0.72), 0.05)
               )
     ax2.axvline(xEx_grid[0, 0] + x_right, c='k', lw=0.5)
-    # ax.imshow(Ex[0].swapaxes(1, 0), vmin=-0.1, vmax=0.1,
-    #           cmap='RdBu_r', origin='lower', interpolation='nearest',
-    #           extent=[xmin, xmax, ymin, ymax])
-    # ax.imshow(Ex[1].swapaxes(1, 0), vmin=-0.1, vmax=0.1,
-    #           cmap='RdBu_r', origin='lower', interpolation='nearest',
-    #           extent=[xmin + x_right, xmax + x_right, ymin, ymax])
+
+    fieldplot(ax3, np.hstack((QLOG(Ex)[0].swapaxes(1, 0)[:, :-1], QLOG(Ex)[1].swapaxes(1, 0)[:, 1:])),
+              xlim=(xEx_grid[:, 0].min() - dx,
+                    xEx_grid[:, 0].max() + x_right + dx),
+              ylim=(yEx_grid[0].min(), yEx_grid[0].max() + dy),
+              title=r"$E_x$ (at i+1/2 positions)",
+              vmin=-1, vmax=1,
+              zoom=((1.0, 0.72), 0.1)
+              )
+    ax3.axvline(xEx_grid[-1, 0], c='k', lw=0.5)
+
+    if particles is not None:
+        tags, xs, ys, wei, nprtl = particles
+        for ip in range(nprtl):
+            if (tags[time_it, ip] == 0):
+                ax1.scatter(xs[time_it, ip], ys[time_it, ip],
+                            s=10, c=f"C{int(wei[time_it, ip] * 0.5 + 0.5)}")
+            elif (tags[time_it, ip] == 1):
+                ax2.scatter(xs[time_it, ip] + x_right, ys[time_it, ip],
+                            s=10, c=f"C{int(wei[time_it, ip] * 0.5 + 0.5)}")
 
     # center = (1.0, 0.72)
     # del_s = 0.05
