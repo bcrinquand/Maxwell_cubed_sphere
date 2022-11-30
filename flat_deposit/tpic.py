@@ -32,17 +32,20 @@ def clear_dir(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
 
+n_iter = 2
 
 clear_dir(output_dir)
 
 for it in tqdm(N.arange(Nt)):
     if ((it % FDUMP) == 0):
-        newplot(output_dir, idump, it,
-                x_right=x_max,
-                dx=dx, dy=dy,
-                Ex=Ex,
-                prtls=(tag, xp, yp, wp, np),
-                xEx_grid=xEx_grid, yEx_grid=yEx_grid)
+        # newplot(output_dir, idump, it,
+        #         x_right=x_max,
+        #         dx=dx, dy=dy,
+        #         Ex=Ex,
+        #         prtls=(tag, xp, yp, wp, np),
+        #         xEx_grid=xEx_grid, yEx_grid=yEx_grid)
+        plot_fields(idump, it)
+        plot_fields_zoom(idump, it)
         idump += 1
 
     # print(it, Nt)
@@ -72,7 +75,7 @@ for it in tqdm(N.arange(Nt)):
 
     compute_divcharge(patches)
 
-    # filter_current(0, n_iter)
+    filter_current(n_iter)
 
     # 2nd Faraday substep, starting with B at n, finishing with B at n + 1/2
     compute_diff_E(patches)

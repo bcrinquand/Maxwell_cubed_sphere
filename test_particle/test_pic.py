@@ -32,7 +32,7 @@ Ny_half = Ny + 2 # NUmber of hlaf-step points
 
 q = 1e-2 # Absolute value of charge
 
-Nt = 4000 # Number of iterations
+Nt = 8000 # Number of iterations
 FDUMP = 50 # Dump frequency
 
 x_min, x_max = 0.0, 1.0
@@ -179,12 +179,28 @@ def compute_divcharge(p):
 # Jz = N.zeros_like(Bz)
 # Jz[1, :, :] = 0.0 * N.exp(- ((xBz_grid-0.5)**2 + (yBz_grid-0.5)**2) / 0.02**2)
 
+xout = 0.9
+vout = 0.02
+Rout = 0.005
+ampout = - 0.5
+
+def shape(x0, y0):
+    # return N.heaviside(Rout - N.sqrt(x0**2 + y0**2), 0.0)
+    return N.exp(- (x0**2 + y0**2) / Rout**2)
+        
+Jxout = N.zeros((n_patches, Nx_half, Ny_int, Nt))
+# for it in range(Nt):
+#     Jxout[0, :, :, it] = ampout * (shape(xEx_grid[:, :] - xout - vout * it * dt, yEx_grid[:, :] - 0.51) + shape(xEx_grid[:, :] - xout + vout * it * dt, yEx_grid[:, :] - 0.51))
+#     Jxout[1, :, :, it] = ampout * (shape(xEx_grid[:, :] - xout - vout * it * dt + x_max - x_min, yEx_grid[:, :] - 0.51) + shape(xEx_grid[:, :] - xout + vout * it * dt + x_max - x_min, yEx_grid[:, :] - 0.51))
+
 def push_B(p, it, dtin):
         Bz[p, :, :] += dtin * (dExdy[p, :, :] - dEydx[p, :, :]) # + dtin * Jz[p, :, :] * N.sin(20.0 * it * dt) * N.exp(- it * dt / 1.0)
 
 def push_E(p, it, dtin):
-        # Ex[p, :, :] += dtin * (dBzdy[p, :, :] - 4.0 * N.pi * (Jx[p, :, :] + Jxout[:, :, it]))
+        # Ex[p, :, :] += dtin * (dBzdy[p, :, :] - 4.0 * N.pi * (Jx[p, :, :] + Jxout[p, :, :, it]))
+        # Ex[p, :, :] += dtin * (dBzdy[p, :, :] - 4.0 * N.pi * (Jx[p, :, :] + Jxout[p, :, :] * N.sin(20.0 * it * dt) * N.exp(- it * dt / 1.0)))
         Ex[p, :, :] += dtin * (dBzdy[p, :, :] - 4.0 * N.pi * Jx[p, :, :])
+
         Ey[p, :, :] += dtin * (- dBzdx[p, :, :] - 4.0 * N.pi * Jy[p, :, :])
 
 ########
@@ -199,8 +215,8 @@ uyp = N.zeros((Nt + 1, np))
 wp  = N.zeros((Nt + 1, np)) # charge x weight (can be negative)
 tag = N.zeros((Nt + 1, np), dtype='int') # Patch in which the partice is located
 
-ux0 = 0.02
-x0 = 0.95
+ux0 = 0.7
+x0 = 0.91
 
 def initialize_part():
 
@@ -215,9 +231,11 @@ def initialize_part():
         yp[0, ip + 1] = 0.51 #r
         uxp[0, ip] = ux0
         uxp[0, ip + 1] = -ux0
+        # wp[:, ip] = 0.0
+        # wp[:, ip + 1] = 0.0
         wp[:, ip] = - 1.0
         wp[:, ip + 1] = 1.0
-
+        
 # Impose velocity with tanh profile to avoid discontinuities
 def impose_velocity_part(it):
     uxp[it, 0] =   ux0 * 0.5 * (1 - N.tanh((200 - it)/50))
@@ -360,6 +378,320 @@ S0 = dx * dy
 # Current deposition of a single particle
 # Note : only deals with x_min and x_max interfaces, no corners or top/bottom interfaces!!
 
+# def deposit_particle(it, ip):
+    
+#     x1, y1 = xp[it, ip], yp[it, ip] # Initial coordinates
+#     x2, y2 = xp[it + 1, ip], yp[it + 1, ip] # Final coordinates
+
+#     # Indices of initial/final cell (from 0 to N-1)
+#     i1, j1 = i_from_pos(x1, y1)
+#     i2, j2 = i_from_pos(x2, y2)
+
+#     xr, yr = compute_intermediate(it, ip)
+
+#     w0   = wp[it, ip]
+#     tag0 = tag[it, ip]
+#     tag1 = tag[it + 1, ip]
+        
+#     # Coefficients of depsoited Jx
+#     deltax1 = 1.0
+#     deltax2 = 1.0
+        
+#     deltay1 = 1.0
+#     deltay2 = 1.0
+    
+#     # Particle does not leave patch
+#     if (tag0==tag1):
+
+#         # Umeda notation
+
+#         Fx1 = q * (xr - x1) / dt * w0
+#         Fx2 = q * (x2 - xr) / dt * w0
+
+#         Fy1 = q * (yr - y1) / dt * w0
+#         Fy2 = q * (y2 - yr) / dt * w0
+
+#         Wx1 = 0.5 * (x1 + xr) / dx - i1
+#         Wy1 = 0.5 * (y1 + yr) / dy - j1
+
+#         Wx2 = 0.5 * (x2 + xr) / dx - i2
+#         Wy2 = 0.5 * (y2 + yr) / dy - j2
+
+#         # Shifted by 1 because of extra points at the edge
+#         ix1 = i1 + 1
+#         ix2 = i2 + 1
+
+#         jy1 = j1 + 1
+#         jy2 = j2 + 1
+        
+#         # Interior, no deposition on edge cell
+#         if (test_inside(i1)==True)and(test_inside(i2)==True):
+#             pass
+
+#         # Particle starts in interior and moves to edge
+#         if (test_inside(i1)==True)and(test_edge(i2)==True):
+#             deltax2 = 3.0
+
+#         # Particle starts in edge and moves to interior
+#         if (test_inside(i2)==True)and(test_edge(i1)==True):
+#             deltax1 = 3.0
+            
+#         # Particle stays in edge
+#         if (test_edge(i1)==True)and(test_edge(i2)==True):
+#             deltax1 = 3.0
+#             deltax2 = 3.0
+
+#         # Particle leaves simulation box: only first half deposit
+#         if (test_out(i2)==True):
+#             deltax1 = 3.0
+#             deltax2 = 0.0
+#             deltay2 = 0.0
+
+#         #######
+#         # First part of trajectory    
+#         #######
+
+#         # Bulk current deposition
+#         Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
+#         Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
+
+#         Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
+#         Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
+
+#         # Current on left edge
+#         if (i1 == 0):
+#             Jx[tag0, 0, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+
+#         # Current on mid-left cell
+#         if (i1 == 1):
+#             Jx[tag0, 1, j1]     += - Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, 1, j1 + 1] += - Fx1 * Wy1 / S0
+            
+#         # Current on right edge            
+#         if (i1 == (Nx - 1)):
+#             Jx[tag0, -1, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+
+#         # Current on mid-right cell
+#         if (i1 == (Nx - 2)):
+#             Jx[tag0, -2, j1]     += - Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, -2, j1 + 1] += - Fx1 * Wy1 / S0
+            
+#         # Current from charge that's not into patch 1 yet
+#         if (tag0==0)and(i1==(Nx-1)):
+#             Jx[1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+#             Jx[1, 1, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
+
+#         # Current from charge that's not into patch 0 yet
+#         if (tag0==1)and(i1==0):
+#             Jx[0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+#             Jx[0, -2, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[0, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
+            
+#         #######
+#         # Second part of trajectory    
+#         #######
+        
+#         Jx[tag0, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
+#         Jx[tag0, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
+
+#         Jy[tag0, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
+#         Jy[tag0, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
+        
+#         if (i2 == 0):
+#             Jx[tag0, 0, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0        
+
+#         if (i2 == 1):
+#             Jx[tag0, 1, j2]     += - Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, 1, j2 + 1] += - Fx2 * Wy2 / S0    
+            
+#         if (i2 == (Nx - 1)):
+#             Jx[tag0, -1, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+
+#         if (i2 == (Nx - 2)):
+#             Jx[tag0, -2, j2]     += - Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, -2, j2 + 1] += - Fx2 * Wy2 / S0
+            
+#         if (tag0==0)and(i2==(Nx-1)):
+#             Jx[1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+#             Jx[1, 1, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[1, 1, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
+
+#         if (tag0==1)and(i2==0):
+#             Jx[0, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+#             Jx[0, -2, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[0, -2, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
+
+
+#         x2r = (x2 - x_min) / dx - i2
+#         y2r = (y2 - y_min) / dy - j2
+
+#         # Charge deposited in current patch
+#         if (test_out(i2)==False):
+#             rho1[tag0, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+#             rho1[tag0, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+#             rho1[tag0, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+#             rho1[tag0, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
+
+#         # Charge deposited in other patch
+#         if (tag0==0)and(i2==(Nx-1)):
+#             rho1[1, 0, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+#             rho1[1, 0, j2 + 1] += q * w0 * x2r * y2r / S0
+#         if (tag0==1)and(i2==0):
+#             rho1[0, -1, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+#             rho1[0, -1, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+
+#     # Particle leaves patch
+#     elif (tag1!=tag0):
+
+#         deltax1 = 3.0
+#         deltax2 = 3.0
+            
+#         # There is better way of doing this than having this dichotomy. Will do later
+#         if (tag0 == 0):
+
+#             # When particle leaves patch 0 to 1, x2 is already written in new patch coordinates, so must specify xr in both cases
+#             xr = 1.0
+#             Fx1 = q * (xr - x1) / dt * w0
+#             Wx1 = 0.5 * (x1 + xr) / dx - i1
+#             Fy1 = q * (yr - y1) / dt * w0
+#             Wy1 = 0.5 * (y1 + yr) / dy - j1
+            
+#             xr = 0.0
+#             Fx2 = q * (x2 - xr) / dt * w0
+#             Wx2 = 0.5 * (x2 + xr) / dx - i2
+#             Fy2 = q * (y2 - yr) / dt * w0
+#             Wy2 = 0.5 * (y2 + yr) / dy - j2
+
+#             ix1 = i1 + 1
+#             ix2 = i2 + 1
+
+#             jy1 = j1 + 1
+#             jy2 = j2 + 1
+
+#             x2r = (x2 - x_min) / dx - i2
+#             y2r = (y2 - y_min) / dy - j2
+
+#             rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+#             rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+#             rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+#             rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
+
+#             # Current deposited during first part of trajectory: particle is in patch 0
+
+#             Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
+#             Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
+            
+#             # Current at mid-last cell of patch 0
+#             Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
+
+#             # Current on the edge of patch 0
+#             Jx[tag0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+
+#             # Current on patch 1
+#             Jx[tag1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+#             Jx[tag1, 1, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
+
+#             # Current deposited during second part of trajectory: particle is in patch 1
+
+#             Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
+#             Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
+            
+#             # Current at mid-last cell of patch 1
+#             Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
+
+#             # Current on the edge of patch 1
+#             Jx[tag1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+
+#             # Current on patch 0
+#             Jx[tag0, -1, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
+#             Jx[tag0, -2, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
+#             Jx[tag0, -2, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
+
+#         # Same thing if particle starts in patch 1
+#         elif (tag0 == 1):
+
+#             xr = 0.0
+#             Fx1 = q * (xr - x1) / dt * w0
+#             Wx1 = 0.5 * (x1 + xr) / dx - i1
+#             Fy1 = q * (yr - y1) / dt * w0
+#             Wy1 = 0.5 * (y1 + yr) / dy - j1
+
+#             xr = 1.0
+#             Fx2 = q * (x2 - xr) / dt * w0
+#             Wx2 = 0.5 * (x2 + xr) / dx - i2
+#             Fy2 = q * (y2 - yr) / dt * w0
+#             Wy2 = 0.5 * (y2 + yr) / dy - j2
+
+#             ix1 = i1 + 1
+#             ix2 = i2 + 1
+
+#             jy1 = j1 + 1
+#             jy2 = j2 + 1
+
+#             x2r = (x2 - x_min) / dx - i2
+#             y2r = (y2 - y_min) / dy - j2
+
+#             rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+#             rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+#             rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+#             rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
+
+#             Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
+
+#             Jx[tag0, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+
+#             Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
+#             Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
+
+#             Jx[tag1, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag1, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+#             Jx[tag1, -2, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
+#             Jx[tag1, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
+
+#             Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
+
+#             Jx[tag1, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag1, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+
+#             Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
+#             Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
+
+#             Jx[tag0, 0, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
+#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
+#             Jx[tag0, 1, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
+#             Jx[tag0, 1, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
+
+#     # If absorbing patch 1    
+#     # Jx[1, :, :] = 0.0
+#     # Jy[1, :, :] = 0.0
+#     # rho1[1, :, :] = 0.0
+    
+#     return
+
+
+#############
+# NEW STENCIL
+#############
+
 def deposit_particle(it, ip):
     
     x1, y1 = xp[it, ip], yp[it, ip] # Initial coordinates
@@ -375,7 +707,7 @@ def deposit_particle(it, ip):
     tag0 = tag[it, ip]
     tag1 = tag[it + 1, ip]
         
-    # Coefficients of depsoited Jx
+    # Coefficients of deposited Jx
     deltax1 = 1.0
     deltax2 = 1.0
         
@@ -405,29 +737,6 @@ def deposit_particle(it, ip):
 
         jy1 = j1 + 1
         jy2 = j2 + 1
-        
-        # Interior, no deposition on edge cell
-        if (test_inside(i1)==True)and(test_inside(i2)==True):
-            pass
-
-        # Particle starts in interior and moves to edge
-        if (test_inside(i1)==True)and(test_edge(i2)==True):
-            deltax2 = 3.0
-
-        # Particle starts in edge and moves to interior
-        if (test_inside(i2)==True)and(test_edge(i1)==True):
-            deltax1 = 3.0
-            
-        # Particle stays in edge
-        if (test_edge(i1)==True)and(test_edge(i2)==True):
-            deltax1 = 3.0
-            deltax2 = 3.0
-
-        # Particle leaves simulation box: only first half deposit
-        if (test_out(i2)==True):
-            deltax1 = 3.0
-            deltax2 = 0.0
-            deltay2 = 0.0
 
         #######
         # First part of trajectory    
@@ -444,35 +753,21 @@ def deposit_particle(it, ip):
         if (i1 == 0):
             Jx[tag0, 0, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-        # Current on mid-left cell
-        if (i1 == 1):
-            Jx[tag0, 1, j1]     += - Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, 1, j1 + 1] += - Fx1 * Wy1 / S0
             
         # Current on right edge            
         if (i1 == (Nx - 1)):
             Jx[tag0, -1, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-        # Current on mid-right cell
-        if (i1 == (Nx - 2)):
-            Jx[tag0, -2, j1]     += - Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, -2, j1 + 1] += - Fx1 * Wy1 / S0
             
         # Current from charge that's not into patch 1 yet
         if (tag0==0)and(i1==(Nx-1)):
             Jx[1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            Jx[1, 1, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
-            Jx[1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
 
         # Current from charge that's not into patch 0 yet
         if (tag0==1)and(i1==0):
             Jx[0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            Jx[0, -2, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
-            Jx[0, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
             
         #######
         # Second part of trajectory    
@@ -487,31 +782,18 @@ def deposit_particle(it, ip):
         if (i2 == 0):
             Jx[tag0, 0, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[tag0, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0        
-
-        if (i2 == 1):
-            Jx[tag0, 1, j2]     += - Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, 1, j2 + 1] += - Fx2 * Wy2 / S0    
             
         if (i2 == (Nx - 1)):
             Jx[tag0, -1, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[tag0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-        if (i2 == (Nx - 2)):
-            Jx[tag0, -2, j2]     += - Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, -2, j2 + 1] += - Fx2 * Wy2 / S0
             
         if (tag0==0)and(i2==(Nx-1)):
             Jx[1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-            Jx[1, 1, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
-            Jx[1, 1, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
 
         if (tag0==1)and(i2==0):
             Jx[0, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-            Jx[0, -2, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
-            Jx[0, -2, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
 
         x2r = (x2 - x_min) / dx - i2
         y2r = (y2 - y_min) / dy - j2
@@ -533,9 +815,6 @@ def deposit_particle(it, ip):
 
     # Particle leaves patch
     elif (tag1!=tag0):
-
-        deltax1 = 3.0
-        deltax2 = 3.0
             
         # There is better way of doing this than having this dichotomy. Will do later
         if (tag0 == 0):
@@ -583,8 +862,6 @@ def deposit_particle(it, ip):
             # Current on patch 1
             Jx[tag1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[tag1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            Jx[tag1, 1, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
 
             # Current deposited during second part of trajectory: particle is in patch 1
 
@@ -602,8 +879,6 @@ def deposit_particle(it, ip):
             # Current on patch 0
             Jx[tag0, -1, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[tag0, -1, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
-            Jx[tag0, -2, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
-            Jx[tag0, -2, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
 
         # Same thing if particle starts in patch 1
         elif (tag0 == 1):
@@ -645,8 +920,6 @@ def deposit_particle(it, ip):
 
             Jx[tag1, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
             Jx[tag1, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            Jx[tag1, -2, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag1, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
 
             Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
             Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
@@ -659,60 +932,163 @@ def deposit_particle(it, ip):
 
             Jx[tag0, 0, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
             Jx[tag0, 0, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
-            Jx[tag0, 1, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
-            Jx[tag0, 1, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
-    # If absorbing patch 1    
-    # Jx[1, :, :] = 0.0
-    # Jy[1, :, :] = 0.0
-    # rho1[1, :, :] = 0.0
     
     return
 
 Jbuffx = N.zeros_like(Jx)
 Jbuffy = N.zeros_like(Jy)
+Jintx = N.zeros_like(Jx)
+Jinty = N.zeros_like(Jy)
 rhobuff = N.zeros_like(rho0)
 
-def filter_current(p, iter):
+def filter_current(iter):
 
-    Jbuffx[p, :, :] = Jx[p, :, :]
-    Jbuffy[p, :, :] = Jy[p, :, :]
-    rhobuff[p, :, :] = rho0[p, :, :]
+    Jbuffx[:, :, :] = Jx[:, :, :]
+    Jbuffy[:, :, :] = Jy[:, :, :]
+    rhobuff[:, :, :] = rho0[:, :, :]
+    
+    # Pretend information from other patch is in a ghost cell
 
     for i in range(iter):
+        
+        Jintx[:, :, :] = Jbuffx[:, :, :]
 
-        Jbuffx[p, 1:(Nx_half-1), 1:(Ny_int-1)] = 0.25 * Jbuffx[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jbuffx, 1, axis = 1)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jbuffx, -1, axis = 1)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jbuffx, 1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jbuffx, -1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffx, 1, axis = 1), 1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffx, -1, axis = 1), -1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffx, 1, axis = 1), -1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffx, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_half-1), 1:(Ny_int-1)]
+        # Jx in bulk, regular 1-2-1 stencil
+        Jbuffx[:, 2:(Nx_half-2), 1:(Ny_int-1)] = 0.25 * Jintx[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)]
 
-        Jbuffx[p, 1:(Nx_half-1), 0]  = 0.5 * Jbuffx[p, 1:(Nx_half-1), 0]  + 0.25 * (N.roll(Jbuffx, 1, axis = 1)[p, 1:(Nx_half-1), 0]  + N.roll(Jbuffx, -1, axis = 1)[p, 1:(Nx_half-1), 0])
-        Jbuffx[p, 1:(Nx_half-1), -1] = 0.5 * Jbuffx[p, 1:(Nx_half-1), -1] + 0.25 * (N.roll(Jbuffx, 1, axis = 1)[p, 1:(Nx_half-1), -1] + N.roll(Jbuffx, -1, axis = 1)[p, 1:(Nx_half-1), -1])
+        # Jx at half-edge cell in patch 0
+        Jbuffx[0, -2, 1:(Ny_int-1)] = 0.25 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -3, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
 
-        Jbuffx[p, 0, 1:(Ny_int-1)]  = Jbuffx[p, 1, 1:(Ny_int-1)]
-        Jbuffx[p, -1, 1:(Ny_int-1)] = Jbuffx[p, -2, 1:(Ny_int-1)]
+        # Jx at edge cell in patch 0
+        Jbuffx[0, -1, 1:(Ny_int-1)] = 0.25 * Jintx[0, -1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
 
-        Jbuffy[p, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jbuffy[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jbuffy, 1, axis = 1)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jbuffy, -1, axis = 1)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jbuffy, 1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jbuffy, -1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffy, 1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffy, -1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffy, 1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jbuffy, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 2:(Ny_half-2)]
+        # Jx at half-edge cell in patch 1                             
+        Jbuffx[1, 1, 1:(Ny_int-1)] = 0.25 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
 
-        Jbuffy[p, 0, 2:(Ny_half-2)]  = 0.5 * Jbuffy[p, 0, 2:(Ny_half-2)]  + 0.25 * (N.roll(Jbuffy, 1, axis = 2)[p, 0, 2:(Ny_half-2)]  + N.roll(Jbuffy, -1, axis = 2)[p, 0, 2:(Ny_half-2)])
-        Jbuffy[p, -1, 2:(Ny_half-2)] = 0.5 * Jbuffy[p, -1, 2:(Ny_half-2)] + 0.25 * (N.roll(Jbuffy, 1, axis = 2)[p, -1, 2:(Ny_half-2)] + N.roll(Jbuffy, -1, axis = 2)[p, -1, 2:(Ny_half-2)])
+        # Jx at edge cell in patch 1
+        Jbuffx[1, 0, 1:(Ny_int-1)] = 0.25 * Jintx[1, 0, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
 
-        Jbuffy[p, 1:(Nx_int-1), :2]  = 0.5 * Jbuffy[p, 1:(Nx_int-1), :2]  + 0.25 * (N.roll(Jbuffy, 1, axis = 1)[p, 1:(Nx_int-1), :2]  + N.roll(Jbuffy, -1, axis = 1)[p, 1:(Nx_int-1), :2])
-        Jbuffy[p, 1:(Nx_int-1), -2:] = 0.5 * Jbuffy[p, 1:(Nx_int-1), -2:] + 0.25 * (N.roll(Jbuffy, 1, axis = 1)[p, 1:(Nx_int-1), -2:] + N.roll(Jbuffy, -1, axis = 1)[p, 1:(Nx_int-1), -2:])
+        # # Jx at half-edge cell in patch 0
+        # Jbuffx[0, -2, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 12.0) * Jintx[0, -3, 1:(Ny_int-1)] \
+        #                             + (1.0 / 6.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+        #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+        #                             + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+        #                             + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+        #                             + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
+                                            
+        # # Jx at edge cell in patch 0
+        # Jbuffx[0, -1, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+        #                             + (1.0 / 8.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 4.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+        #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+        #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+        #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+        #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+        #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
 
+        # # Jx at half-edge cell in patch 1                             
+        # Jbuffx[1, 1, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 12.0) * Jintx[1, 2, 1:(Ny_int-1)] \
+        #                            + (1.0 / 6.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+        #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+        #                            + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+        #                            + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+        #                            + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
+                                        
+        # # Jx at edge cell in patch 1
+        # Jbuffx[1, 0, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+        #                            + (1.0 / 8.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 4.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+        #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+        #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+        #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
+
+
+        Jinty[:, :, :] = Jbuffy[:, :, :]
+
+        # Jy in bulk
+        Jbuffy[:, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jinty[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)]
+
+        # Jy at edge cell in patch 0
+        Jbuffy[0, -1, 2:(Ny_half-2)] = 0.25 * Jinty[0, -1, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)]
+
+        # Jx at edge cell in patch 1
+        Jbuffy[1, 0, 2:(Ny_half-2)] = 0.25 * Jinty[1, 0, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)]
+
+        # rho in bulk
         rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] = 0.25 * rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(rhobuff, 1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(rhobuff, -1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
@@ -724,20 +1100,21 @@ def filter_current(p, iter):
                                             + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)]
 
 
-    Jx[p, :, :] = Jbuffx[p, :, :]
-    Jy[p, :, :] = Jbuffy[p, :, :]
-    rho0[p, :, :] = rhobuff[p, :, :]
+    Jx[:, :, :] = Jbuffx[:, :, :]
+    Jy[:, :, :] = Jbuffy[:, :, :]
+    rho0[:, :, :] = rhobuff[:, :, :]
 
     return
 
 flux0 = N.zeros(Nt)
 flux1 = N.zeros(Nt)
+fluxa = N.zeros(Nt)
 
 # Boundaries of Gauss' theorem diagnostic in patch 0 and 1
 x0l = 0.7
-x0r = 0.9
-x1l = 0.3
-x1r = 0.5
+x0r = 0.85
+x1l = 0.05
+x1r = 0.2
 
 i0l = N.argmin(N.abs(x_half - x0l))
 i0r = N.argmin(N.abs(x_half - x0r))
@@ -749,7 +1126,23 @@ def compute_charge():
     flux0[it]  = spi.simps(Ex[0, i0r, :], x=y_int) - spi.simps(Ex[0, i0l, :], x=y_int) \
                + spi.simps(Ey[0, i0l:i0r, -1], x=x_int[i0l:i0r]) - spi.simps(Ey[0, i0l:i0r, 0], x=x_int[i0l:i0r])
     flux1[it]  = spi.simps(Ex[1, i1r, :], x=y_int) - spi.simps(Ex[1, i1l, :], x=y_int) \
-               + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i0l:i0r])
+               + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i1l:i1r])
+    return
+
+# Boundaries of Gauss' theorem across interface
+xal = 0.95
+xar = 1.05
+
+ial = N.argmin(N.abs(x_half - xal))
+iar = N.argmin(N.abs(x_half - (xar - x_max + x_min)))
+
+# Computes enclosed charge
+def compute_charge_across():
+
+    fluxa[it]  = spi.simps(Ex[1, iar, :], x=y_int) - spi.simps(Ex[0, ial, :], x=y_int) \
+               + spi.simps(Ey[0, ial:-1, -1], x=x_int[ial:-1]) - spi.simps(Ey[0, ial:-1, 0], x=x_int[ial:-1]) \
+               + spi.simps(Ey[1, 1:iar, -1], x=x_int[1:iar]) - spi.simps(Ey[1, 1:iar, 0], x=x_int[ial:-1])
+
     return
 
 ########
@@ -829,6 +1222,8 @@ def BC_penalty_E(dtin, Exin, Eyin, Bzin):
 
 ratio = 0.5
 
+vm = 0.4
+
 from matplotlib.gridspec import GridSpec
 
 def plot_fields(idump, it):
@@ -838,8 +1233,14 @@ def plot_fields(idump, it):
     
     ax = fig.add_subplot(gs[0, :3])
     
-    P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
-    P.pcolormesh(xEx_grid + x_max, yEx_grid, Jx[1, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEx_grid, yEx_grid, Ex[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Ex[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    
+    # P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid + x_max, yEx_grid, Jx[1, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+
+    # P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :] + Jxout[0, :, :, it], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid + x_max, yEx_grid, Jx[1, :, :] + Jxout[1, :, :, it], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
     
     for ip in range(np):
         if (tag[it, ip]==0):
@@ -851,23 +1252,25 @@ def plot_fields(idump, it):
     
     # P.colorbar()
     
-    P.ylim((y_min, y_max))
-    P.xlim((0.0, 2.0*x_max))
+    P.xlim((0.5, 1.5))
+    P.ylim((0.25, 0.75))
 
     ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
     P.plot([1.0, 1.0],[0, 1.0], color='k')
 
-    P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
-    P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
-    P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
-    P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    # P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    # P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    # P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    # P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
 
+    P.plot([xal, xal],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    P.plot([xar, xar],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
 
     ax = fig.add_subplot(gs[1, :3])
 
-    P.pcolormesh(xEy_grid, yEy_grid, Ey[0, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
-    P.pcolormesh(xEy_grid + x_max, yEy_grid, Ey[1, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEy_grid, yEy_grid, Ey[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEy_grid + x_max, yEy_grid, Ey[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
 
     # P.colorbar()
 
@@ -878,19 +1281,23 @@ def plot_fields(idump, it):
             P.scatter(xp[it, ip] + x_max - x_min+ 2.0 * dx, yp[it, ip], s=10)
 
     P.title(r'$E_y$', fontsize=16)
+
+    P.xlim((0.5, 1.5))
+    P.ylim((0.25, 0.75))
         
-    P.ylim((y_min, y_max))
-    P.xlim((0.0, 2.0*x_max))
     ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
     P.plot([1.0, 1.0],[0, 1.0], color='k')
 
     ax = fig.add_subplot(gs[:, -1])
 
-    P.scatter(time[it-1], flux0[it-1] / (4.0 * N.pi * q), s=10, color=[0, 0.4, 0.4])
-    P.scatter(time[it-1], flux1[it-1] / (4.0 * N.pi * q), s=10, color=[0.8, 0.0, 0.0])
-    P.plot(time[:it], flux0[:it] / (4.0 * N.pi * q), color = [0, 0.4, 0.4], ls = '-')
-    P.plot(time[:it], flux1[:it] / (4.0 * N.pi * q), color = [0.8, 0.0, 0.0], ls = '-')
+    # P.scatter(time[it-1], flux0[it-1] / (4.0 * N.pi * q), s=10, color=[0, 0.4, 0.4])
+    # P.scatter(time[it-1], flux1[it-1] / (4.0 * N.pi * q), s=10, color=[0.8, 0.0, 0.0])
+    # P.plot(time[:it], flux0[:it] / (4.0 * N.pi * q), color = [0, 0.4, 0.4], ls = '-')
+    # P.plot(time[:it], flux1[:it] / (4.0 * N.pi * q), color = [0.8, 0.0, 0.0], ls = '-')
+
+    P.scatter(time[it-1], fluxa[it-1] / (4.0 * N.pi * q), s=10, color=[0, 0.4, 0.4])
+    P.plot(time[:it], fluxa[:it] / (4.0 * N.pi * q), color = [0, 0.4, 0.4], ls = '-')
 
     P.plot([0.0, Nt*dt],[1.0, 1.0], color='k',   lw=1.0, ls = '--')
     P.plot([0.0, Nt*dt],[-1.0, -1.0], color='k', lw=1.0, ls = '--')
@@ -904,17 +1311,17 @@ def plot_fields(idump, it):
     
     P.close('all')
 
-vm=1.0
-
 def plot_fields_zoom(idump, it):
 
     fig = P.figure(1, facecolor='w', figsize=(30,10))
     gs = GridSpec(2, 1, figure=fig)
     
     ax = fig.add_subplot(gs[0, 0])
-    
-    P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
-    P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Jx[1, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
+
+    P.pcolormesh(xEx_grid, yEx_grid, Ex[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Ex[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Jx[1, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
     
     for ip in range(np):
         if (tag[it, ip]==0):
@@ -930,10 +1337,10 @@ def plot_fields_zoom(idump, it):
 
     P.plot([1.0, 1.0],[0, 1.0], color='k')
 
-    P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
-    P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
-    P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
-    P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    # P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    # P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    # P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    # P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
 
 
     ax = fig.add_subplot(gs[1, 0])
@@ -968,19 +1375,19 @@ def plot_div(idump, it):
     ax = P.subplot(211)
 
     P.pcolormesh(xEz_grid, yEz_grid, q * N.abs(divE1[0, :, :] - 4.0 * N.pi * rho1[0, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
-    P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, q * N.abs(divE0[1, :, :] - 4.0 * N.pi * rho1[1, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, q * N.abs(divE1[1, :, :] - 4.0 * N.pi * rho1[1, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
         
     P.ylim((0.4, 0.6))
-    P.xlim((0.95, 1.05))
+    P.xlim((0.9, 1.1))
     # ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
     
     ax = P.subplot(212)
 
     P.pcolormesh(xEz_grid, yEz_grid, q * N.abs(divcharge[0, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
-    P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, N.abs(divcharge[0, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, N.abs(divcharge[1, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
         
     P.ylim((0.4, 0.6))
-    P.xlim((0.95, 1.05))
+    P.xlim((0.9, 1.1))
     # ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
     figsave_png(fig, "../snapshots_penalty/divergence_" + str(idump))
@@ -993,7 +1400,7 @@ def plot_div(idump, it):
 
 amp = 0.0
 n_mode = 2
-n_iter = 10
+n_iter = 8
 
 wave = 2.0 * (x_max - x_min) / n_mode
 Bz0 = amp * N.cos(2.0 * N.pi * (xBz_grid - x_min) / wave) * N.cos(2.0 * N.pi * (yBz_grid - x_min) / wave)
@@ -1024,7 +1431,7 @@ Bz0 = N.zeros_like(Bz)
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields(idump, it)
-        plot_fields_zoom(idump, it)
+        # plot_fields_zoom(idump, it)
         # plot_div(idump, it)
         idump += 1
 
@@ -1053,7 +1460,7 @@ for it in tqdm(range(Nt), "Progression"):
     
     compute_divcharge(patches)
 
-    # filter_current(0, n_iter)
+    filter_current(n_iter)
 
     # 2nd Faraday substep, starting with B at n, finishing with B at n + 1/2
     compute_diff_E(patches)
@@ -1080,3 +1487,4 @@ for it in tqdm(range(Nt), "Progression"):
     energy[0, it] = dx * dy * N.sum(Bz[0, :, :]**2) + N.sum(Ex[0, :, :]**2) + N.sum(Ey[0, :, :]**2)
     energy[1, it] = dx * dy * N.sum(Bz[1, :, :]**2) + N.sum(Ex[1, :, :]**2) + N.sum(Ey[1, :, :]**2)
     compute_charge()
+    compute_charge_across()

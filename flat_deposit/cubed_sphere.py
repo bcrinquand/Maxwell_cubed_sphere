@@ -14,8 +14,8 @@ Ny_half = Ny + 2  # NUmber of hlaf-step points
 
 q = 1e-2  # Absolute value of charge
 
-Nt = 200  # Number of iterations
-FDUMP = 1  # Dump frequency
+Nt = 4000  # Number of iterations
+FDUMP = 100  # Dump frequency
 
 x_min, x_max = 0.0, 1.0
 dx = (x_max - x_min) / Nx
@@ -256,9 +256,8 @@ wp = N.zeros((Nt + 1, np))  # charge x weight (can be negative)
 # Patch in which the partice is located
 tag = N.zeros((Nt + 1, np), dtype='int')
 
-ux0 = 0.1
-x0 = 0.99
-
+ux0 = 0.02
+x0 = 0.95
 
 def initialize_part():
     xp[0, :] = x0
@@ -268,8 +267,8 @@ def initialize_part():
 
     for ip in range(0, np, 2):
         r = y_min + N.random.rand() * (y_max - y_min)
-        yp[0, ip] = 0.72      # r
-        yp[0, ip + 1] = 0.72  # r
+        yp[0, ip] = 0.51      # r
+        yp[0, ip + 1] = 0.51  # r
         uxp[0, ip] = ux0
         uxp[0, ip + 1] = -ux0
         wp[:, ip] = -1.0
@@ -279,8 +278,8 @@ def initialize_part():
 
 
 def impose_velocity_part(it):
-    uxp[it, 0] = ux0   # * 0.5 * (1 - N.tanh((200 - it)/50))
-    uxp[it, 1] = -ux0  # * 0.5 * (1 - N.tanh((200 - it)/50))
+    uxp[it, 0] = ux0  * 0.5 * (1 - N.tanh((200 - it)/50))
+    uxp[it, 1] = -ux0 * 0.5 * (1 - N.tanh((200 - it)/50))
 
 # Returns index of CELL
 
@@ -745,74 +744,130 @@ def deposit_particle(it, ip):
 
 Jbuffx = N.zeros_like(Jx)
 Jbuffy = N.zeros_like(Jy)
+Jintx = N.zeros_like(Jx)
+Jinty = N.zeros_like(Jy)
 rhobuff = N.zeros_like(rho0)
 
+def filter_current(iter):
 
-def filter_current(p, iter):
-
-    Jbuffx[p, :, :] = Jx[p, :, :]
-    Jbuffy[p, :, :] = Jy[p, :, :]
-    rhobuff[p, :, :] = rho0[p, :, :]
+    Jbuffx[:, :, :] = Jx[:, :, :]
+    Jbuffy[:, :, :] = Jy[:, :, :]
+    rhobuff[:, :, :] = rho0[:, :, :]
+    
+    # Pretend information from other patch is in a ghost cell
 
     for i in range(iter):
+        
+        Jintx[:, :, :] = Jbuffx[:, :, :]
 
-        Jbuffx[p, 1:(Nx_half-1), 1:(Ny_int-1)] = 0.25 * Jbuffx[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(Jbuffx, 1, axis=1)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(Jbuffx, -1, axis=1)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(Jbuffx, 1, axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(Jbuffx, -1, axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(Jbuffx, 1, axis=1), 1, axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(Jbuffx, -1, axis=1), -1, axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(Jbuffx, 1, axis=1), -1, axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)] \
-            + 0.0625 * \
-            N.roll(N.roll(Jbuffx, -1, axis=1), 1,
-                   axis=2)[p, 1:(Nx_half-1), 1:(Ny_int-1)]
+        # Jx in bulk, regular 1-2-1 stencil
+        Jbuffx[:, 2:(Nx_half-2), 1:(Ny_int-1)] = 0.25 * Jintx[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)]
 
-        Jbuffx[p, 1:(Nx_half-1), 0] = 0.5 * Jbuffx[p, 1:(Nx_half-1), 0] + 0.25 * (N.roll(Jbuffx,
-                                                                                         1, axis=1)[p, 1:(Nx_half-1), 0] + N.roll(Jbuffx, -1, axis=1)[p, 1:(Nx_half-1), 0])
-        Jbuffx[p, 1:(Nx_half-1), -1] = 0.5 * Jbuffx[p, 1:(Nx_half-1), -1] + 0.25 * (N.roll(Jbuffx,
-                                                                                           1, axis=1)[p, 1:(Nx_half-1), -1] + N.roll(Jbuffx, -1, axis=1)[p, 1:(Nx_half-1), -1])
+        # Jx at half-edge cell in patch 0
+        Jbuffx[0, -2, 1:(Ny_int-1)] = 0.25 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -3, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
 
-        Jbuffx[p, 0, 1:(Ny_int-1)] = Jbuffx[p, 1, 1:(Ny_int-1)]
-        Jbuffx[p, -1, 1:(Ny_int-1)] = Jbuffx[p, -2, 1:(Ny_int-1)]
+        # Jx at edge cell in patch 0
+        Jbuffx[0, -1, 1:(Ny_int-1)] = 0.25 * Jintx[0, -1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
 
-        Jbuffy[p, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jbuffy[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.125 * N.roll(Jbuffy, 1, axis=1)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.125 * N.roll(Jbuffy, -1, axis=1)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.125 * N.roll(Jbuffy, 1, axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.125 * N.roll(Jbuffy, -1, axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.0625 * N.roll(N.roll(Jbuffy, 1, axis=1), 1, axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.0625 * N.roll(N.roll(Jbuffy, -1, axis=1), -1, axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.0625 * N.roll(N.roll(Jbuffy, 1, axis=1), -1, axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)] \
-            + 0.0625 * N.roll(N.roll(Jbuffy, -1, axis=1), 1,
-                              axis=2)[p, 1:(Nx_int-1), 2:(Ny_half-2)]
+        # Jx at half-edge cell in patch 1                             
+        Jbuffx[1, 1, 1:(Ny_int-1)] = 0.25 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
 
-        Jbuffy[p, 0, 2:(Ny_half-2)] = 0.5 * Jbuffy[p, 0, 2:(Ny_half-2)] + 0.25 * (N.roll(
-            Jbuffy, 1, axis=2)[p, 0, 2:(Ny_half-2)] + N.roll(Jbuffy, -1, axis=2)[p, 0, 2:(Ny_half-2)])
-        Jbuffy[p, -1, 2:(Ny_half-2)] = 0.5 * Jbuffy[p, -1, 2:(Ny_half-2)] + 0.25 * (N.roll(
-            Jbuffy, 1, axis=2)[p, -1, 2:(Ny_half-2)] + N.roll(Jbuffy, -1, axis=2)[p, -1, 2:(Ny_half-2)])
+        # Jx at edge cell in patch 1
+        Jbuffx[1, 0, 1:(Ny_int-1)] = 0.25 * Jintx[1, 0, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
 
-        Jbuffy[p, 1:(Nx_int-1), :2] = 0.5 * Jbuffy[p, 1:(Nx_int-1), :2] + 0.25 * (N.roll(Jbuffy,
-                                                                                         1, axis=1)[p, 1:(Nx_int-1), :2] + N.roll(Jbuffy, -1, axis=1)[p, 1:(Nx_int-1), :2])
-        Jbuffy[p, 1:(Nx_int-1), -2:] = 0.5 * Jbuffy[p, 1:(Nx_int-1), -2:] + 0.25 * (N.roll(Jbuffy,
-                                                                                           1, axis=1)[p, 1:(Nx_int-1), -2:] + N.roll(Jbuffy, -1, axis=1)[p, 1:(Nx_int-1), -2:])
+        Jinty[:, :, :] = Jbuffy[:, :, :]
 
-        rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] = 0.25 * rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(rhobuff, 1, axis=1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(rhobuff, -1, axis=1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(rhobuff, 1, axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.125 * N.roll(rhobuff, -1, axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(rhobuff, 1, axis=1), 1, axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(rhobuff, -1, axis=1), -1, axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(rhobuff, 1, axis=1), -1, axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-            + 0.0625 * N.roll(N.roll(rhobuff, -1, axis=1), 1,
-                              axis=2)[p, 1:(Nx_int-1), 1:(Ny_int-1)]
+        # Jy in bulk
+        Jbuffy[:, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jinty[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)]
 
-    Jx[p, :, :] = Jbuffx[p, :, :]
-    Jy[p, :, :] = Jbuffy[p, :, :]
-    rho0[p, :, :] = rhobuff[p, :, :]
+        # Jy at edge cell in patch 0
+        Jbuffy[0, -1, 2:(Ny_half-2)] = 0.25 * Jinty[0, -1, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)]
+
+        # Jx at edge cell in patch 1
+        Jbuffy[1, 0, 2:(Ny_half-2)] = 0.25 * Jinty[1, 0, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)]
+
+        # # rho in bulk
+        # rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] = 0.25 * rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.125 * N.roll(rhobuff, 1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.125 * N.roll(rhobuff, -1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.125 * N.roll(rhobuff, 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.125 * N.roll(rhobuff, -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+        #                                     + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)]
+
+
+    Jx[:, :, :] = Jbuffx[:, :, :]
+    Jy[:, :, :] = Jbuffy[:, :, :]
+    rho0[:, :, :] = rhobuff[:, :, :]
 
     return
+
 
 
 flux0 = N.zeros(Nt)
@@ -931,3 +986,146 @@ def BC_penalty_E(dtin, sigma, Exin, Eyin, Bzin):
     Ey[1, 0, :] -= dtin * sigma * \
         (Eyin[1, 0, :] + Bzin[1, 0, :] -
          (Eyin[0, -1, :] + Bzin[0, -1, :])) / (dx * P_half_2[0])
+        
+        
+        
+#### VISUALIZATION
+
+ratio = 0.5
+
+from matplotlib.gridspec import GridSpec
+import matplotlib.pyplot as P
+from figure_module import *
+
+def plot_fields(idump, it):
+
+    fig = P.figure(1, facecolor='w', figsize=(30,10))
+    gs = GridSpec(2, 3, figure=fig)
+    
+    ax = fig.add_subplot(gs[0, :3])
+    
+    P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEx_grid + x_max, yEx_grid, Jx[1, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    
+    for ip in range(np):
+        if (tag[it, ip]==0):
+            P.scatter(xp[it, ip], yp[it, ip], s=10)
+        elif (tag[it, ip]==1):
+            P.scatter(xp[it, ip] + x_max - x_min+ 2.0 * dx, yp[it, ip], s=10)
+    
+    P.title(r'$E_x$', fontsize=16)
+    
+    # P.colorbar()
+    
+    P.ylim((y_min, y_max))
+    P.xlim((0.0, 2.0*x_max))
+
+    ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
+
+    P.plot([1.0, 1.0],[0, 1.0], color='k')
+
+    P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+
+
+    ax = fig.add_subplot(gs[1, :3])
+
+    P.pcolormesh(xEy_grid, yEy_grid, Ey[0, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+    P.pcolormesh(xEy_grid + x_max, yEy_grid, Ey[1, :, :], vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
+
+    # P.colorbar()
+
+    for ip in range(np):
+        if (tag[it, ip]==0):
+            P.scatter(xp[it, ip], yp[it, ip], s=10)
+        elif (tag[it, ip]==1):
+            P.scatter(xp[it, ip] + x_max - x_min+ 2.0 * dx, yp[it, ip], s=10)
+
+    P.title(r'$E_y$', fontsize=16)
+        
+    P.ylim((y_min, y_max))
+    P.xlim((0.0, 2.0*x_max))
+    ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
+
+    P.plot([1.0, 1.0],[0, 1.0], color='k')
+
+    ax = fig.add_subplot(gs[:, -1])
+
+    P.scatter(time[it-1], flux0[it-1] / (4.0 * N.pi * q), s=10, color=[0, 0.4, 0.4])
+    P.scatter(time[it-1], flux1[it-1] / (4.0 * N.pi * q), s=10, color=[0.8, 0.0, 0.0])
+    P.plot(time[:it], flux0[:it] / (4.0 * N.pi * q), color = [0, 0.4, 0.4], ls = '-')
+    P.plot(time[:it], flux1[:it] / (4.0 * N.pi * q), color = [0.8, 0.0, 0.0], ls = '-')
+
+    P.plot([0.0, Nt*dt],[1.0, 1.0], color='k',   lw=1.0, ls = '--')
+    P.plot([0.0, Nt*dt],[-1.0, -1.0], color='k', lw=1.0, ls = '--')
+    
+    P.xlim((0.0, Nt * dt))
+    P.ylim((-1.1, 1.1))
+    P.xlabel(r'$t$')
+    P.ylabel(r'$Q$')
+    
+    figsave_png(fig, "../snapshots_penalty/fields_" + str(idump))
+    
+    P.close('all')
+
+vm=1.0
+
+def plot_fields_zoom(idump, it):
+
+    fig = P.figure(1, facecolor='w', figsize=(30,10))
+    gs = GridSpec(2, 1, figure=fig)
+    
+    ax = fig.add_subplot(gs[0, 0])
+
+    P.pcolormesh(xEx_grid, yEx_grid, Ex[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Ex[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid, yEx_grid, Jx[0, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Jx[1, :, :], vmin = -1.0, vmax = 1.0, cmap = 'RdBu_r')
+    
+    for ip in range(np):
+        if (tag[it, ip]==0):
+            P.scatter(xp[it, ip], yp[it, ip], s=20, color='k')
+        elif (tag[it, ip]==1):
+            P.scatter(xp[it, ip] + x_max - x_min+ 2.0 * dx, yp[it, ip], s=20, color='k')
+    
+    P.title(r'$E_x$', fontsize=16)
+        
+    P.ylim((0.4, 0.6))
+    P.xlim((0.8, 1.2))
+    ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
+
+    P.plot([1.0, 1.0],[0, 1.0], color='k')
+
+    P.plot([x0l, x0l],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    P.plot([x0r, x0r],[0, 1.0], color=[0,0.4,0.4],   lw=1.0, ls = '--')
+    P.plot([x1l + x_max, x1l + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+    P.plot([x1r + x_max, x1r + x_max],[0, 1.0], color=[0.8,0.0,0.0], lw=1.0, ls = '--')
+
+
+    ax = fig.add_subplot(gs[1, 0])
+
+    # P.pcolormesh(xEx_grid, yEx_grid, Ex[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    # P.pcolormesh(xEx_grid + x_max + 2.0 * dx, yEx_grid, Ex[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEy_grid, yEy_grid, Ey[0, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+    P.pcolormesh(xEy_grid + x_max + 2.0 * dx, yEy_grid, Ey[1, :, :], vmin = -vm, vmax = vm, cmap = 'RdBu_r')
+
+    for ip in range(np):
+        if (tag[it, ip]==0):
+            P.scatter(xp[it, ip], yp[it, ip], s=20, color='k')
+        elif (tag[it, ip]==1):
+            P.scatter(xp[it, ip] + x_max - x_min+ 2.0 * dx, yp[it, ip], s=20, color='k')
+
+    P.title(r'$E_y$', fontsize=16)
+        
+    P.ylim((0.4, 0.6))
+    P.xlim((0.8, 1.2))
+    ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
+
+    P.plot([1.0, 1.0],[0, 1.0], color='k')
+    
+    figsave_png(fig, "../snapshots_penalty/fields_zoom_" + str(idump))
+    
+    P.close('all')
+
