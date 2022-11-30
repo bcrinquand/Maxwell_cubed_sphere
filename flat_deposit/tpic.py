@@ -12,40 +12,67 @@ idump = 0
 energy = N.zeros((n_patches, Nt))
 patches = N.array(range(n_patches))
 
-PARAMS = {
-    'use_implicit': False,
-    'sigma': 1.0
-}
+PARAMS = {"use_implicit": True, "sigma": 1}
 
 # Fields at previous time steps
 Ex0 = N.zeros_like(Ex)
 Ey0 = N.zeros_like(Ey)
 Bz0 = N.zeros_like(Bz)
 
-output_dir = 'frames_explicit'
+output_dir = "frames_impl"
 
 
 def clear_dir(output_dir):
     import os
     import shutil
+
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
 
-n_iter = 2
 
 clear_dir(output_dir)
 
 for it in tqdm(N.arange(Nt)):
-    if ((it % FDUMP) == 0):
-        # newplot(output_dir, idump, it,
-        #         x_right=x_max,
-        #         dx=dx, dy=dy,
-        #         Ex=Ex,
-        #         prtls=(tag, xp, yp, wp, np),
-        #         xEx_grid=xEx_grid, yEx_grid=yEx_grid)
-        plot_fields(idump, it)
-        plot_fields_zoom(idump, it)
+    if (it % FDUMP) == 0:
+        region_A = (0.97, 0.98, 0.7, 0.74)
+        indices_A = (
+            N.argmin(N.abs(x_half - region_A[0])),
+            N.argmin(N.abs(x_half - region_A[1])),
+            N.argmin(N.abs(y_int - region_A[2])),
+            N.argmin(N.abs(y_int - region_A[3])),
+        )
+        x_slice = slice(indices_A[0], indices_A[1])
+        y_slice = slice(indices_A[2], indices_A[3])
+        flux0[it] = (
+            spi.simps(Ex[0, indices_A[0], y_slice], x=y_int[y_slice])
+            - spi.simps(Ex[0, indices_A[1], y_slice], x=y_int[y_slice])
+            + spi.simps(Ey[0, x_slice, indices_A[2]], x=x_half[x_slice])
+            - spi.simps(Ey[0, x_slice, indices_A[3]], x=x_half[x_slice])
+        )
+        # flux1[it] = spi.simps(Ex[1, i1r, :], x=y_int) - spi.simps(Ex[1, i1l, :], x=y_int) \
+        #     + spi.simps(Ey[1, i1l:i1r, -1], x=x_int[i1l:i1r]) - \
+        #     spi.simps(Ey[1, i1l:i1r, 0], x=x_int[i1l:i1r])
+        actual_region_A = (
+            x_half[indices_A[0]],
+            x_half[indices_A[1]],
+            y_int[indices_A[2]],
+            y_int[indices_A[3]],
+        )
+        newplot(
+            output_dir,
+            idump,
+            it,
+            x_right=x_max,
+            dx=dx,
+            dy=dy,
+            Ex=Ex,
+            prtls=(tag, xp, yp, wp, np),
+            fluxes=(actual_region_A, time, flux0, flux1),
+            charge=q,
+            xEx_grid=xEx_grid,
+            yEx_grid=yEx_grid,
+        )
         idump += 1
 
     # print(it, Nt)
@@ -57,7 +84,7 @@ for it in tqdm(N.arange(Nt)):
     # Here, Bz is defined at n, no need for averaging
     # BC_conducting_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
     BC_absorbing_B(0.5 * dt, Ex, Ey, copy.deepcopy(Bz))
-    BC_penalty_B(0.5 * dt, PARAMS['sigma'], Ex, Ey, copy.deepcopy(Bz))
+    BC_penalty_B(0.5 * dt, PARAMS["sigma"], Ex, Ey, copy.deepcopy(Bz))
 
     Bz0 = copy.deepcopy(Bz)
 
@@ -69,13 +96,13 @@ for it in tqdm(N.arange(Nt)):
         uxp[it, 1] = -ux0
         push_x(it, ip)
         BC_part(it, ip)
-
+    
     # Current deposition
     deposit_J(it)
 
-    compute_divcharge(patches)
+    # compute_divcharge(patches)
 
-    filter_current(n_iter)
+    # filter_current(0, n_iter)
 
     # 2nd Faraday substep, starting with B at n, finishing with B at n + 1/2
     compute_diff_E(patches)
@@ -84,7 +111,7 @@ for it in tqdm(N.arange(Nt)):
     # Use Bz0, defined at n, this time
     # BC_conducting_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
     BC_absorbing_B(0.5 * dt, Ex, Ey, Bz0)
-    BC_penalty_B(0.5 * dt, PARAMS['sigma'], Ex, Ey, Bz0)
+    BC_penalty_B(0.5 * dt, PARAMS["sigma"], Ex, Ey, Bz0)
 
     # Ampère step, starting with E at n, finishing with E at n + 1
     Ex0 = copy.deepcopy(Ex)
@@ -92,7 +119,7 @@ for it in tqdm(N.arange(Nt)):
     compute_diff_B(patches)
 
     Ex[patches] += dt * (dBzdy[patches] - 4.0 * N.pi * Jx[patches])
-    if PARAMS['use_implicit']:
+    if PARAMS["use_implicit"]:
         Ey[0, :-1, :] += dt * (-dBzdx[0, :-1, :] - 4.0 * N.pi * Jy[0, :-1, :])
         Ey[1, 1:, :] += dt * (-dBzdx[1, 1:, :] - 4.0 * N.pi * Jy[1, 1:, :])
     else:
@@ -104,31 +131,32 @@ for it in tqdm(N.arange(Nt)):
 
     BC_absorbing_E(dt, 0.5 * (Ex0 + Ex), 0.5 * (Ey0 + Ey), Bz)
 
-    if PARAMS['use_implicit']:
+    if PARAMS["use_implicit"]:
         Ey1 = copy.deepcopy(Ey)
-        dx1 = PARAMS['sigma'] * dt
+        dx1 = PARAMS["sigma"] * dt
         delta = dx + 2 * dx1
-        SY_A = (-dBzdx[0, -1, :] - 4.0 * N.pi * Jy[0, -1, :])
-        SY_B = (-dBzdx[1, 0, :] - 4.0 * N.pi * Jy[1, 0, :])
-        deltaBZ_AB = (Bz[0, -1, :] - Bz[1, 0, :])
+        SY_A = -dBzdx[0, -1, :] - 4.0 * N.pi * Jy[0, -1, :]
+        SY_B = -dBzdx[1, 0, :] - 4.0 * N.pi * Jy[1, 0, :]
+        deltaBZ_AB = Bz[0, -1, :] - Bz[1, 0, :]
 
-        Ey[0, -1, :] = \
-            (1 / delta) * (dx * Ey1[0, -1, :] + 2 * dx1 * Ey1[1, 0, :]) +\
-            (dt / delta) * ((dx + dx1) * SY_A + dx1 * SY_B) +\
-            + (2 * dx1 / dx) * deltaBZ_AB
+        Ey[0, -1, :] = (
+            (1 / delta) * (dx * Ey1[0, -1, :] + 2 * dx1 * Ey1[1, 0, :])
+            + (dt / delta) * ((dx + dx1) * SY_A + dx1 * SY_B)
+            + +(2 * dx1 / dx) * deltaBZ_AB
+        )
 
-        Ey[1, 0, :] = \
-            (1 / delta) * (2 * dx1 * Ey1[0, -1, :] + dx * Ey1[1, 0, :]) +\
-            (dt / delta) * (dx1 * SY_A + (dx + dx1) * SY_B) +\
-            + (2 * dx1 / dx) * deltaBZ_AB
+        Ey[1, 0, :] = (
+            (1 / delta) * (2 * dx1 * Ey1[0, -1, :] + dx * Ey1[1, 0, :])
+            + (dt / delta) * (dx1 * SY_A + (dx + dx1) * SY_B)
+            + +(2 * dx1 / dx) * deltaBZ_AB
+        )
     else:
-        BC_penalty_E(dt, PARAMS['sigma'], 0.5 *
-                     (Ex0 + Ex), 0.5 * (Ey0 + Ey), Bz)
+        BC_penalty_E(dt, PARAMS["sigma"], 0.5 * (Ex0 + Ex), 0.5 * (Ey0 + Ey), Bz)
 
-    compute_divE(patches, Ex, Ey)
+    # compute_divE(patches, Ex, Ey)
 
-    energy[0, it] = dx * dy * \
-        N.sum(Bz[0, :, :]**2) + N.sum(Ex[0, :, :]**2) + N.sum(Ey[0, :, :]**2)
-    energy[1, it] = dx * dy * \
-        N.sum(Bz[1, :, :]**2) + N.sum(Ex[1, :, :]**2) + N.sum(Ey[1, :, :]**2)
-    compute_charge(it)
+    # energy[0, it] = dx * dy * \
+    #     N.sum(Bz[0, :, :]**2) + N.sum(Ex[0, :, :]**2) + N.sum(Ey[0, :, :]**2)
+    # energy[1, it] = dx * dy * \
+    #     N.sum(Bz[1, :, :]**2) + N.sum(Ex[1, :, :]**2) + N.sum(Ey[1, :, :]**2)
+so
