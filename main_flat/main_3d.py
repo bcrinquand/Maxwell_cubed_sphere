@@ -57,10 +57,10 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.6
-Nr0 = 50
-Nxi = 50 #32
-Neta = 50 #32
+cfl = 0.2
+Nr0 = 64
+Nxi = 32 #32
+Neta = 32 #32
 
 Nxi_int = Nxi + 1 # Number of integer points
 Nxi_half = Nxi + 2 # Number of half-step points
@@ -70,7 +70,7 @@ Neta_half = Neta + 2 # NUmber of half-step points
 NG = 1 # Radial ghost cells
 Nr = Nr0 + 2 * NG # Total number of radial points
 
-r_min, r_max = 1.0, 15.0
+r_min, r_max = 1.0, 8.0
 xi_min, xi_max = - N.pi / 4.0, N.pi / 4.0
 eta_min, eta_max = - N.pi / 4.0, N.pi / 4.0
 
@@ -410,6 +410,27 @@ def compute_diff_B(p):
     dB2d1[p, :, Nxi_int - 1, :] = (- 0.25 * B2d[p, :, -3, :] - 0.25 * B2d[p, :, -2, :] + 0.5 * B2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 1]
     dB2d1[p, :, 2:(Nxi_int - 2), :] = (N.roll(B2d, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - B2d[p, :, 2:(Nxi_int - 2), :]) / dxi
 
+def compute_diff_B_low(p):
+    
+    dBrd1[p, :, 0, :] = (- Br[p, :, 0, :] + Br[p, :, 1, :]) / dxi / 0.5
+    dBrd1[p, :, Nxi_int - 1, :] = (-  Br[p, :, -2, :] + Br[p, :, -1, :]) / dxi / 0.5
+    dBrd1[p, :, 1:(Nxi_int - 1), :] = (N.roll(Br, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - Br[p, :, 1:(Nxi_int - 1), :]) / dxi
+
+    dBrd2[p, :, :, 0] = (- Br[p, :, :, 0] + Br[p, :, :, 1]) / deta / 0.5
+    dBrd2[p, :, :, Nxi_int - 1] = (- Br[p, :, :, -2] + Br[p, :, :, -1]) / deta / 0.5
+    dBrd2[p, :, :, 1:(Neta_int - 1)] = (N.roll(Br, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - Br[p, :, :, 1:(Neta_int - 1)]) / deta
+
+    dB1dr[p, NG:(Nr0 + NG), :, :] = (B1d[p, NG:(Nr0 + NG), :, :] - N.roll(B1d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
+    dB2dr[p, NG:(Nr0 + NG), :, :] = (B2d[p, NG:(Nr0 + NG), :, :] - N.roll(B2d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
+
+    dB1d2[p, :, :, 0] = (- B1d[p, :, :, 0] + B1d[p, :, :, 1]) / deta / 0.5
+    dB1d2[p, :, :, Nxi_int - 1] = (- B1d[p, :, :, -2] + B1d[p, :, :, -1]) / deta / 0.5
+    dB1d2[p, :, :, 1:(Neta_int - 1)] = (N.roll(B1d, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - B1d[p, :, :, 1:(Neta_int - 1)]) / deta
+
+    dB2d1[p, :, 0, :] = (- B2d[p, :, 0, :] + B2d[p, :, 1, :]) / dxi / 0.5
+    dB2d1[p, :, Nxi_int - 1, :] = (- B2d[p, :, -2, :] + B2d[p, :, -1, :]) / dxi / 0.5
+    dB2d1[p, :, 1:(Nxi_int - 1), :] = (N.roll(B2d, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - B2d[p, :, 1:(Nxi_int - 1), :]) / dxi
+
 def compute_diff_E(p):
 
     dE2d1[p, :, 0, :] = (- 0.50 * E2d[p, :, 0, :] + 0.50 * E2d[p, :, 1, :]) / dxi / P_half_2[0]
@@ -446,6 +467,35 @@ def compute_diff_E(p):
     dErd2[p, :, :, Neta_half - 2] = (- 0.25 * Er[p, :, :, -2] + 0.25 * Er[p, :, :, -1]) / deta / P_half_2[Nxi_half - 2]
     dErd2[p, :, :, Neta_half - 1] = (- 0.50 * Er[p, :, :, -2] + 0.50 * Er[p, :, :, -1]) / deta / P_half_2[Nxi_half - 1]
     dErd2[p, :, :, 3:(Neta_half - 3)] = (Er[p, :, :, 3:(Neta_half - 3)] - N.roll(Er, 1, axis = 3)[p, :, :, 3:(Neta_half - 3)]) / deta
+
+def compute_diff_E_low(p):
+
+    dE2d1[p, :, 0, :] = (- E2d[p, :, 0, :] + E2d[p, :, 1, :]) / dxi
+    dE2d1[p, :, 1, :] = (- E2d[p, :, 0, :] + E2d[p, :, 1, :]) / dxi
+    dE2d1[p, :, Nxi_half - 2, :] = (- E2d[p, :, -2, :] + E2d[p, :, -1, :]) / dxi
+    dE2d1[p, :, Nxi_half - 1, :] = (- E2d[p, :, -2, :] + E2d[p, :, -1, :]) / dxi
+    dE2d1[p, :, 2:(Nxi_half - 2), :] = (E2d[p, :, 2:(Nxi_half - 2), :] - N.roll(E2d, 1, axis = 2)[p, :, 2:(Nxi_half - 2), :]) / dxi
+
+    dE1d2[p, :, :, 0] = (- E1d[p, :, :, 0] + E1d[p, :, :, 1]) / dxi
+    dE1d2[p, :, :, 1] = (- E1d[p, :, :, 0] + E1d[p, :, :, 1]) / dxi
+    dE1d2[p, :, :, Neta_half - 2] = (- E1d[p, :, :, -2] + E1d[p, :, :, -1]) / deta
+    dE1d2[p, :, :, Neta_half - 1] = (- E1d[p, :, :, -2] + E1d[p, :, :, -1]) / deta
+    dE1d2[p, :, :, 2:(Neta_half - 2)] = (E1d[p, :, :, 2:(Neta_half - 2)] - N.roll(E1d, 1, axis = 3)[p, :, :, 2:(Neta_half - 2)]) / deta
+
+    dE1dr[p, NG:(Nr0 + NG), :, :] = (N.roll(E1d, -1, axis = 1)[p, NG:(Nr0 + NG), :, :] - E1d[p, NG:(Nr0 + NG), :, :]) / dr
+    dE2dr[p, NG:(Nr0 + NG), :, :] = (N.roll(E2d, -1, axis = 1)[p, NG:(Nr0 + NG), :, :] - E2d[p, NG:(Nr0 + NG), :, :]) / dr
+
+    dErd1[p, :, 0, :] = (- Er[p, :, 0, :] + Er[p, :, 1, :]) / dxi
+    dErd1[p, :, 1, :] = (- Er[p, :, 0, :] + Er[p, :, 1, :]) / dxi
+    dErd1[p, :, Nxi_half - 2, :] = (- Er[p, :, -2, :] + Er[p, :, -1, :]) / dxi
+    dErd1[p, :, Nxi_half - 1, :] = (- Er[p, :, -2, :] + Er[p, :, -1, :]) / dxi
+    dErd1[p, :, 3:(Nxi_half - 3), :] = (Er[p, :, 3:(Nxi_half - 3), :] - N.roll(Er, 1, axis = 2)[p, :, 3:(Nxi_half - 3), :]) / dxi
+
+    dErd2[p, :, :, 0] = (- Er[p, :, :, 0] + Er[p, :, :, 1]) / dxi
+    dErd2[p, :, :, 1] = (- Er[p, :, :, 0] + Er[p, :, :, 1]) / dxi
+    dErd2[p, :, :, Neta_half - 2] = (- Er[p, :, :, -2] + Er[p, :, :, -1]) / deta
+    dErd2[p, :, :, Neta_half - 1] = (- Er[p, :, :, -2] + Er[p, :, :, -1]) / deta
+    dErd2[p, :, :, 2:(Neta_half - 2)] = (Er[p, :, :, 2:(Neta_half - 2)] - N.roll(Er, 1, axis = 3)[p, :, :, 2:(Neta_half - 2)]) / deta
 
 ########
 # Single-patch push routines
@@ -894,13 +944,13 @@ def corners_B(p0):
 # Absorbing boundary conditions at r_max
 ########
 
-i_abs = 8 # Thickness of absorbing layer in number of cells
+i_abs = 5 # Thickness of absorbing layer in number of cells
 r_abs = r[Nr - i_abs]
 delta = ((r - r_abs) / (r_max - r_abs)) * N.heaviside(r - r_abs, 0.0)
-sigma = N.exp(- 2.0 * delta**3)
+sigma = N.exp(- 1.0 * delta**3)
 
 delta = ((r_yee - r_abs) / (r_max - r_abs)) * N.heaviside(r_yee - r_abs, 0.0)
-sigma_yee = N.exp(- 2.0 * delta**3)
+sigma_yee = N.exp(- 1.0 * delta**3)
 
 # def BC_B_absorb(patch):
 #     for k in range(Nr - i_abs, Nr):
@@ -915,9 +965,10 @@ sigma_yee = N.exp(- 2.0 * delta**3)
 #         E2u[patch, k, :, :] *= sigma[k]
 
 def BC_B_absorb(patch):
-    Br[patch, :, :, :] *= sigma[:, None, None]
-    B1u[patch, :, :, :] *= sigma_yee[:, None, None]
-    B2u[patch, :, :, :] *= sigma_yee[:, None, None]
+    # Br[patch, :, :, :] *= sigma[:, None, None]
+    # B1u[patch, :, :, :] *= sigma_yee[:, None, None]
+    # B2u[patch, :, :, :] *= sigma_yee[:, None, None]
+    return
 
 def BC_E_absorb(patch):
     Er[patch, :, :, :]  *= sigma_yee[:, None, None]
@@ -1010,7 +1061,7 @@ InitialData()
 
 rlc = 2.0 # Light cylinder radius
 omega = 1.0 / rlc # Spin velocity of the conductor at r_min
-period = 2.0 * N.pi / omega
+# period = 2.0 * N.pi / omega
 pem = (2.0/3.0)*(omega**4)*N.sin(tilt)**2
 
 def func_Br_a(r0, th0, ph0):
@@ -1253,10 +1304,10 @@ WriteCoordsHDF5()
 
 for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
-        plot_fields_unfolded_Br(idump, 0.5, 2)
-        plot_fields_unfolded_B1(idump, 0.1, 2)
-        plot_fields_unfolded_E1(idump, 0.1, 2)
-        plot_fields_unfolded_E2(idump, 0.1, 2)
+        plot_fields_unfolded_Br(idump, 0.5, 5)
+        plot_fields_unfolded_B1(idump, 0.1, 5)
+        plot_fields_unfolded_E1(idump, 0.1, 5)
+        plot_fields_unfolded_E2(idump, 0.1, 5)
         WriteAllFieldsHDF5(idump)
         idump += 1
 
@@ -1267,7 +1318,8 @@ for it in tqdm(range(Nt), "Progression"):
     diff_B1[:, :, :, :] = 0.0
     diff_B2[:, :, :, :] = 0.0
     
-    compute_diff_B(patches)
+    # compute_diff_B(patches)
+    compute_diff_B_low(patches)
 
     push_E(patches, dt)
 
@@ -1286,6 +1338,7 @@ for it in tqdm(range(Nt), "Progression"):
     contra_to_cov_E(patches)
 
     compute_diff_E(patches)
+    # compute_diff_E_low(patches)
     
     push_B(patches, dt)
     

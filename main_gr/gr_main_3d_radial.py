@@ -64,13 +64,13 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl  = 0.4 #0.1 for a=0.99
+cfl  = 0.2 #0.1 for a=0.99
 Nl0  = 60
 Nxi  = 40
 Neta = 40
 
 # Spin parameter
-a = 0.99
+a = 0.95
 rh = 1.0 + N.sqrt(1.0 - a * a)
 
 Nxi_int   = Nxi + 1  # Number of integer points
@@ -815,6 +815,30 @@ def compute_diff_H(p):
     dH2d1[p, :, Nxi_int - 2, :] = (- 0.75 * H2d[p, :, -3, :] + 0.25 * H2d[p, :, -2, :] + 0.5 * H2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
     dH2d1[p, :, Nxi_int - 1, :] = (- 0.25 * H2d[p, :, -3, :] - 0.25 * H2d[p, :, -2, :] + 0.5 * H2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 1]
     dH2d1[p, :, 2:(Nxi_int - 2), :] = (N.roll(H2d, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - H2d[p, :, 2:(Nxi_int - 2), :]) / dxi
+
+def compute_diff_H_low(p):
+
+    ir1 = NG
+    ir2 = Nl0 + NG + 1
+        
+    dHrd1[p, :, 0, :] = (- Hrd[p, :, 0, :] + Hrd[p, :, 1, :]) / dxi / 0.5
+    dHrd1[p, :, Nxi_int - 1, :] = (-  Hrd[p, :, -2, :] + Hrd[p, :, -1, :]) / dxi / 0.5
+    dHrd1[p, :, 1:(Nxi_int - 1), :] = (N.roll(Hrd, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - Hrd[p, :, 1:(Nxi_int - 1), :]) / dxi
+
+    dHrd2[p, :, :, 0] = (- Hrd[p, :, :, 0] + Hrd[p, :, :, 1]) / deta / 0.5
+    dHrd2[p, :, :, Nxi_int - 1] = (- Hrd[p, :, :, -2] + Hrd[p, :, :, -1]) / deta / 0.5
+    dHrd2[p, :, :, 1:(Neta_int - 1)] = (N.roll(Hrd, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - Hrd[p, :, :, 1:(Neta_int - 1)]) / deta
+
+    dH1dl[p, ir1:ir2, :, :] = (H1d[p, ir1:ir2, :, :] - N.roll(H1d, 1, axis = 1)[p, ir1:ir2, :, :]) / dl
+    dH2dl[p, ir1:ir2, :, :] = (H2d[p, ir1:ir2, :, :] - N.roll(H2d, 1, axis = 1)[p, ir1:ir2, :, :]) / dl
+
+    dH1d2[p, :, :, 0] = (- H1d[p, :, :, 0] + H1d[p, :, :, 1]) / deta / 0.5
+    dH1d2[p, :, :, Nxi_int - 1] = (- H1d[p, :, :, -2] + H1d[p, :, :, -1]) / deta / 0.5
+    dH1d2[p, :, :, 1:(Neta_int - 1)] = (N.roll(H1d, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - H1d[p, :, :, 1:(Neta_int - 1)]) / deta
+
+    dH2d1[p, :, 0, :] = (- H2d[p, :, 0, :] + H2d[p, :, 1, :]) / dxi / 0.5
+    dH2d1[p, :, Nxi_int - 1, :] = (- H2d[p, :, -2, :] + H2d[p, :, -1, :]) / dxi / 0.5
+    dH2d1[p, :, 1:(Nxi_int - 1), :] = (N.roll(H2d, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - H2d[p, :, 1:(Nxi_int - 1), :]) / dxi
 
 def compute_diff_E(p):
 
@@ -2601,7 +2625,8 @@ for it in tqdm(range(Nt), "Progression"):
     compute_H_aux(patches, Dru, D1u, D2u, Brd, B1d, B2d)
     BC_Hd(patches, Hrd, H1d, H2d)
 
-    compute_diff_H(patches)
+    # compute_diff_H(patches)
+    compute_diff_H_low(patches)
     push_D(patches, Dru1, D1u1, D2u1, dt)
 
     # # Penalty terms ??
@@ -2625,7 +2650,8 @@ for it in tqdm(range(Nt), "Progression"):
     D1u0[:, :, :, :] = D1u[:, :, :, :]
     D2u0[:, :, :, :] = D2u[:, :, :, :]
 
-    compute_diff_H(patches)
+    # compute_diff_H(patches)
+    compute_diff_H_low(patches)
     push_D(patches, Dru, D1u, D2u, dt)
 
     # Penalty terms

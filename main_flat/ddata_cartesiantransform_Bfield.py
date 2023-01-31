@@ -26,9 +26,9 @@ outdir = '/home/bcrinqua/GitHub/Maxwell_cubed_sphere/data_3d/'
 
 num = sys.argv[1]
 
-ONt = 50
-ONp = 50
-Nxyz = 50
+ONt = 64
+ONp = 64
+Nxyz = 128
 
 n_patches = 6
 # Connect patch indices and names

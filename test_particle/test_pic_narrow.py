@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
 
 # Parameters
 cfl = 0.5
-Nx = 256 # Number of cells
+Nx = 200 # Number of cells
 Nx_int = Nx + 1 # Number of integer points
 Nx_half = Nx + 2 # NUmber of hlaf-step points
 Ny = Nx # Number of cells
@@ -32,8 +32,8 @@ Ny_half = Ny + 2 # NUmber of hlaf-step points
 
 q = 1e-2 # Absolute value of charge
 
-Nt = 8000 # Number of iterations
-FDUMP = 50 # Dump frequency
+Nt = 1000 # Number of iterations
+FDUMP = 40 # Dump frequency
 
 x_min, x_max = 0.0, 1.0
 dx = (x_max - x_min) / Nx
@@ -107,17 +107,31 @@ P_half_2[-1] = 0.5
 
 def compute_diff_B(p):
     
-    dBzdx[p, 0, :] = (- 0.5 * Bz[p, 0, :] + 0.25 * Bz[p, 1, :] + 0.25 * Bz[p, 2, :]) / dx / P_int_2[0]
-    dBzdx[p, 1, :] = (- 0.5 * Bz[p, 0, :] - 0.25 * Bz[p, 1, :] + 0.75 * Bz[p, 2, :]) / dx / P_int_2[1]
-    dBzdx[p, Nx_int - 2, :] = (- 0.75 * Bz[p, -3, :] + 0.25 * Bz[p, -2, :] + 0.5 * Bz[p, -1, :]) / dx / P_int_2[Nx_int - 2]
-    dBzdx[p, Nx_int - 1, :] = (- 0.25 * Bz[p, -3, :] - 0.25 * Bz[p, -2, :] + 0.5 * Bz[p, -1, :]) / dx / P_int_2[Nx_int - 1]
-    dBzdx[p, 2:(Nx_int - 2), :] = (N.roll(Bz, -1, axis = 1)[p, 2:(Nx_int - 2), :] - Bz[p, 2:(Nx_int - 2), :]) / dx
+    dBzdx[p, 0, :] = (- Bz[p, 0, :] + Bz[p, 1, :]) / dx / 0.5
+    dBzdx[p, Nx_int - 1, :] = (- Bz[p, -2, :] + Bz[p, -1, :]) / dx / 0.5
+    dBzdx[p, 1:(Nx_int - 1), :] = (N.roll(Bz, -1, axis = 1)[p, 1:(Nx_int - 1), :] - Bz[p, 1:(Nx_int - 1), :]) / dx
 
-    dBzdy[p, :, 0] = (- 0.5 * Bz[p, :, 0] + 0.25 * Bz[p, :, 1] + 0.25 * Bz[p, :, 2]) / dy / P_int_2[0]
-    dBzdy[p, :, 1] = (- 0.5 * Bz[p, :, 0] - 0.25 * Bz[p, :, 1] + 0.75 * Bz[p, :, 2]) / dy / P_int_2[1]
-    dBzdy[p, :, Ny_int - 2] = (- 0.75 * Bz[p, :, -3] + 0.25 * Bz[p, :, -2] + 0.5 * Bz[p, :, -1]) / dy / P_int_2[Ny_int - 2]
-    dBzdy[p, :, Ny_int - 1] = (- 0.25 * Bz[p, :, -3] - 0.25 * Bz[p, :, -2] + 0.5 * Bz[p, :, -1]) / dy / P_int_2[Ny_int - 1]
-    dBzdy[p, :, 2:(Ny_int - 2)] = (N.roll(Bz, -1, axis = 2)[p, :, 2:(Ny_int - 2)] - Bz[p, :, 2:(Ny_int - 2)]) / dy
+    dBzdy[p, :, 0] = (- Bz[p, :, 0] + Bz[p, :, 1]) / dy / 0.5
+    dBzdy[p, :, Ny_int - 1] = (- Bz[p, :, -2] + Bz[p, :, -1]) / dy / 0.5
+    dBzdy[p, :, 1:(Ny_int - 1)] = (N.roll(Bz, -1, axis = 2)[p, :, 1:(Ny_int - 1)] - Bz[p, :, 1:(Ny_int - 1)]) / dy
+
+# def compute_diff_E(p):
+
+#     dEydx[p, 0, :] = (- 0.5 * Ey[p, 0, :] + 0.5 * Ey[p, 1, :]) / dx / P_half_2[0]
+#     dEydx[p, 1, :] = (- 0.25 * Ey[p, 0, :] + 0.25 * Ey[p, 1, :]) / dx / P_half_2[1]
+#     dEydx[p, 2, :] = (- 0.25 * Ey[p, 0, :] - 0.75 * Ey[p, 1, :] + Ey[p, 2, :]) / dx / P_half_2[2]
+#     dEydx[p, Nx_half - 3, :] = (- Ey[p, -3, :] + 0.75 * Ey[p, -2, :] + 0.25 * Ey[p, -1, :]) / dx / P_half_2[Nx_half - 3]
+#     dEydx[p, Nx_half - 2, :] = (- 0.25 * Ey[p, -2, :] + 0.25 * Ey[p, -1, :]) / dx / P_half_2[Nx_half - 2]
+#     dEydx[p, Nx_half - 1, :] = (- 0.5 * Ey[p, -2, :] + 0.5 * Ey[p, -1, :]) / dx / P_half_2[Nx_half - 1]
+#     dEydx[p, 3:(Nx_half - 3), :] = (Ey[p, 3:(Nx_half - 3), :] - N.roll(Ey, 1, axis = 1)[p, 3:(Nx_half - 3), :]) / dx
+
+#     dExdy[p, :, 0] = (- 0.5 * Ex[p, :, 0] + 0.5 * Ex[p, :, 1]) / dx / P_half_2[0]
+#     dExdy[p, :, 1] = (- 0.25 * Ex[p, :, 0] + 0.25 * Ex[p, :, 1]) / dx / P_half_2[1]
+#     dExdy[p, :, 2] = (- 0.25 * Ex[p, :, 0] - 0.75 * Ex[p, :, 1] + Ex[p, :, 2]) / dx / P_half_2[2]
+#     dExdy[p, :, Ny_half - 3] = (- Ex[p, :, -3] + 0.75 * Ex[p, :, -2] + 0.25 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 3]
+#     dExdy[p, :, Ny_half - 2] = (- 0.25 * Ex[p, :, -2] + 0.25 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 2]
+#     dExdy[p, :, Ny_half - 1] = (- 0.5 * Ex[p, :, -2] + 0.5 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 1]
+#     dExdy[p, :, 3:(Ny_half - 3)] = (Ex[p, :, 3:(Ny_half - 3)] - N.roll(Ex, 1, axis = 2)[p, :, 3:(Ny_half - 3)]) / dy
 
 def compute_diff_E(p):
 
@@ -135,40 +149,32 @@ def compute_diff_E(p):
     dExdy[p, :, Ny_half - 3] = (- Ex[p, :, -3] + 0.75 * Ex[p, :, -2] + 0.25 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 3]
     dExdy[p, :, Ny_half - 2] = (- 0.25 * Ex[p, :, -2] + 0.25 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 2]
     dExdy[p, :, Ny_half - 1] = (- 0.5 * Ex[p, :, -2] + 0.5 * Ex[p, :, -1]) / dy / P_half_2[Nx_half - 1]
-    dExdy[p, :, 3:(Ny_half - 3)] = (Ex[p, :, 3:(Nx_half - 3)] - N.roll(Ex, 1, axis = 2)[p, :, 3:(Ny_half - 3)]) / dy
+    dExdy[p, :, 3:(Ny_half - 3)] = (Ex[p, :, 3:(Ny_half - 3)] - N.roll(Ex, 1, axis = 2)[p, :, 3:(Ny_half - 3)]) / dy
 
 def compute_divE(p, fieldx, fieldy):
 
     divE0[p, :, :] = divE1[p, :, :]    
     divE1[p, :, :] = 0.0
     
-    divE1[p, 0, :] += (- 0.5 * fieldx[p, 0, :] + 0.25 * fieldx[p, 1, :] + 0.25 * fieldx[p, 2, :]) / dx / P_int_2[0]
-    divE1[p, 1, :] += (- 0.5 * fieldx[p, 0, :] - 0.25 * fieldx[p, 1, :] + 0.75 * fieldx[p, 2, :]) / dx / P_int_2[1]
-    divE1[p, Nx_int - 2, :] += (- 0.75 * fieldx[p, -3, :] + 0.25 * fieldx[p, -2, :] + 0.5 * fieldx[p, -1, :]) / dx / P_int_2[Nx_int - 2]
-    divE1[p, Nx_int - 1, :] += (- 0.25 * fieldx[p, -3, :] - 0.25 * fieldx[p, -2, :] + 0.5 * fieldx[p, -1, :]) / dx / P_int_2[Nx_int - 1]
-    divE1[p, 2:(Nx_int - 2), :] += (N.roll(fieldx, -1, axis = 1)[p, 2:(Nx_int - 2), :] - fieldx[p, 2:(Nx_int - 2), :]) / dx
+    divE1[p, 0, :] += (- fieldx[p, 0, :] + fieldx[p, 1, :]) / dx / 0.5
+    divE1[p, Nx_int - 1, :] += (- fieldx[p, -2, :] + fieldx[p, -1, :]) / dx / 0.5
+    divE1[p, 1:(Nx_int - 1), :] += (N.roll(fieldx, -1, axis = 1)[p, 1:(Nx_int - 1), :] - fieldx[p, 1:(Nx_int - 1), :]) / dx
 
-    divE1[p, :, 0] += (- 0.5 * fieldy[p, :, 0] + 0.25 * fieldy[p, :, 1] + 0.25 * fieldy[p, :, 2]) / dy / P_int_2[0]
-    divE1[p, :, 1] += (- 0.5 * fieldy[p, :, 0] - 0.25 * fieldy[p, :, 1] + 0.75 * fieldy[p, :, 2]) / dy / P_int_2[1]
-    divE1[p, :, Ny_int - 2] += (- 0.75 * fieldy[p, :, -3] + 0.25 * fieldy[p, :, -2] + 0.5 * fieldy[p, :, -1]) / dy / P_int_2[Ny_int - 2]
-    divE1[p, :, Ny_int - 1] += (- 0.25 * fieldy[p, :, -3] - 0.25 * fieldy[p, :, -2] + 0.5 * fieldy[p, :, -1]) / dy / P_int_2[Ny_int - 1]
-    divE1[p, :, 2:(Ny_int - 2)] += (N.roll(fieldy, -1, axis = 2)[p, :, 2:(Ny_int - 2)] - fieldy[p, :, 2:(Ny_int - 2)]) / dy
+    divE1[p, :, 0] += (- fieldy[p, :, 0] + fieldy[p, :, 1]) / dy / 0.5
+    divE1[p, :, Ny_int - 1] += (- fieldy[p, :, -2] + fieldy[p, :, -1]) / dy / 0.5
+    divE1[p, :, 1:(Ny_int - 1)] += (N.roll(fieldy, -1, axis = 2)[p, :, 1:(Ny_int - 1)] - fieldy[p, :, 1:(Ny_int - 1)]) / dy
 
 def compute_divcharge(p):
     
     divJ[p, :, :] = 0.0
     
-    divJ[p, 0, :] += (- 0.5 * Jx[p, 0, :] + 0.25 * Jx[p, 1, :] + 0.25 * Jx[p, 2, :]) / dx / P_int_2[0]
-    divJ[p, 1, :] += (- 0.5 * Jx[p, 0, :] - 0.25 * Jx[p, 1, :] + 0.75 * Jx[p, 2, :]) / dx / P_int_2[1]
-    divJ[p, Nx_int - 2, :] += (- 0.75 * Jx[p, -3, :] + 0.25 * Jx[p, -2, :] + 0.5 * Jx[p, -1, :]) / dx / P_int_2[Nx_int - 2]
-    divJ[p, Nx_int - 1, :] += (- 0.25 * Jx[p, -3, :] - 0.25 * Jx[p, -2, :] + 0.5 * Jx[p, -1, :]) / dx / P_int_2[Nx_int - 1]
-    divJ[p, 2:(Nx_int - 2), :] += (N.roll(Jx, -1, axis = 1)[p, 2:(Nx_int - 2), :] - Jx[p, 2:(Nx_int - 2), :]) / dx
+    divJ[p, 0, :] += (- Jx[p, 0, :] + Jx[p, 1, :]) / dx / 0.5
+    divJ[p, Nx_int - 1, :] += (- Jx[p, -2, :] + Jx[p, -1, :]) / dx / 0.5
+    divJ[p, 1:(Nx_int - 1), :] += (N.roll(Jx, -1, axis = 1)[p, 1:(Nx_int - 1), :] - Jx[p, 1:(Nx_int - 1), :]) / dx
 
-    divJ[p, :, 0] += (- 0.5 * Jy[p, :, 0] + 0.25 * Jy[p, :, 1] + 0.25 * Jy[p, :, 2]) / dy / P_int_2[0]
-    divJ[p, :, 1] += (- 0.5 * Jy[p, :, 0] - 0.25 * Jy[p, :, 1] + 0.75 * Jy[p, :, 2]) / dy / P_int_2[1]
-    divJ[p, :, Ny_int - 2] += (- 0.75 * Jy[p, :, -3] + 0.25 * Jy[p, :, -2] + 0.5 * Jy[p, :, -1]) / dy / P_int_2[Ny_int - 2]
-    divJ[p, :, Ny_int - 1] += (- 0.25 * Jy[p, :, -3] - 0.25 * Jy[p, :, -2] + 0.5 * Jy[p, :, -1]) / dy / P_int_2[Ny_int - 1]
-    divJ[p, :, 2:(Ny_int - 2)] += (N.roll(Jy, -1, axis = 2)[p, :, 2:(Ny_int - 2)] - Jy[p, :, 2:(Ny_int - 2)]) / dy
+    divJ[p, :, 0] += (- Jy[p, :, 0] + Jy[p, :, 1]) / dy / 0.5
+    divJ[p, :, Ny_int - 1] += (- Jy[p, :, -2] + Jy[p, :, -1]) / dy / 0.5
+    divJ[p, :, 1:(Ny_int - 1)] += (N.roll(Jy, -1, axis = 2)[p, :, 1:(Ny_int - 1)] - Jy[p, :, 1:(Ny_int - 1)]) / dy
 
     drho = (rho1[p, :, :] - rho0[p, :, :]) / dt
 
@@ -215,13 +221,13 @@ uyp = N.zeros((Nt + 1, np))
 wp  = N.zeros((Nt + 1, np)) # charge x weight (can be negative)
 tag = N.zeros((Nt + 1, np), dtype='int') # Patch in which the partice is located
 
-ux0 = 0.7
-x0 = 0.91
+ux0 = 0.1
+uy0 = 0.05
+x0 = 0.96
 
 def initialize_part():
 
     xp[0, :] = x0
-    uyp[0, :] = 0.0
     tag[:, 0] = 0
     tag[:, 1] = 0
 
@@ -231,6 +237,10 @@ def initialize_part():
         yp[0, ip + 1] = 0.51 #r
         uxp[0, ip] = ux0
         uxp[0, ip + 1] = -ux0
+
+        uyp[0, ip] = uy0
+        uyp[0, ip + 1] = -uy0
+
         # wp[:, ip] = 0.0
         # wp[:, ip + 1] = 0.0
         wp[:, ip] = - 1.0
@@ -238,9 +248,11 @@ def initialize_part():
         
 # Impose velocity with tanh profile to avoid discontinuities
 def impose_velocity_part(it):
-    uxp[it, 0] =   ux0 * 0.5 * (1 - N.tanh((200 - it)/50))
-    uxp[it, 1] = - ux0 * 0.5 * (1 - N.tanh((200 - it)/50))
-
+    uxp[it, 0] =   ux0 * 0.5 * (1 - N.tanh((100 - it)/50))
+    uxp[it, 1] = - ux0 * 0.5 * (1 - N.tanh((100 - it)/50))
+    uyp[it, 0] =   uy0 * 0.5 * (1 - N.tanh((100 - it)/50))
+    uyp[it, 1] = - uy0 * 0.5 * (1 - N.tanh((100 - it)/50))
+    
 # Returns index of CELL
 def i_from_pos(x0, y0):
     i0 = int(((x0 - x_min) / dx) // 1)
@@ -375,322 +387,55 @@ def deposit_J(it):
                     
 S0 = dx * dy
 
-# Current deposition of a single particle
-# Note : only deals with x_min and x_max interfaces, no corners or top/bottom interfaces!!
+# Deposit current on a subcell
+### NEW STENCIL
+def subcell(m_tag0, m_i1, m_j1, m_Fx1, m_Fy1, m_Wx1, m_Wy1):
 
-# def deposit_particle(it, ip):
+        # Shifted by 1 because of extra points at the edge
+        ix1 = m_i1 + 1
+        jy1 = m_j1 + 1
+        
+        tag1 = int(1-m_tag0)
+
+        deltax1 = 1.0
+        deltay1 = 1.0
+
+        # Particle leaves simulation box: only first half deposit
+        if (test_out(m_i1)==True):
+            deltax1 = 0.0
+            deltay1 = 0.0
     
-#     x1, y1 = xp[it, ip], yp[it, ip] # Initial coordinates
-#     x2, y2 = xp[it + 1, ip], yp[it + 1, ip] # Final coordinates
+        # Bulk current deposition
+        Jx[m_tag0, ix1, m_j1] += deltax1 * m_Fx1 * (1.0 - m_Wy1) / S0
+        Jx[m_tag0, ix1, m_j1 + 1] += deltax1 * m_Fx1 * m_Wy1 / S0
 
-#     # Indices of initial/final cell (from 0 to N-1)
-#     i1, j1 = i_from_pos(x1, y1)
-#     i2, j2 = i_from_pos(x2, y2)
+        Jy[m_tag0, m_i1, jy1] += deltay1 * m_Fy1 * (1.0 - m_Wx1) / S0
+        Jy[m_tag0, m_i1 + 1, jy1] += deltay1 * m_Fy1 * m_Wx1 / S0
 
-#     xr, yr = compute_intermediate(it, ip)
-
-#     w0   = wp[it, ip]
-#     tag0 = tag[it, ip]
-#     tag1 = tag[it + 1, ip]
-        
-#     # Coefficients of depsoited Jx
-#     deltax1 = 1.0
-#     deltax2 = 1.0
-        
-#     deltay1 = 1.0
-#     deltay2 = 1.0
-    
-#     # Particle does not leave patch
-#     if (tag0==tag1):
-
-#         # Umeda notation
-
-#         Fx1 = q * (xr - x1) / dt * w0
-#         Fx2 = q * (x2 - xr) / dt * w0
-
-#         Fy1 = q * (yr - y1) / dt * w0
-#         Fy2 = q * (y2 - yr) / dt * w0
-
-#         Wx1 = 0.5 * (x1 + xr) / dx - i1
-#         Wy1 = 0.5 * (y1 + yr) / dy - j1
-
-#         Wx2 = 0.5 * (x2 + xr) / dx - i2
-#         Wy2 = 0.5 * (y2 + yr) / dy - j2
-
-#         # Shifted by 1 because of extra points at the edge
-#         ix1 = i1 + 1
-#         ix2 = i2 + 1
-
-#         jy1 = j1 + 1
-#         jy2 = j2 + 1
-        
-#         # Interior, no deposition on edge cell
-#         if (test_inside(i1)==True)and(test_inside(i2)==True):
-#             pass
-
-#         # Particle starts in interior and moves to edge
-#         if (test_inside(i1)==True)and(test_edge(i2)==True):
-#             deltax2 = 3.0
-
-#         # Particle starts in edge and moves to interior
-#         if (test_inside(i2)==True)and(test_edge(i1)==True):
-#             deltax1 = 3.0
+        # Current on left edge
+        if (m_i1 == 0):
+            Jx[m_tag0, 0, m_j1]     += 0.5 * m_Fx1 * (1.0 - m_Wy1) / S0
+            Jx[m_tag0, 0, m_j1 + 1] += 0.5 * m_Fx1 * m_Wy1 / S0
             
-#         # Particle stays in edge
-#         if (test_edge(i1)==True)and(test_edge(i2)==True):
-#             deltax1 = 3.0
-#             deltax2 = 3.0
-
-#         # Particle leaves simulation box: only first half deposit
-#         if (test_out(i2)==True):
-#             deltax1 = 3.0
-#             deltax2 = 0.0
-#             deltay2 = 0.0
-
-#         #######
-#         # First part of trajectory    
-#         #######
-
-#         # Bulk current deposition
-#         Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-#         Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-#         Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-#         Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
-
-#         # Current on left edge
-#         if (i1 == 0):
-#             Jx[tag0, 0, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-#         # Current on mid-left cell
-#         if (i1 == 1):
-#             Jx[tag0, 1, j1]     += - Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, 1, j1 + 1] += - Fx1 * Wy1 / S0
+        # Current on right edge            
+        if (m_i1 == (Nx - 1)):
+            Jx[m_tag0, -1, m_j1]     += 0.5 * m_Fx1 * (1.0 - m_Wy1) / S0
+            Jx[m_tag0, -1, m_j1 + 1] += 0.5 * m_Fx1 * m_Wy1 / S0
             
-#         # Current on right edge            
-#         if (i1 == (Nx - 1)):
-#             Jx[tag0, -1, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
+        # Current from charge that's not into patch 1 yet
+        if (m_tag0==0)and(m_i1==(Nx-1)):
+            Jx[tag1, 0, m_j1] += 0.5 * m_Fx1 * (1.0 - m_Wy1) / S0
+            Jx[tag1, 0, m_j1 + 1] += 0.5 * m_Fx1 * m_Wy1 / S0
+            Jy[tag1, 0, jy1] += deltay1 * m_Fy1 * m_Wx1 / S0
 
-#         # Current on mid-right cell
-#         if (i1 == (Nx - 2)):
-#             Jx[tag0, -2, j1]     += - Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, -2, j1 + 1] += - Fx1 * Wy1 / S0
-            
-#         # Current from charge that's not into patch 1 yet
-#         if (tag0==0)and(i1==(Nx-1)):
-#             Jx[1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-#             Jx[1, 1, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
+        # Current from charge that's not into patch 0 yet
+        if (m_tag0==1)and(m_i1==0):
+            Jx[tag1, -1, m_j1] += 0.5 * m_Fx1 * (1.0 - m_Wy1) / S0
+            Jx[tag1, -1, m_j1 + 1] += 0.5 * m_Fx1 * m_Wy1 / S0
+            Jy[tag1, -1, jy1] += deltay1 * m_Fy1 * (1.0 - m_Wx1) / S0
 
-#         # Current from charge that's not into patch 0 yet
-#         if (tag0==1)and(i1==0):
-#             Jx[0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-#             Jx[0, -2, j1] += -1.0 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[0, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
-            
-#         #######
-#         # Second part of trajectory    
-#         #######
-        
-#         Jx[tag0, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-#         Jx[tag0, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
-
-#         Jy[tag0, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-#         Jy[tag0, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
-        
-#         if (i2 == 0):
-#             Jx[tag0, 0, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0        
-
-#         if (i2 == 1):
-#             Jx[tag0, 1, j2]     += - Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, 1, j2 + 1] += - Fx2 * Wy2 / S0    
-            
-#         if (i2 == (Nx - 1)):
-#             Jx[tag0, -1, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-#         if (i2 == (Nx - 2)):
-#             Jx[tag0, -2, j2]     += - Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, -2, j2 + 1] += - Fx2 * Wy2 / S0
-            
-#         if (tag0==0)and(i2==(Nx-1)):
-#             Jx[1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-#             Jx[1, 1, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[1, 1, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
-#         if (tag0==1)and(i2==0):
-#             Jx[0, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-#             Jx[0, -2, j2] += -1.0 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[0, -2, j2 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
-
-#         x2r = (x2 - x_min) / dx - i2
-#         y2r = (y2 - y_min) / dy - j2
-
-#         # Charge deposited in current patch
-#         if (test_out(i2)==False):
-#             rho1[tag0, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-#             rho1[tag0, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-#             rho1[tag0, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-#             rho1[tag0, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
-
-#         # Charge deposited in other patch
-#         if (tag0==0)and(i2==(Nx-1)):
-#             rho1[1, 0, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-#             rho1[1, 0, j2 + 1] += q * w0 * x2r * y2r / S0
-#         if (tag0==1)and(i2==0):
-#             rho1[0, -1, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-#             rho1[0, -1, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-
-#     # Particle leaves patch
-#     elif (tag1!=tag0):
-
-#         deltax1 = 3.0
-#         deltax2 = 3.0
-            
-#         # There is better way of doing this than having this dichotomy. Will do later
-#         if (tag0 == 0):
-
-#             # When particle leaves patch 0 to 1, x2 is already written in new patch coordinates, so must specify xr in both cases
-#             xr = 1.0
-#             Fx1 = q * (xr - x1) / dt * w0
-#             Wx1 = 0.5 * (x1 + xr) / dx - i1
-#             Fy1 = q * (yr - y1) / dt * w0
-#             Wy1 = 0.5 * (y1 + yr) / dy - j1
-            
-#             xr = 0.0
-#             Fx2 = q * (x2 - xr) / dt * w0
-#             Wx2 = 0.5 * (x2 + xr) / dx - i2
-#             Fy2 = q * (y2 - yr) / dt * w0
-#             Wy2 = 0.5 * (y2 + yr) / dy - j2
-
-#             ix1 = i1 + 1
-#             ix2 = i2 + 1
-
-#             jy1 = j1 + 1
-#             jy2 = j2 + 1
-
-#             x2r = (x2 - x_min) / dx - i2
-#             y2r = (y2 - y_min) / dy - j2
-
-#             rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-#             rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-#             rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-#             rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
-
-#             # Current deposited during first part of trajectory: particle is in patch 0
-
-#             Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-#             Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
-            
-#             # Current at mid-last cell of patch 0
-#             Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-#             # Current on the edge of patch 0
-#             Jx[tag0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-#             # Current on patch 1
-#             Jx[tag1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-#             Jx[tag1, 1, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag1, 1, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
-
-#             # Current deposited during second part of trajectory: particle is in patch 1
-
-#             Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-#             Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
-            
-#             # Current at mid-last cell of patch 1
-#             Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
-
-#             # Current on the edge of patch 1
-#             Jx[tag1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-#             # Current on patch 0
-#             Jx[tag0, -1, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, -1, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
-#             Jx[tag0, -2, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
-#             Jx[tag0, -2, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
-#         # Same thing if particle starts in patch 1
-#         elif (tag0 == 1):
-
-#             xr = 0.0
-#             Fx1 = q * (xr - x1) / dt * w0
-#             Wx1 = 0.5 * (x1 + xr) / dx - i1
-#             Fy1 = q * (yr - y1) / dt * w0
-#             Wy1 = 0.5 * (y1 + yr) / dy - j1
-
-#             xr = 1.0
-#             Fx2 = q * (x2 - xr) / dt * w0
-#             Wx2 = 0.5 * (x2 + xr) / dx - i2
-#             Fy2 = q * (y2 - yr) / dt * w0
-#             Wy2 = 0.5 * (y2 + yr) / dy - j2
-
-#             ix1 = i1 + 1
-#             ix2 = i2 + 1
-
-#             jy1 = j1 + 1
-#             jy2 = j2 + 1
-
-#             x2r = (x2 - x_min) / dx - i2
-#             y2r = (y2 - y_min) / dy - j2
-
-#             rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-#             rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-#             rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-#             rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
-
-#             Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-#             Jx[tag0, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-#             Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-#             Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
-
-#             Jx[tag1, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag1, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-#             Jx[tag1, -2, j1] += - 1.0 * Fx1 * (1.0 - Wy1) / S0
-#             Jx[tag1, -2, j1 + 1] += - 1.0 * Fx1 * Wy1 / S0
-
-#             Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
-
-#             Jx[tag1, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag1, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-#             Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-#             Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
-
-#             Jx[tag0, 0, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-#             Jx[tag0, 0, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
-#             Jx[tag0, 1, j1] += - 1.0 * Fx2 * (1.0 - Wy1) / S0
-#             Jx[tag0, 1, j1 + 1] += - 1.0 * Fx2 * Wy2 / S0
-
-#     # If absorbing patch 1    
-#     # Jx[1, :, :] = 0.0
-#     # Jy[1, :, :] = 0.0
-#     # rho1[1, :, :] = 0.0
-    
-#     return
-
-
-#############
-# NEW STENCIL
-#############
+# # Current deposition of a single particle
+# # Note : only deals with x_min and x_max interfaces, no corners or top/bottom interfaces!!
 
 def deposit_particle(it, ip):
     
@@ -706,13 +451,6 @@ def deposit_particle(it, ip):
     w0   = wp[it, ip]
     tag0 = tag[it, ip]
     tag1 = tag[it + 1, ip]
-        
-    # Coefficients of deposited Jx
-    deltax1 = 1.0
-    deltax2 = 1.0
-        
-    deltay1 = 1.0
-    deltay2 = 1.0
     
     # Particle does not leave patch
     if (tag0==tag1):
@@ -731,69 +469,11 @@ def deposit_particle(it, ip):
         Wx2 = 0.5 * (x2 + xr) / dx - i2
         Wy2 = 0.5 * (y2 + yr) / dy - j2
 
-        # Shifted by 1 because of extra points at the edge
-        ix1 = i1 + 1
-        ix2 = i2 + 1
-
-        jy1 = j1 + 1
-        jy2 = j2 + 1
-
-        #######
-        # First part of trajectory    
-        #######
-
-        # Bulk current deposition
-        Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-        Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-        Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-        Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
-
-        # Current on left edge
-        if (i1 == 0):
-            Jx[tag0, 0, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            
-        # Current on right edge            
-        if (i1 == (Nx - 1)):
-            Jx[tag0, -1, j1]     += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            
-        # Current from charge that's not into patch 1 yet
-        if (tag0==0)and(i1==(Nx-1)):
-            Jx[1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-        # Current from charge that's not into patch 0 yet
-        if (tag0==1)and(i1==0):
-            Jx[0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-            
-        #######
+        # First part of trajectory
+        subcell(tag0, i1, j1, Fx1, Fy1, Wx1, Wy1) 
+          
         # Second part of trajectory    
-        #######
-        
-        Jx[tag0, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-        Jx[tag0, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
-
-        Jy[tag0, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-        Jy[tag0, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
-        
-        if (i2 == 0):
-            Jx[tag0, 0, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0        
-            
-        if (i2 == (Nx - 1)):
-            Jx[tag0, -1, j2]     += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-            
-        if (tag0==0)and(i2==(Nx-1)):
-            Jx[1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-        if (tag0==1)and(i2==0):
-            Jx[0, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[0, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+        subcell(tag1, i2, j2, Fx2, Fy2, Wx2, Wy2) 
 
         x2r = (x2 - x_min) / dx - i2
         y2r = (y2 - y_min) / dy - j2
@@ -815,123 +495,99 @@ def deposit_particle(it, ip):
 
     # Particle leaves patch
     elif (tag1!=tag0):
+
+        # When particle leaves patch 0 to 1, x2 is already written in new patch coordinates, so must specify xr in both cases
+        xr = 1.0
+        Fx1 = q * (xr - x1) / dt * w0
+        Wx1 = 0.5 * (x1 + xr) / dx - i1
+        Fy1 = q * (yr - y1) / dt * w0
+        Wy1 = 0.5 * (y1 + yr) / dy - j1
+        
+        xr = 0.0     
+        Fx2 = q * (x2 - xr) / dt * w0
+        Wx2 = 0.5 * (x2 + xr) / dx - i2
+        Fy2 = q * (y2 - yr) / dt * w0
+        Wy2 = 0.5 * (y2 + yr) / dy - j2
+        
+        x2r = (x2 - x_min) / dx - i2
+        y2r = (y2 - y_min) / dy - j2
+        
+        rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+        rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+        rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+        rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
+
+        if (tag1==0)and(i2==(Nx-1)):
+            rho1[1, 0, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+            rho1[1, 0, j2 + 1] += q * w0 * x2r * y2r / S0
+        if (tag1==1)and(i2==0):
+            rho1[0, -1, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+            rho1[0, -1, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+        
+        subcell(tag0, i1, j1, Fx1, Fy1, Wx1, Wy1) 
+        subcell(tag1, i2, j2, Fx2, Fy2, Wx2, Wy2) 
             
-        # There is better way of doing this than having this dichotomy. Will do later
-        if (tag0 == 0):
+        # # There is better way of doing this than having this dichotomy. Will do later
+        # if (tag0 == 0):
 
-            # When particle leaves patch 0 to 1, x2 is already written in new patch coordinates, so must specify xr in both cases
-            xr = 1.0
-            Fx1 = q * (xr - x1) / dt * w0
-            Wx1 = 0.5 * (x1 + xr) / dx - i1
-            Fy1 = q * (yr - y1) / dt * w0
-            Wy1 = 0.5 * (y1 + yr) / dy - j1
+        #     # When particle leaves patch 0 to 1, x2 is already written in new patch coordinates, so must specify xr in both cases
+        #     xr = 1.0
+        #     Fx1 = q * (xr - x1) / dt * w0
+        #     Wx1 = 0.5 * (x1 + xr) / dx - i1
+        #     Fy1 = q * (yr - y1) / dt * w0
+        #     Wy1 = 0.5 * (y1 + yr) / dy - j1
             
-            xr = 0.0
-            Fx2 = q * (x2 - xr) / dt * w0
-            Wx2 = 0.5 * (x2 + xr) / dx - i2
-            Fy2 = q * (y2 - yr) / dt * w0
-            Wy2 = 0.5 * (y2 + yr) / dy - j2
-
-            ix1 = i1 + 1
-            ix2 = i2 + 1
-
-            jy1 = j1 + 1
-            jy2 = j2 + 1
-
-            x2r = (x2 - x_min) / dx - i2
-            y2r = (y2 - y_min) / dy - j2
-
-            rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-            rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-            rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-            rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
-
-            # Current deposited during first part of trajectory: particle is in patch 0
-
-            Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-            Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
+        #     xr = 0.0
             
-            # Current at mid-last cell of patch 0
-            Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-            # Current on the edge of patch 0
-            Jx[tag0, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-            # Current on patch 1
-            Jx[tag1, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag1, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-            # Current deposited during second part of trajectory: particle is in patch 1
-
-            Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-            Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
+        #     # yp[it + 1, ip] = yr
+        #     # y2 = yr
             
-            # Current at mid-last cell of patch 1
-            Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
+        #     Fx2 = q * (x2 - xr) / dt * w0
+        #     Wx2 = 0.5 * (x2 + xr) / dx - i2
+        #     Fy2 = q * (y2 - yr) / dt * w0
+        #     Wy2 = 0.5 * (y2 + yr) / dy - j2
 
-            # Current on the edge of patch 1
-            Jx[tag1, 0, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag1, 0, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
+        #     x2r = (x2 - x_min) / dx - i2
+        #     y2r = (y2 - y_min) / dy - j2
 
-            # Current on patch 0
-            Jx[tag0, -1, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, -1, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
+        #     rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+        #     rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+        #     rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+        #     rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
 
-        # Same thing if particle starts in patch 1
-        elif (tag0 == 1):
+        #     subcell(0, deltax1, deltay1, i1, j1, Fx1, Fy1, Wx1, Wy1) 
+        #     subcell(1, deltax2, deltay2, i2, j2, Fx2, Fy2, Wx2, Wy2) 
 
-            xr = 0.0
-            Fx1 = q * (xr - x1) / dt * w0
-            Wx1 = 0.5 * (x1 + xr) / dx - i1
-            Fy1 = q * (yr - y1) / dt * w0
-            Wy1 = 0.5 * (y1 + yr) / dy - j1
+        # # Same thing if particle starts in patch 1
+        # elif (tag0 == 1):
 
-            xr = 1.0
-            Fx2 = q * (x2 - xr) / dt * w0
-            Wx2 = 0.5 * (x2 + xr) / dx - i2
-            Fy2 = q * (y2 - yr) / dt * w0
-            Wy2 = 0.5 * (y2 + yr) / dy - j2
+        #     xr = 0.0
+        #     Fx1 = q * (xr - x1) / dt * w0
+        #     Wx1 = 0.5 * (x1 + xr) / dx - i1
+        #     Fy1 = q * (yr - y1) / dt * w0
+        #     Wy1 = 0.5 * (y1 + yr) / dy - j1
 
-            ix1 = i1 + 1
-            ix2 = i2 + 1
+        #     xr = 1.0
+        #     Fx2 = q * (x2 - xr) / dt * w0
+        #     Wx2 = 0.5 * (x2 + xr) / dx - i2
+        #     Fy2 = q * (y2 - yr) / dt * w0
+        #     Wy2 = 0.5 * (y2 + yr) / dy - j2
 
-            jy1 = j1 + 1
-            jy2 = j2 + 1
+        #     x2r = (x2 - x_min) / dx - i2
+        #     y2r = (y2 - y_min) / dy - j2
 
-            x2r = (x2 - x_min) / dx - i2
-            y2r = (y2 - y_min) / dy - j2
+        #     rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
+        #     rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
+        #     rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
+        #     rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
 
-            rho1[tag1, i2, j2] += q * w0 * (1.0 - x2r) * (1.0 - y2r) / S0
-            rho1[tag1, i2, j2 + 1] += q * w0 * (1.0 - x2r) * y2r / S0
-            rho1[tag1, i2 + 1, j2] += q * w0 * x2r * (1.0 - y2r) / S0
-            rho1[tag1, i2 + 1, j2 + 1] += q * w0 * x2r * y2r / S0
+        #     subcell(1, deltax1, deltay1, i1, j1, Fx1, Fy1, Wx1, Wy1) 
+        #     subcell(0, deltax2, deltay2, i2, j2, Fx2, Fy2, Wx2, Wy2) 
 
-            Jx[tag0, ix1, j1] += deltax1 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, ix1, j1 + 1] += deltax1 * Fx1 * Wy1 / S0
-
-            Jx[tag0, 0, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag0, 0, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-            Jy[tag0, i1, jy1] += deltay1 * Fy1 * (1.0 - Wx1) / S0
-            Jy[tag0, i1 + 1, jy1] += deltay1 * Fy1 * Wx1 / S0
-
-            Jx[tag1, -1, j1] += 0.5 * Fx1 * (1.0 - Wy1) / S0
-            Jx[tag1, -1, j1 + 1] += 0.5 * Fx1 * Wy1 / S0
-
-            Jx[tag1, ix2, j2] += deltax2 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag1, ix2, j2 + 1] += deltax2 * Fx2 * Wy2 / S0
-
-            Jx[tag1, -1, j2] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag1, -1, j2 + 1] += 0.5 * Fx2 * Wy2 / S0
-
-            Jy[tag1, i2, jy2] += deltay2 * Fy2 * (1.0 - Wx2) / S0
-            Jy[tag1, i2 + 1, jy2] += deltay2 * Fy2 * Wx2 / S0
-
-            Jx[tag0, 0, j1] += 0.5 * Fx2 * (1.0 - Wy2) / S0
-            Jx[tag0, 0, j1 + 1] += 0.5 * Fx2 * Wy2 / S0
+    # If absorbing patch 1    
+    # Jx[1, :, :] = 0.0
+    # Jy[1, :, :] = 0.0
+    # rho1[1, :, :] = 0.0
     
     return
 
@@ -1377,7 +1033,7 @@ def plot_div(idump, it):
     P.pcolormesh(xEz_grid, yEz_grid, q * N.abs(divE1[0, :, :] - 4.0 * N.pi * rho1[0, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
     P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, q * N.abs(divE1[1, :, :] - 4.0 * N.pi * rho1[1, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
         
-    P.ylim((0.4, 0.6))
+    P.ylim((0.2, 0.8))
     P.xlim((0.9, 1.1))
     # ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
     
@@ -1386,7 +1042,7 @@ def plot_div(idump, it):
     P.pcolormesh(xEz_grid, yEz_grid, q * N.abs(divcharge[0, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
     P.pcolormesh(xEz_grid + x_max + 2.0 * dx, yEz_grid, N.abs(divcharge[1, :, :]), vmin = -0.1, vmax = 0.1, cmap = 'RdBu_r')
         
-    P.ylim((0.4, 0.6))
+    P.ylim((0.2, 0.8))
     P.xlim((0.9, 1.1))
     # ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
@@ -1400,7 +1056,7 @@ def plot_div(idump, it):
 
 amp = 0.0
 n_mode = 2
-n_iter = 8
+n_iter = 4
 
 wave = 2.0 * (x_max - x_min) / n_mode
 Bz0 = amp * N.cos(2.0 * N.pi * (xBz_grid - x_min) / wave) * N.cos(2.0 * N.pi * (yBz_grid - x_min) / wave)
@@ -1432,7 +1088,7 @@ for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields(idump, it)
         # plot_fields_zoom(idump, it)
-        # plot_div(idump, it)
+        plot_div(idump, it)
         idump += 1
 
     # print(it, Nt)
