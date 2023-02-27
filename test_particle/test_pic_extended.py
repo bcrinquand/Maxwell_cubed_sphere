@@ -26,18 +26,18 @@ cfl = 0.5
 Nx = 200 # Number of cells
 Nx_int = Nx + 1 # Number of integer points
 Nx_half = Nx + 2 # NUmber of hlaf-step points
-Ny = 100 # Number of cells
+Ny = 200 # Number of cells
 Ny_int = Ny + 1 # Number of integer points
 Ny_half = Ny + 2 # NUmber of hlaf-step points
 
 q = 1e-2 # Absolute value of charge
 
 Nt = 4000 # Number of iterations
-FDUMP = 100 # Dump frequency
+FDUMP = 50 # Dump frequency
 
 x_min, x_max = 0.0, 1.0
 dx = (x_max - x_min) / Nx
-y_min, y_max = 0.0, 0.5
+y_min, y_max = 0.0, 1.0
 dy = (y_max - y_min) / Ny
 
 dt = cfl / N.sqrt(1.0 / dx**2 + 1.0 / dy**2)
@@ -220,9 +220,9 @@ wp  = N.zeros((Nt + 1, np)) # charge x weight (can be negative)
 tag = N.zeros((Nt + 1, np), dtype='int') # Patch in which the partice is located
 
 ux0 = 0.1
-uy0 = 0.05
-x0 = 0.8
-y0 = 0.26
+uy0 = 0.1
+x0 = 1.0 - 20.5 * dx
+y0 = 0.25
 
 def initialize_part():
 
@@ -236,7 +236,7 @@ def initialize_part():
         r = y_min + N.random.rand() * (y_max - y_min)
         yp[0, ip] = y0
         yp[0, ip + 1] = y0
-        uxp[0, ip] = ux0
+        uxp[0, ip] = - ux0
         uxp[0, ip + 1] = - ux0
 
         uyp[0, ip] = uy0
@@ -940,6 +940,198 @@ Jintx = N.zeros_like(Jx)
 Jinty = N.zeros_like(Jy)
 rhobuff = N.zeros_like(rho0)
 
+# def filter_current(iter):
+
+#     Jbuffx[:, :, :] = Jx[:, :, :]
+#     Jbuffy[:, :, :] = Jy[:, :, :]
+#     rhobuff[:, :, :] = rho0[:, :, :]
+    
+#     # Pretend information from other patch is in a ghost cell
+
+#     for i in range(iter):
+        
+#         Jintx[:, :, :] = Jbuffx[:, :, :]
+
+#         # Jx in bulk, regular 1-2-1 stencil
+#         Jbuffx[:, 2:(Nx_half-2), 1:(Ny_int-1)] = 0.25 * Jintx[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)]
+
+#         # Jx at half-edge cell in patch 0
+#         Jbuffx[0, -2, 1:(Ny_int-1)] = 0.25 * Jintx[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[0, -3, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
+
+#         # Jx at edge cell in patch 0
+#         Jbuffx[0, -1, 1:(Ny_int-1)] = 0.25 * Jintx[0, -1, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
+
+#         # Jx at half-edge cell in patch 1                             
+#         Jbuffx[1, 1, 1:(Ny_int-1)] = 0.25 * Jintx[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[1, 2, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
+
+#         # Jx at edge cell in patch 1
+#         Jbuffx[1, 0, 1:(Ny_int-1)] = 0.25 * Jintx[1, 0, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
+
+#         # # Jx at half-edge cell in patch 0
+#         # Jbuffx[0, -2, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 12.0) * Jintx[0, -3, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 6.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
+                                            
+#         # # Jx at edge cell in patch 0
+#         # Jbuffx[0, -1, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 8.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 4.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#         #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
+
+#         # # Jx at half-edge cell in patch 1                             
+#         # Jbuffx[1, 1, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 12.0) * Jintx[1, 2, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 6.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
+                                        
+#         # # Jx at edge cell in patch 1
+#         # Jbuffx[1, 0, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 8.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 4.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+#         #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
+
+
+#         Jinty[:, :, :] = Jbuffy[:, :, :]
+
+#         # Jy in bulk
+#         Jbuffy[:, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jinty[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, 1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, -1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)]
+
+#         # Jy at edge cell in patch 0
+#         Jbuffy[0, -1, 2:(Ny_half-2)] = 0.25 * Jinty[0, -1, 2:(Ny_half-2)] \
+#                                             + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+#                                             + 0.125 * Jinty[1, 0, 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)]
+
+#         # Jx at edge cell in patch 1
+#         Jbuffy[1, 0, 2:(Ny_half-2)] = 0.25 * Jinty[1, 0, 2:(Ny_half-2)] \
+#                                             + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+#                                             + 0.125 * Jinty[0, -1, 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+#                                             + 0.125 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
+#                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)]
+
+#         # rho in bulk
+#         rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] = 0.25 * rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(rhobuff, 1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(rhobuff, -1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(rhobuff, 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.125 * N.roll(rhobuff, -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
+#                                             + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)]
+
+#     Jx[:, :, :] = Jbuffx[:, :, :]
+#     Jy[:, :, :] = Jbuffy[:, :, :]
+#     rho0[:, :, :] = rhobuff[:, :, :]
+
+#     return
+
+Jxtot = N.zeros((2, Nx_int, Ny_int))
+Jytot = N.zeros((2, Nx_int, Ny_int))
+
+def interpolate_to_nodes():
+
+    Jxtot[:, 0, :]    = Jx[:, 0, :]
+    Jxtot[:, -1, :]   = Jx[:, -1, :]
+    Jxtot[:, 1:-1, :] = 0.5 * (Jx[:, 1:-2, :] + N.roll(Jx, -1, axis = 1)[:, 1:-2, :])
+
+    Jytot[:, :, 0]    = Jy[:, :, 0]
+    Jytot[:, :, -1]   = Jy[:, :, -1]
+    Jytot[:, :, 1:-1] = 0.5 * (Jy[:, :, 1:-2] + N.roll(Jy, -1, axis = 2)[:, :, 1:-2])
+
+    return
+
+def interpolate_to_J():
+
+    Jxtot[:, 0, :]    = Jx[:, 0, :]
+    Jxtot[:, -1, :]   = Jx[:, -1, :]
+    Jxtot[:, 1:-1, :] = 0.5 * (Jx[:, 1:-2, :] + N.roll(Jx, -1, axis = 1)[:, 1:-2, :])
+
+    Jytot[:, :, 0]    = Jy[:, :, 0]
+    Jytot[:, :, -1]   = Jy[:, :, -1]
+    Jytot[:, :, 1:-1] = 0.5 * (Jy[:, :, 1:-2] + N.roll(Jy, -1, axis = 2)[:, :, 1:-2])
+
+    return
+
+
 def filter_current(iter):
 
     Jbuffx[:, :, :] = Jx[:, :, :]
@@ -953,151 +1145,94 @@ def filter_current(iter):
         Jintx[:, :, :] = Jbuffx[:, :, :]
 
         # Jx in bulk, regular 1-2-1 stencil
-        Jbuffx[:, 2:(Nx_half-2), 1:(Ny_int-1)] = 0.25 * Jintx[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jintx, 1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jintx, -1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jintx, 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(Jintx, -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jintx, 1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(Jintx, -1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)]
+        Jbuffx[:, 2:(Nx_half-2), 1:(Ny_int-1)] = 0.3 * Jintx[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.15 * N.roll(Jintx, 1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.15 * N.roll(Jintx, -1, axis = 1)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.1 * N.roll(Jintx, 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.1 * N.roll(Jintx, -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.025 * N.roll(N.roll(Jintx, 1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.025 * N.roll(N.roll(Jintx, -1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.075 * N.roll(N.roll(Jintx, 1, axis = 1), -1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)] \
+                                            + 0.075 * N.roll(N.roll(Jintx, -1, axis = 1), 1, axis = 2)[:, 2:(Nx_half-2), 1:(Ny_int-1)]
 
         # Jx at half-edge cell in patch 0
         Jbuffx[0, -2, 1:(Ny_int-1)] = 0.25 * Jintx[0, -2, 1:(Ny_int-1)] \
                                             + 0.125 * Jintx[0, -3, 1:(Ny_int-1)] \
-                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -1, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
 
         # Jx at edge cell in patch 0
         Jbuffx[0, -1, 1:(Ny_int-1)] = 0.25 * Jintx[0, -1, 1:(Ny_int-1)] \
                                             + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
-                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
 
         # Jx at half-edge cell in patch 1                             
         Jbuffx[1, 1, 1:(Ny_int-1)] = 0.25 * Jintx[1, 1, 1:(Ny_int-1)] \
                                             + 0.125 * Jintx[1, 2, 1:(Ny_int-1)] \
-                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 0, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
 
         # Jx at edge cell in patch 1
         Jbuffx[1, 0, 1:(Ny_int-1)] = 0.25 * Jintx[1, 0, 1:(Ny_int-1)] \
                                             + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
-                                            + 0.125 * Jintx[0, -2, 1:(Ny_int-1)] \
+                                            + 0.125 * Jintx[1, 1, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
                                             + 0.125 * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                             + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)]
-
-        # # Jx at half-edge cell in patch 0
-        # Jbuffx[0, -2, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 12.0) * Jintx[0, -3, 1:(Ny_int-1)] \
-        #                             + (1.0 / 6.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
-        #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[0, -3, 1:(Ny_int-1)] \
-        #                             + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[0, -3, 1:(Ny_int-1)] \
-        #                             + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-        #                             + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
-                                            
-        # # Jx at edge cell in patch 0
-        # Jbuffx[0, -1, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
-        #                             + (1.0 / 8.0)  * Jintx[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 4.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
-        #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-        #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-        #                             + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
-        #                             + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-        #                             + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
-
-        # # Jx at half-edge cell in patch 1                             
-        # Jbuffx[1, 1, 1:(Ny_int-1)] = (1.0 / 4.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 12.0) * Jintx[1, 2, 1:(Ny_int-1)] \
-        #                            + (1.0 / 6.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
-        #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 24.0) * N.roll(Jintx, 1, axis = 2)[1, 2, 1:(Ny_int-1)] \
-        #                            + (1.0 / 24.0) * N.roll(Jintx, -1, axis = 2)[1, 2, 1:(Ny_int-1)] \
-        #                            + (1.0 / 12.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-        #                            + (1.0 / 12.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)]
-                                        
-        # # Jx at edge cell in patch 1
-        # Jbuffx[1, 0, 1:(Ny_int-1)] = (1.0 / 8.0)  * Jintx[1, 0, 1:(Ny_int-1)] \
-        #                            + (1.0 / 8.0)  * Jintx[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 4.0)  * Jintx[0, -1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-        #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-        #                            + (1.0 / 16.0) * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 16.0) * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 8.0)  * N.roll(Jintx, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-        #                            + (1.0 / 8.0)  * N.roll(Jintx, -1, axis = 2)[0, -1, 1:(Ny_int-1)]
-
+                                            + 0.0625 * N.roll(Jintx, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                            + 0.0625 * N.roll(Jintx, -1, axis = 2)[1, 1, 1:(Ny_int-1)]
 
         Jinty[:, :, :] = Jbuffy[:, :, :]
 
         # Jy in bulk
-        Jbuffy[:, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.25 * Jinty[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jinty, 1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jinty, -1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jinty, 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.125 * N.roll(Jinty, -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jinty, 1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(N.roll(Jinty, -1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)]
+        Jbuffy[:, 1:(Nx_int-1), 2:(Ny_half-2)] = 0.3 * Jinty[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.15 * N.roll(Jinty, 1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.15 * N.roll(Jinty, -1, axis = 1)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.1 * N.roll(Jinty, 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.1 * N.roll(Jinty, -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.025 * N.roll(N.roll(Jinty, 1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.025 * N.roll(N.roll(Jinty, -1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.075 * N.roll(N.roll(Jinty, 1, axis = 1), -1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)] \
+                                            + 0.075 * N.roll(N.roll(Jinty, -1, axis = 1), 1, axis = 2)[:, 1:(Nx_int-1), 2:(Ny_half-2)]
 
         # Jy at edge cell in patch 0
         Jbuffy[0, -1, 2:(Ny_half-2)] = 0.25 * Jinty[0, -1, 2:(Ny_half-2)] \
                                             + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
-                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
                                             + 0.125 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
                                             + 0.125 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)]
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)]
 
         # Jx at edge cell in patch 1
         Jbuffy[1, 0, 2:(Ny_half-2)] = 0.25 * Jinty[1, 0, 2:(Ny_half-2)] \
                                             + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
-                                            + 0.125 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                            + 0.125 * Jinty[1, 1, 2:(Ny_half-2)] \
                                             + 0.125 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
                                             + 0.125 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
                                             + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
                                             + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
-                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)]
-
-        # rho in bulk
-        rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] = 0.25 * rhobuff[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(rhobuff, 1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(rhobuff, -1, axis = 1)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(rhobuff, 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.125 * N.roll(rhobuff, -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(rhobuff, 1, axis = 1), -1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)] \
-                                            + 0.0625 * N.roll(N.roll(rhobuff, -1, axis = 1), 1, axis = 2)[p, 1:(Nx_int-1), 1:(Ny_int-1)]
-
+                                            + 0.0625 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                            + 0.0625 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)]
 
     Jx[:, :, :] = Jbuffx[:, :, :]
     Jy[:, :, :] = Jbuffy[:, :, :]
@@ -1149,7 +1284,7 @@ def compute_charge_across():
 # Boundary conditions
 ########
 
-sig_abs = 0.5
+sig_abs = 1.0
 
 def BC_conducting_B(dtin, Exin, Eyin, Bzin):
 
@@ -1211,9 +1346,23 @@ def BC_penalty_B(dtin, Exin, Eyin, Bzin):
     Bz[1, 0, :]  -= dtin * sig_abs * (Bzin[1, 0, :] + Eyin[1, 0, :] - (Bzin[0, -1, :] + Eyin[0, -1, :])) / dx / P_half_2[0]
     return
 
+sig = 0.5
+
+gamma=0.75
 def BC_penalty_E(dtin, Exin, Eyin, Bzin):
-    Ey[0, -1, :] -= dtin * sig_abs * (Eyin[0, -1, :] - Bzin[0, -1, :] - (Eyin[1, 0, :] - Bzin[1, 0, :])) / dx / P_half_2[-1]
-    Ey[1, 0, :]  -= dtin * sig_abs * (Eyin[1, 0, :] + Bzin[1, 0, :] - (Eyin[0, -1, :] + Bzin[0, -1, :])) / dx / P_half_2[0]
+    penalty0 = - dtin * sig * (Eyin[0, -1, :] - Bzin[0, -1, :] - (Eyin[1, 0, :] - Bzin[1, 0, :])) / dx / P_half_2[-1]
+    penalty1 = - dtin * sig * (Eyin[1, 0, :] + Bzin[1, 0, :] - (Eyin[0, -1, :] + Bzin[0, -1, :])) / dx / P_half_2[0]
+    Ey[0, -1, :] -= dtin * sig * (Eyin[0, -1, :] - Bzin[0, -1, :] - (Eyin[1, 0, :] - Bzin[1, 0, :])) / dx / P_half_2[-1]
+    Ey[1, 0, :]  -= dtin * sig * (Eyin[1, 0, :] + Bzin[1, 0, :] - (Eyin[0, -1, :] + Bzin[0, -1, :])) / dx / P_half_2[0]
+    
+    # ## CLEANING
+    # Ex[0, -1, 2:-2] += (3.0 * gamma - 2.0) / (1.0 - 2.0 * gamma) * (dx/dy) *(N.roll(penalty0, -1)[2:-3] - penalty0[2:-3]) 
+
+    # Ex[0, -2, 2:-2] += (2.0 * gamma - 2.0) / (1.0 - 2.0 * gamma) * (dx/dy) *(N.roll(penalty0, -1)[2:-3] - penalty0[2:-3])
+
+    # Ex[1, 0, 2:-2]  -= (3.0 * gamma - 2.0) / (1.0 - 2.0 * gamma) * (dx/dy) *(N.roll(penalty1, -1)[2:-3] - penalty1[2:-3])
+
+    # Ex[1, 1, 2:-2]  -= (2.0 * gamma - 2.0) / (1.0 - 2.0 * gamma) * (dx/dy) *(N.roll(penalty1, -1)[2:-3] - penalty1[2:-3])
     return
 
 def BC_periodic_B(dtin, Exin, Eyin, Bzin):
@@ -1520,7 +1669,9 @@ for it in tqdm(range(Nt), "Progression"):
     Ey0[:, :, :] = Ey[:, :, :]
     compute_diff_B(patches)
     push_E(patches, it, dt)
-      
+
+    # filter_current(n_iter)
+
     # Use averaged E field, defined at n + 1/2  
     BC_conducting_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
     BC_absorbing_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
