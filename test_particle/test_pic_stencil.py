@@ -33,7 +33,7 @@ Ny_half = Ny + 2 # NUmber of hlaf-step points
 q = 1e-2 # Absolute value of charge
 
 Nt = 4000 #351 # Number of iterations
-FDUMP = 50 # Dump frequency
+FDUMP = 5 # Dump frequency
 
 x_min, x_max = 0.0, 1.0
 dx = (x_max - x_min) / Nx
@@ -98,7 +98,7 @@ dxJx = N.zeros_like(divE0)
 ########
 
 delta = 0.5
-gamma = 1 - 0.5 * delta  #Condition for currents at interface to match when particle in last cell  #0.2
+gamma = 0.75 #0.9 #1 - 0.5 * delta  #Condition for currents at interface to match when particle in last cell  #0.2
 
 P_int_2 = N.ones(Nx_int)
 
@@ -241,10 +241,10 @@ uyp = N.zeros((Nt + 1, np))
 wp  = N.zeros((Nt + 1, np)) # charge x weight (can be negative)
 tag = N.zeros((Nt + 1, np), dtype='int') # Patch in which the partice is located
 
-ux0 = 0.1
-uy0 = 0.08
-x0 = 1.0 - 10.5 * dx
-y0 = 0.25
+ux0 = 0.8
+uy0 = 0.2
+x0 = 1.0 - 30.5 * dx
+y0 = 0.5
 
 def initialize_part():
 
@@ -973,90 +973,35 @@ Jinty = N.zeros_like(Jy)
 rhobuff = N.zeros_like(rho0)
 rhoint = N.zeros_like(rho0)
 
-c00 = 0.50
-c10 = 0.25
+c00 = 0.25
+c10 = 0.125
 c01 = 0.50
 c11 = 0.50
 c12 = 0.00
-c50 = 0.00
-c40 = 0.00
+c04 = 0.0
+c50 = 0.25
+c40 = 0.125
 
-x00 = 1.0
-x01 = -0.0
-x02 = -0.0
+x00 = 0.75
+x01 = 0.125
+x02 = 0.125
 x03 = 0.0
-x52 = 0.00
-x51 = 0.00
-x50 = 0.00
+x52 = 0.125
+x51 = 0.125
+x50 = -0.25
 
 x10 = 0.375
 x11 = 0.1875
 x12 = 0.6875
 x13 = -0.25
-x42 = 0.0
-x41 = 0.0
-x40 = -0.0
+x42 = -0.0
+x41 = -0.0
+x40 = 0.0
 
 x20 = 0.125
 x21 = 0.0625
 x22 = 0.5625
 x23 = 0.25
-
-# c00 = 0.50
-# c10 = 0.25
-# c11 = 0.50
-# c12 = 0.00
-# c50 = 0.0
-# c40 = 0.0
-
-# x00 = 1.0625
-# x01 = -0.09375
-# x02 = 0.03125
-# x03 = 0.0
-# x52 = 0.0
-# x51 = 0.0
-# x50 = -0.0
-
-# x10 = 0.25
-# x11 = 0.375
-# x12 = 0.625
-# x13 = -0.25
-# x42 = -0.0
-# x41 = -0.0
-# x40 = 0.0
-
-# x20 = 0.125
-# x21 = 0.0625
-# x22 = 0.5625
-# x23 = 0.25
-
-# c00 = 0.5
-# c10 = 0.25
-# c11 = 0.375
-# c12 = 0.125
-# c50 = c00
-# c40 = c10
-
-# x00 = 0.875
-# x01 = -0.0625
-# x02 = 0.1875
-# x03 = 0.0
-# x52 = 0.4375
-# x51 = 0.1875
-# x50 = -0.625
-
-# x10 = 0.375
-# x11 = 0.1875
-# x12 = 0.6875
-# x13 = -0.25
-# x42 = 0.0
-# x41 = 0.0
-# x40 = 0.0
-
-# x20 = 0.125
-# x21 = 0.0625
-# x22 = 0.5625
-# x23 = 0.25
 
 ym1 = 0.25
 y00 = 0.50
@@ -1217,15 +1162,15 @@ def filter_current(iter):
         Jbuffy[0, -1, 2:(Ny_half-2)] = c00 * y00 * Jinty[0, -1, 2:(Ny_half-2)] \
                                      + c01 * y00 * Jinty[0, -2, 2:(Ny_half-2)] \
                                      + c50 * y00 * Jinty[1, 0, 2:(Ny_half-2)] \
-                                     + c40 * y00 * Jinty[1, 1, 2:(Ny_half-2)] \
+                                     + c04 * y00 * Jinty[1, 1, 2:(Ny_half-2)] \
                                      + c00 * ym1 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
                                      + c01 * ym1 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
                                      + c50 * ym1 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
-                                     + c40 * ym1 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                     + c04 * ym1 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
                                      + c00 * yp1 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
                                      + c01 * yp1 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
                                      + c50 * yp1 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
-                                     + c40 * yp1 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
+                                     + c04 * yp1 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
 
         Jbuffy[0, -2, 2:(Ny_half-2)] = c10  * y00 * Jinty[0, -1, 2:(Ny_half-2)] \
                                      + c11  * y00 * Jinty[0, -2, 2:(Ny_half-2)] \
@@ -1247,15 +1192,15 @@ def filter_current(iter):
         Jbuffy[1, 0, 2:(Ny_half-2)] = c00 * y00 * Jinty[1, 0, 2:(Ny_half-2)] \
                                     + c01 * y00 * Jinty[1, 1, 2:(Ny_half-2)] \
                                     + c50 * y00 * Jinty[0, -1, 2:(Ny_half-2)] \
-                                    + c40 * y00 * Jinty[0, -2, 2:(Ny_half-2)] \
+                                    + c04 * y00 * Jinty[0, -2, 2:(Ny_half-2)] \
                                     + c00 * ym1 * N.roll(Jinty, 1, axis = 2)[1, 0, 2:(Ny_half-2)] \
                                     + c01 * ym1 * N.roll(Jinty, 1, axis = 2)[1, 1, 2:(Ny_half-2)] \
                                     + c50 * ym1 * N.roll(Jinty, 1, axis = 2)[0, -1, 2:(Ny_half-2)] \
-                                    + c40 * ym1 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                    + c04 * ym1 * N.roll(Jinty, 1, axis = 2)[0, -2, 2:(Ny_half-2)] \
                                     + c00 * yp1 * N.roll(Jinty, -1, axis = 2)[1, 0, 2:(Ny_half-2)] \
                                     + c01 * yp1 * N.roll(Jinty, -1, axis = 2)[1, 1, 2:(Ny_half-2)] \
                                     + c50 * yp1 * N.roll(Jinty, -1, axis = 2)[0, -1, 2:(Ny_half-2)] \
-                                    + c40 * yp1 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
+                                    + c04 * yp1 * N.roll(Jinty, -1, axis = 2)[0, -2, 2:(Ny_half-2)] \
 
         Jbuffy[1, 1, 2:(Ny_half-2)] = c10  * y00 * Jinty[1, 0, 2:(Ny_half-2)] \
                                     + c11  * y00 * Jinty[1, 1, 2:(Ny_half-2)] \
@@ -1289,15 +1234,15 @@ def filter_current(iter):
         rhobuff[0, -1, 1:(Ny_int-1)] = c00 * y00 * rhoint[0, -1, 1:(Ny_int-1)] \
                                      + c01 * y00 * rhoint[0, -2, 1:(Ny_int-1)] \
                                      + c50 * y00 * rhoint[1, 0, 1:(Ny_int-1)] \
-                                     + c40 * y00 * rhoint[1, 1, 1:(Ny_int-1)] \
+                                     + c04 * y00 * rhoint[1, 1, 1:(Ny_int-1)] \
                                      + c00 * ym1 * N.roll(rhoint, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
                                      + c01 * ym1 * N.roll(rhoint, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                      + c50 * ym1 * N.roll(rhoint, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-                                     + c40 * ym1 * N.roll(rhoint, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                     + c04 * ym1 * N.roll(rhoint, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                      + c00 * yp1 * N.roll(rhoint, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
                                      + c01 * yp1 * N.roll(rhoint, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                      + c50 * yp1 * N.roll(rhoint, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
-                                     + c40 * yp1 * N.roll(rhoint, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
+                                     + c04 * yp1 * N.roll(rhoint, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                         
         rhobuff[0, -2, 1:(Ny_int-1)] = c10  * y00 * rhoint[0, -1, 1:(Ny_int-1)] \
                                      + c11  * y00 * rhoint[0, -2, 1:(Ny_int-1)] \
@@ -1318,15 +1263,15 @@ def filter_current(iter):
         rhobuff[1, 0, 1:(Ny_int-1)] = c00 * y00 * rhoint[1, 0, 1:(Ny_int-1)] \
                                     + c01 * y00 * rhoint[1, 1, 1:(Ny_int-1)] \
                                     + c50 * y00 * rhoint[0, -1, 1:(Ny_int-1)] \
-                                    + c40 * y00 * rhoint[0, -2, 1:(Ny_int-1)] \
+                                    + c04 * y00 * rhoint[0, -2, 1:(Ny_int-1)] \
                                     + c00 * ym1 * N.roll(rhoint, 1, axis = 2)[1, 0, 1:(Ny_int-1)] \
                                     + c01 * ym1 * N.roll(rhoint, 1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                     + c50 * ym1 * N.roll(rhoint, 1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-                                    + c40 * ym1 * N.roll(rhoint, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                    + c04 * ym1 * N.roll(rhoint, 1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                     + c00 * yp1 * N.roll(rhoint, -1, axis = 2)[1, 0, 1:(Ny_int-1)] \
                                     + c01 * yp1 * N.roll(rhoint, -1, axis = 2)[1, 1, 1:(Ny_int-1)] \
                                     + c50 * yp1 * N.roll(rhoint, -1, axis = 2)[0, -1, 1:(Ny_int-1)] \
-                                    + c40 * yp1 * N.roll(rhoint, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
+                                    + c04 * yp1 * N.roll(rhoint, -1, axis = 2)[0, -2, 1:(Ny_int-1)] \
                                         
         rhobuff[1, 1, 1:(Ny_int-1)] = c10  * y00 * rhoint[1, 0, 1:(Ny_int-1)] \
                                     + c11  * y00 * rhoint[1, 1, 1:(Ny_int-1)] \
@@ -1543,7 +1488,7 @@ def plot_fields(idump, it):
     # P.colorbar()
     
     P.xlim((0.5, 1.5))
-    P.ylim((0.0, 0.5))
+    P.ylim((0.25, 0.75))
 
     ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
@@ -1573,7 +1518,7 @@ def plot_fields(idump, it):
     P.title(r'$E_y$', fontsize=16)
 
     P.xlim((0.5, 1.5))
-    P.ylim((0.0, 0.5))
+    P.ylim((0.25, 0.75))
         
     ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
 
@@ -1701,7 +1646,7 @@ def compute_energy():
 
 amp = 0.0
 n_mode = 2
-n_iter = 0
+n_iter = 8
 
 wave = 2.0 * (x_max - x_min) / n_mode
 Bz0 = amp * N.cos(2.0 * N.pi * (xBz_grid - x_min) / wave) * N.cos(2.0 * N.pi * (yBz_grid - x_min) / wave)
@@ -1733,7 +1678,7 @@ for it in tqdm(range(Nt), "Progression"):
     if ((it % FDUMP) == 0):
         plot_fields(idump, it)
         # plot_fields_zoom(idump, it)
-        plot_div(idump, it)
+        # plot_div(idump, it)
         idump += 1
 
     # print(it, Nt)
@@ -1744,8 +1689,8 @@ for it in tqdm(range(Nt), "Progression"):
     
     # Here, Bz is defined at n, no need for averaging
     # BC_conducting_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
-    # BC_absorbing_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
-    BC_periodic_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
+    BC_absorbing_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
+    # BC_periodic_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
     BC_penalty_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz[:, :, :])
     
     Bz0[:, :, :] = Bz[:, :, :]
@@ -1772,8 +1717,8 @@ for it in tqdm(range(Nt), "Progression"):
     
     # Use Bz0, defined at n, this time
     # BC_conducting_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
-    # BC_absorbing_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
-    BC_periodic_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
+    BC_absorbing_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
+    # BC_periodic_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
     BC_penalty_B(0.5 * dt, Ex[:, :, :], Ey[:, :, :], Bz0[:, :, :])
 
     # Ampère step, starting with E at n, finishing with E at n + 1
@@ -1793,8 +1738,8 @@ for it in tqdm(range(Nt), "Progression"):
 
     # Use averaged E field, defined at n + 1/2  
     # BC_conducting_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
-    # BC_absorbing_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
-    BC_periodic_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
+    BC_absorbing_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
+    # BC_periodic_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
     BC_penalty_E(dt, 0.5 * (Ex0[:, :, :] + Ex[:, :, :]), 0.5 * (Ey0[:, :, :] + Ey[:, :, :]), Bz[:, :, :])
 
     # Clean corners
