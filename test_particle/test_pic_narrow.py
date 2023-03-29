@@ -222,7 +222,7 @@ wp  = N.zeros((Nt + 1, np)) # charge x weight (can be negative)
 tag = N.zeros((Nt + 1, np), dtype='int') # Patch in which the partice is located
 
 ux0 = 0.1
-uy0 = 0.05
+uy0 = 0.1
 x0 = 0.96
 
 def initialize_part():

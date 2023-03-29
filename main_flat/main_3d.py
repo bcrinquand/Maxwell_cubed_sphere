@@ -57,7 +57,7 @@ index_row, index_col = N.nonzero(topology)[0], N.nonzero(topology)[1]
 n_zeros = N.size(index_row) # Total number of interactions (12)
 
 # Parameters
-cfl = 0.2
+cfl = 0.1
 Nr0 = 64
 Nxi = 32 #32
 Neta = 32 #32
@@ -381,55 +381,66 @@ P_half_2[-3] = 1.25
 P_half_2[-2] = 0.25 
 P_half_2[-1] = 0.5 
 
+delt = 0.25
+gamma = 1.0
+
 def compute_diff_B(p):
     
-    dBrd1[p, :, 0, :] = (- 0.5 * Br[p, :, 0, :] + 0.25 * Br[p, :, 1, :] + 0.25 * Br[p, :, 2, :]) / dxi / P_int_2[0]
-    dBrd1[p, :, 1, :] = (- 0.5 * Br[p, :, 0, :] - 0.25 * Br[p, :, 1, :] + 0.75 * Br[p, :, 2, :]) / dxi / P_int_2[1]
-    dBrd1[p, :, Nxi_int - 2, :] = (- 0.75 * Br[p, :, -3, :] + 0.25 * Br[p, :, -2, :] + 0.5 * Br[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
-    dBrd1[p, :, Nxi_int - 1, :] = (- 0.25 * Br[p, :, -3, :] - 0.25 * Br[p, :, -2, :] + 0.5 * Br[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 1]
+    dBrd1[p, :, 0, :] = (2.0 *(delt - 1.0) * Br[p, :, 0, :] + (2.0 - 3.0 * delt) * Br[p, :, 1, :] + delt * Br[p, :, 2, :]) / dxi
+    dBrd1[p, :, 1, :] = (2.0 * (gamma - 1.0) * Br[p, :, 0, :] + (2.0 - 3.0 * gamma) * Br[p, :, 1, :] + gamma * Br[p, :, 2, :]) / dxi / P_int_2[1]
+    dBrd1[p, :, Nxi_int - 2, :] = (- gamma * Br[p, :, -3, :] - (2.0 - 3.0 * gamma) * Br[p, :, -2, :] - 2.0 * (gamma - 1.0) * Br[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
+    dBrd1[p, :, Nxi_int - 1, :] = (- delt * Br[p, :, -3, :] - (2.0 - 3.0 * delt) * Br[p, :, -2, :] - 2.0 * (delt - 1.0) * Br[p, :, -1, :]) / dxi
     dBrd1[p, :, 2:(Nxi_int - 2), :] = (N.roll(Br, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - Br[p, :, 2:(Nxi_int - 2), :]) / dxi
 
-    dBrd2[p, :, :, 0] = (- 0.5 * Br[p, :, :, 0] + 0.25 * Br[p, :, :, 1] + 0.25 * Br[p, :, :, 2]) / deta / P_int_2[0]
-    dBrd2[p, :, :, 1] = (- 0.5 * Br[p, :, :, 0] - 0.25 * Br[p, :, :, 1] + 0.75 * Br[p, :, :, 2]) / deta / P_int_2[1]
-    dBrd2[p, :, :, Nxi_int - 2] = (- 0.75 * Br[p, :, :, -3] + 0.25 * Br[p, :, :, -2] + 0.5 * Br[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
-    dBrd2[p, :, :, Nxi_int - 1] = (- 0.25 * Br[p, :, :, -3] - 0.25 * Br[p, :, :, -2] + 0.5 * Br[p, :, :, -1]) / deta / P_int_2[Nxi_int - 1]
+    dBrd2[p, :, :, 0] = (2.0 *(delt - 1.0) * Br[p, :, :, 0] + (2.0 - 3.0 * delt) * Br[p, :, :, 1] + delt * Br[p, :, :, 2]) / deta
+    dBrd2[p, :, :, 1] = (2.0 * (gamma - 1.0) * Br[p, :, :, 0] + (2.0 - 3.0 * gamma) * Br[p, :, :, 1] + gamma * Br[p, :, :, 2]) / deta / P_int_2[1]
+    dBrd2[p, :, :, Nxi_int - 2] = (- gamma * Br[p, :, :, -3] - (2.0 - 3.0 * gamma) * Br[p, :, :, -2] - 2.0 * (gamma - 1.0) * Br[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
+    dBrd2[p, :, :, Nxi_int - 1] = (- delt * Br[p, :, :, -3] - (2.0 - 3.0 * delt) * Br[p, :, :, -2] - 2.0 * (delt - 1.0) * Br[p, :, :, -1]) / deta
     dBrd2[p, :, :, 2:(Neta_int - 2)] = (N.roll(Br, -1, axis = 3)[p, :, :, 2:(Neta_int - 2)] - Br[p, :, :, 2:(Neta_int - 2)]) / deta
 
     dB1dr[p, NG:(Nr0 + NG), :, :] = (B1d[p, NG:(Nr0 + NG), :, :] - N.roll(B1d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
     dB2dr[p, NG:(Nr0 + NG), :, :] = (B2d[p, NG:(Nr0 + NG), :, :] - N.roll(B2d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
 
-    dB1d2[p, :, :, 0] = (- 0.5 * B1d[p, :, :, 0] + 0.25 * B1d[p, :, :, 1] + 0.25 * B1d[p, :, :, 2]) / deta / P_int_2[0]
-    dB1d2[p, :, :, 1] = (- 0.5 * B1d[p, :, :, 0] - 0.25 * B1d[p, :, :, 1] + 0.75 * B1d[p, :, :, 2]) / deta / P_int_2[1]
-    dB1d2[p, :, :, Nxi_int - 2] = (- 0.75 * B1d[p, :, :, -3] + 0.25 * B1d[p, :, :, -2] + 0.5 * B1d[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
-    dB1d2[p, :, :, Nxi_int - 1] = (- 0.25 * B1d[p, :, :, -3] - 0.25 * B1d[p, :, :, -2] + 0.5 * B1d[p, :, :, -1]) / deta / P_int_2[Nxi_int - 1]
+    dB1d2[p, :, :, 0] = (2.0 *(delt - 1.0) * B1d[p, :, :, 0] + (2.0 - 3.0 * delt) * B1d[p, :, :, 1] + delt * B1d[p, :, :, 2]) / deta
+    dB1d2[p, :, :, 1] = (2.0 * (gamma - 1.0) * B1d[p, :, :, 0] + (2.0 - 3.0 * gamma) * B1d[p, :, :, 1] + gamma * B1d[p, :, :, 2]) / deta / P_int_2[1]
+    dB1d2[p, :, :, Nxi_int - 2] = (- gamma * B1d[p, :, :, -3] - (2.0 - 3.0 * gamma) * B1d[p, :, :, -2] - 2.0 * (gamma - 1.0) * B1d[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
+    dB1d2[p, :, :, Nxi_int - 1] = (- delt * B1d[p, :, :, -3] - (2.0 - 3.0 * delt) * B1d[p, :, :, -2] - 2.0 * (delt - 1.0) * B1d[p, :, :, -1]) / deta
     dB1d2[p, :, :, 2:(Neta_int - 2)] = (N.roll(B1d, -1, axis = 3)[p, :, :, 2:(Neta_int - 2)] - B1d[p, :, :, 2:(Neta_int - 2)]) / deta
 
-    dB2d1[p, :, 0, :] = (- 0.5 * B2d[p, :, 0, :] + 0.25 * B2d[p, :, 1, :] + 0.25 * B2d[p, :, 2, :]) / dxi / P_int_2[0]
-    dB2d1[p, :, 1, :] = (- 0.5 * B2d[p, :, 0, :] - 0.25 * B2d[p, :, 1, :] + 0.75 * B2d[p, :, 2, :]) / dxi / P_int_2[1]
-    dB2d1[p, :, Nxi_int - 2, :] = (- 0.75 * B2d[p, :, -3, :] + 0.25 * B2d[p, :, -2, :] + 0.5 * B2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
-    dB2d1[p, :, Nxi_int - 1, :] = (- 0.25 * B2d[p, :, -3, :] - 0.25 * B2d[p, :, -2, :] + 0.5 * B2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 1]
+    dB2d1[p, :, 0, :] = (2.0 *(delt - 1.0) * B2d[p, :, 0, :] + (2.0 - 3.0 * delt) * B2d[p, :, 1, :] + delt * B2d[p, :, 2, :]) / dxi
+    dB2d1[p, :, 1, :] = (2.0 * (gamma - 1.0) * B2d[p, :, 0, :] + (2.0 - 3.0 * gamma) * B2d[p, :, 1, :] + gamma * B2d[p, :, 2, :]) / dxi / P_int_2[1]
+    dB2d1[p, :, Nxi_int - 2, :] = (- gamma * B2d[p, :, -3, :] - (2.0 - 3.0 * gamma) * B2d[p, :, -2, :] - 2.0 * (gamma - 1.0) * B2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
+    dB2d1[p, :, Nxi_int - 1, :] = (- delt * B2d[p, :, -3, :] - (2.0 - 3.0 * delt) * B2d[p, :, -2, :] - 2.0 * (delt - 1.0) * B2d[p, :, -1, :]) / dxi
     dB2d1[p, :, 2:(Nxi_int - 2), :] = (N.roll(B2d, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - B2d[p, :, 2:(Nxi_int - 2), :]) / dxi
 
 def compute_diff_B_low(p):
     
     dBrd1[p, :, 0, :] = (- Br[p, :, 0, :] + Br[p, :, 1, :]) / dxi / 0.5
+    dBrd1[p, :, 1, :] = (2.0 * (gamma - 1.0) * Br[p, :, 0, :] + (2.0 - 3.0 * gamma) * Br[p, :, 1, :] + gamma * Br[p, :, 2, :]) / dxi / P_int_2[1]
+    dBrd1[p, :, Nxi_int - 2, :] = (- gamma * Br[p, :, -3, :] - (2.0 - 3.0 * gamma) * Br[p, :, -2, :] - 2.0 * (gamma - 1.0) * Br[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
     dBrd1[p, :, Nxi_int - 1, :] = (-  Br[p, :, -2, :] + Br[p, :, -1, :]) / dxi / 0.5
-    dBrd1[p, :, 1:(Nxi_int - 1), :] = (N.roll(Br, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - Br[p, :, 1:(Nxi_int - 1), :]) / dxi
+    dBrd1[p, :, 2:(Nxi_int - 2), :] = (N.roll(Br, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - Br[p, :, 2:(Nxi_int - 2), :]) / dxi
 
     dBrd2[p, :, :, 0] = (- Br[p, :, :, 0] + Br[p, :, :, 1]) / deta / 0.5
-    dBrd2[p, :, :, Nxi_int - 1] = (- Br[p, :, :, -2] + Br[p, :, :, -1]) / deta / 0.5
-    dBrd2[p, :, :, 1:(Neta_int - 1)] = (N.roll(Br, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - Br[p, :, :, 1:(Neta_int - 1)]) / deta
+    dBrd2[p, :, :, 1] = (2.0 * (gamma - 1.0) * Br[p, :, :, 0] + (2.0 - 3.0 * gamma) * Br[p, :, :, 1] + gamma * Br[p, :, :, 2]) / deta / P_int_2[1]
+    dBrd2[p, :, :, Nxi_int - 2] = (- gamma * Br[p, :, :, -3] - (2.0 - 3.0 * gamma) * Br[p, :, :, -2] - 2.0 * (gamma - 1.0) * Br[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
+    dBrd2[p, :, :, Nxi_int - 1] = (- Br[p, :, :, -2] + Br[p, :, :, -1]) / deta / 0.5    
+    dBrd2[p, :, :, 2:(Neta_int - 2)] = (N.roll(Br, -1, axis = 3)[p, :, :, 2:(Neta_int - 2)] - Br[p, :, :, 2:(Neta_int - 2)]) / deta
 
     dB1dr[p, NG:(Nr0 + NG), :, :] = (B1d[p, NG:(Nr0 + NG), :, :] - N.roll(B1d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
     dB2dr[p, NG:(Nr0 + NG), :, :] = (B2d[p, NG:(Nr0 + NG), :, :] - N.roll(B2d, 1, axis = 1)[p, NG:(Nr0 + NG), :, :]) / dr
 
     dB1d2[p, :, :, 0] = (- B1d[p, :, :, 0] + B1d[p, :, :, 1]) / deta / 0.5
+    dB1d2[p, :, :, 1] = (2.0 * (gamma - 1.0) * B1d[p, :, :, 0] + (2.0 - 3.0 * gamma) * B1d[p, :, :, 1] + gamma * B1d[p, :, :, 2]) / deta / P_int_2[1]
+    dB1d2[p, :, :, Nxi_int - 2] = (- gamma * B1d[p, :, :, -3] - (2.0 - 3.0 * gamma) * B1d[p, :, :, -2] - 2.0 * (gamma - 1.0) * B1d[p, :, :, -1]) / deta / P_int_2[Nxi_int - 2]
     dB1d2[p, :, :, Nxi_int - 1] = (- B1d[p, :, :, -2] + B1d[p, :, :, -1]) / deta / 0.5
-    dB1d2[p, :, :, 1:(Neta_int - 1)] = (N.roll(B1d, -1, axis = 3)[p, :, :, 1:(Neta_int - 1)] - B1d[p, :, :, 1:(Neta_int - 1)]) / deta
+    dB1d2[p, :, :, 2:(Neta_int - 2)] = (N.roll(B1d, -1, axis = 3)[p, :, :, 2:(Neta_int - 2)] - B1d[p, :, :, 2:(Neta_int - 2)]) / deta
 
-    dB2d1[p, :, 0, :] = (- B2d[p, :, 0, :] + B2d[p, :, 1, :]) / dxi / 0.5
-    dB2d1[p, :, Nxi_int - 1, :] = (- B2d[p, :, -2, :] + B2d[p, :, -1, :]) / dxi / 0.5
-    dB2d1[p, :, 1:(Nxi_int - 1), :] = (N.roll(B2d, -1, axis = 2)[p, :, 1:(Nxi_int - 1), :] - B2d[p, :, 1:(Nxi_int - 1), :]) / dxi
+    dB2d1[p, :, 0, :] = (- B2d[p, :, 0, :] + B2d[p, :, 1, :]) / dxi / 0.5    
+    dB2d1[p, :, 1, :] = (2.0 * (gamma - 1.0) * B2d[p, :, 0, :] + (2.0 - 3.0 * gamma) * B2d[p, :, 1, :] + gamma * B2d[p, :, 2, :]) / dxi / P_int_2[1]
+    dB2d1[p, :, Nxi_int - 2, :] = (- gamma * B2d[p, :, -3, :] - (2.0 - 3.0 * gamma) * B2d[p, :, -2, :] - 2.0 * (gamma - 1.0) * B2d[p, :, -1, :]) / dxi / P_int_2[Nxi_int - 2]
+    dB2d1[p, :, Nxi_int - 1, :] = (- B2d[p, :, -2, :] + B2d[p, :, -1, :]) / dxi / 0.5    
+    dB2d1[p, :, 2:(Nxi_int - 2), :] = (N.roll(B2d, -1, axis = 2)[p, :, 2:(Nxi_int - 2), :] - B2d[p, :, 2:(Nxi_int - 2), :]) / dxi
 
 def compute_diff_E(p):
 
@@ -654,7 +665,7 @@ def push_B(p, dtin):
 # Compute interface terms
 ########
 
-sig_in  = 1.0
+sig_in  = 2.0
 
 def compute_penalty_E(p0, p1, dtin, Erin, E1in, E2in, Brin, B1in, B2in):
 
@@ -1318,8 +1329,8 @@ for it in tqdm(range(Nt), "Progression"):
     diff_B1[:, :, :, :] = 0.0
     diff_B2[:, :, :, :] = 0.0
     
-    # compute_diff_B(patches)
-    compute_diff_B_low(patches)
+    compute_diff_B(patches)
+    # compute_diff_B_low(patches)
 
     push_E(patches, dt)
 
