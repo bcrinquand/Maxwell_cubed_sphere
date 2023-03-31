@@ -140,3 +140,98 @@ def unflip_eq(xi, eta):
     return eta, - xi
 def unflip_po(xi, eta):
     return - eta, xi
+
+
+########
+# Cartesian <-> Patches
+########
+
+def coord_A_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = r / delta
+    y = r * X / delta
+    z = r * Y / delta
+    return x, y, z
+
+def coord_Cart_to_A(x, y, z):
+    xi = N.arctan(y / x)
+    eta = N.arctan(z / x)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta
+
+def coord_B_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = - r * X / delta
+    y = r / delta
+    z = r * Y / delta
+    return x, y, z
+
+def coord_Cart_to_B(x, y, z):
+    xi = N.arctan(- x / y)
+    eta = N.arctan(z / y)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta
+
+def coord_C_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = - r / delta
+    y = - r * Y / delta
+    z = r * X / delta
+    return x, y, z
+
+def coord_Cart_to_C(x, y, z):
+    xi = N.arctan(z / x)
+    eta = N.arctan(y / x)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta
+
+def coord_D_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = r * Y / delta
+    y = - r / delta
+    z = - r * X / delta
+    return x, y, z
+
+def coord_Cart_to_D(x, y, z):
+    xi = N.arctan(z / y)
+    eta = N.arctan(- x / y)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta
+
+def coord_N_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = - r * X / delta
+    y = - r * Y / delta
+    z = r / delta
+    return x, y, z
+
+def coord_Cart_to_N(x, y, z):
+    xi = N.arctan(- x / z)
+    eta = N.arctan(- y / z)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta
+
+def coord_S_to_Cart(r, xi, eta):
+    X = N.tan(xi)
+    Y = N.tan(eta)
+    delta = N.sqrt(1 + X**2 + Y**2)
+    x = r * Y / delta
+    y = r * X / delta
+    z = - r / delta
+    return x, y, z
+
+def coord_Cart_to_S(x, y, z):
+    xi = N.arctan(- y / z)
+    eta = N.arctan(- x / z)
+    r = N.sqrt(x**2 + y**2 + z**2)
+    return r, xi, eta

@@ -173,3 +173,19 @@ def unflip_form_eq(vxi, veta):
     return - veta, vxi
 def unflip_form_po(vxi, veta):
     return veta, - vxi
+
+def form_A_to_Cart(r, xi, eta, vr, vxi, veta):
+    x, y, z, = coord_A_to_Cart(r, xi, eta)
+    Jac = N.transpose(jacob_cart_to_A(x, y, z))
+    vx = Jac[0,0] * vr + Jac[0,1] * vxi + Jac[0,2] * veta
+    vy = Jac[1,0] * vr + Jac[1,1] * vxi + Jac[1,2] * veta
+    vz = Jac[2,0] * vr + Jac[2,1] * vxi + Jac[2,2] * veta
+    return vx, vy, vz
+
+def form_Cart_to_A(x, y, z, vx, vy, vz):
+    r, xi, eta, = coord_Cart_to_A(x, y, z)
+    Jac = N.transpose(jacob_A_to_Cart(r, xi, eta))
+    vr = Jac[0,0] * vx + Jac[0,1] * vy + Jac[0,2] * vz
+    vxi = Jac[1,0] * vx + Jac[1,1] * vy + Jac[1,2] * vz
+    veta = Jac[2,0] * vx + Jac[2,1] * vy + Jac[2,2] * vz
+    return vr, vxi, veta

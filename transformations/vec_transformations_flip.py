@@ -232,3 +232,21 @@ def unflip_vec_eq(vxi, veta):
     return veta, - vxi
 def unflip_vec_po(vxi, veta):
     return - veta, vxi
+
+########
+# Spherical <-> Patches
+########
+
+def vec_A_to_Cart(r, xi, eta, vr, vxi, veta):
+    Jac = jacob_A_to_cart(r, xi, eta)
+    vx = Jac[0,0] * vr + Jac[0,1] * vxi + Jac[0,2] * veta
+    vy = Jac[1,0] * vr + Jac[1,1] * vxi + Jac[1,2] * veta
+    vz = Jac[2,0] * vr + Jac[2,1] * vxi + Jac[2,2] * veta
+    return vx, vy, vz
+
+def vec_Cart_to_A(x, y, z, vx, vy, vz):
+    Jac = jacob_cart_to_A(x, y, z)
+    vr = Jac[0,0] * vx + Jac[0,1] * vy + Jac[0,2] * vz
+    vxi = Jac[1,0] * vx + Jac[1,1] * vy + Jac[1,2] * vz
+    veta = Jac[2,0] * vx + Jac[2,1] * vy + Jac[2,2] * vz
+    return vr, vxi, veta
