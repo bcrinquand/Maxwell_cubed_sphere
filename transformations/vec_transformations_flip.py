@@ -1,6 +1,7 @@
 import numpy as N
 
-from coord_transformations_flip import coord_A_to_sph, coord_cart_to_sph, coord_sph_to_cart
+from coord_transformations_flip import *
+sphere = {0: "A", 1: "B", 2: "C", 3: "D", 4: "N", 5: "S"}
 
 ########
 # Spherical <-> Cartesian
@@ -237,15 +238,17 @@ def unflip_vec_po(vxi, veta):
 # Spherical <-> Patches
 ########
 
-def vec_A_to_Cart(r, xi, eta, vr, vxi, veta):
-    Jac = jacob_A_to_cart(r, xi, eta)
+def vec_Cubed_to_Cart(patch, r, xi, eta, vr, vxi, veta):
+    jacob = (globals()["jacob_" + sphere[patch] + "_to_cart"])
+    Jac = jacob(r, xi, eta)
     vx = Jac[0,0] * vr + Jac[0,1] * vxi + Jac[0,2] * veta
     vy = Jac[1,0] * vr + Jac[1,1] * vxi + Jac[1,2] * veta
     vz = Jac[2,0] * vr + Jac[2,1] * vxi + Jac[2,2] * veta
     return vx, vy, vz
 
-def vec_Cart_to_A(x, y, z, vx, vy, vz):
-    Jac = jacob_cart_to_A(x, y, z)
+def vec_Cart_to_Cubed(patch, x, y, z, vx, vy, vz):
+    jacob = (globals()["jacob_cart_to_" + sphere[patch]])
+    Jac = jacob(x, y, z)
     vr = Jac[0,0] * vx + Jac[0,1] * vy + Jac[0,2] * vz
     vxi = Jac[1,0] * vx + Jac[1,1] * vy + Jac[1,2] * vz
     veta = Jac[2,0] * vx + Jac[2,1] * vy + Jac[2,2] * vz
