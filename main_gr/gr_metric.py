@@ -123,284 +123,332 @@ def KSCart(patch, r, xi, eta, spin):
 # Define metric in patch coordinates from Cartesian KS, according to (jacob_patch_to_Cart)^T.gKS.jacob_patch_to_Cart
 ########
 
-def grrd(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def grrd(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxx**2*gKSxx + fjacxx*fjacyx*(gKSxy + gKSyx) + fjacyx**2*gKSyy + fjacxx*fjaczx*(gKSxz + gKSzx) + fjacyx*fjaczx*(gKSyz + gKSzy) + fjaczx**2*gKSzz
+#     return fjacxx**2*gKSxx + fjacxx*fjacyx*(gKSxy + gKSyx) + fjacyx**2*gKSyy + fjacxx*fjaczx*(gKSxz + gKSzx) + fjacyx*fjaczx*(gKSyz + gKSzy) + fjaczx**2*gKSzz
     
-def gr1d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def gr1d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxx*(fjacxy*gKSxx + fjacyy*gKSxy + fjaczy*gKSxz) + fjacxy*fjacyx*gKSyx + fjacyx*fjacyy*gKSyy + fjacyx*fjaczy*gKSyz + fjacxy*fjaczx*gKSzx + fjacyy*fjaczx*gKSzy + fjaczx*fjaczy*gKSzz
-    
-
-def gr2d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
-    
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
-        
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
-        
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
-    
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
-
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
-    
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
-    
-    return fjacxx*(fjacxz*gKSxx + fjacyz*gKSxy + fjaczz*gKSxz) + fjacxz*fjacyx*gKSyx + fjacyx*fjacyz*gKSyy + fjacyx*fjaczz*gKSyz + fjacxz*fjaczx*gKSzx + fjacyz*fjaczx*gKSzy + fjaczx*fjaczz*gKSzz
+#     return fjacxx*(fjacxy*gKSxx + fjacyy*gKSxy + fjaczy*gKSxz) + fjacxy*fjacyx*gKSyx + fjacyx*fjacyy*gKSyy + fjacyx*fjaczy*gKSyz + fjacxy*fjaczx*gKSzx + fjacyy*fjaczx*gKSzy + fjaczx*fjaczy*gKSzz
     
 
-def g1rd(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def gr2d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxy*fjacyx*gKSxy + fjacxy*fjaczx*gKSxz + fjacyx*fjacyy*gKSyy + fjacyy*fjaczx*gKSyz + fjacxx*(fjacxy*gKSxx + fjacyy*gKSyx + fjaczy*gKSzx) + fjacyx*fjaczy*gKSzy + fjaczx*fjaczy*gKSzz
+#     return fjacxx*(fjacxz*gKSxx + fjacyz*gKSxy + fjaczz*gKSxz) + fjacxz*fjacyx*gKSyx + fjacyx*fjacyz*gKSyy + fjacyx*fjaczz*gKSyz + fjacxz*fjaczx*gKSzx + fjacyz*fjaczx*gKSzy + fjaczx*fjaczz*gKSzz
+    
+
+# def g1rd(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
+    
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
+        
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
+        
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
+    
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
+
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
+    
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
+    
+#     return fjacxy*fjacyx*gKSxy + fjacxy*fjaczx*gKSxz + fjacyx*fjacyy*gKSyy + fjacyy*fjaczx*gKSyz + fjacxx*(fjacxy*gKSxx + fjacyy*gKSyx + fjaczy*gKSzx) + fjacyx*fjaczy*gKSzy + fjaczx*fjaczy*gKSzz
      
-def g11d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def g11d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxy**2*gKSxx + fjacxy*fjacyy*(gKSxy + gKSyx) + fjacyy**2*gKSyy + fjacxy*fjaczy*(gKSxz + gKSzx) + fjacyy*fjaczy*(gKSyz + gKSzy) + fjaczy**2*gKSzz
+#     return fjacxy**2*gKSxx + fjacxy*fjacyy*(gKSxy + gKSyx) + fjacyy**2*gKSyy + fjacxy*fjaczy*(gKSxz + gKSzx) + fjacyy*fjaczy*(gKSyz + gKSzy) + fjaczy**2*gKSzz
 
-def g12d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def g12d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxy*(fjacxz*gKSxx + fjacyz*gKSxy + fjaczz*gKSxz) + fjacxz*fjacyy*gKSyx + fjacyy*fjacyz*gKSyy + fjacyy*fjaczz*gKSyz + fjacxz*fjaczy*gKSzx + fjacyz*fjaczy*gKSzy + fjaczy*fjaczz*gKSzz
+#     return fjacxy*(fjacxz*gKSxx + fjacyz*gKSxy + fjaczz*gKSxz) + fjacxz*fjacyy*gKSyx + fjacyy*fjacyz*gKSyy + fjacyy*fjaczz*gKSyz + fjacxz*fjaczy*gKSzx + fjacyz*fjaczy*gKSzy + fjaczy*fjaczz*gKSzz
 
-def g2rd(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def g2rd(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxz*fjacyx*gKSxy + fjacxz*fjaczx*gKSxz + fjacyx*fjacyz*gKSyy + fjacyz*fjaczx*gKSyz + fjacxx*(fjacxz*gKSxx + fjacyz*gKSyx + fjaczz*gKSzx) + fjacyx*fjaczz*gKSzy + fjaczx*fjaczz*gKSzz
+#     return fjacxz*fjacyx*gKSxy + fjacxz*fjaczx*gKSxz + fjacyx*fjacyz*gKSyy + fjacyz*fjaczx*gKSyz + fjacxx*(fjacxz*gKSxx + fjacyz*gKSyx + fjaczz*gKSzx) + fjacyx*fjaczz*gKSzy + fjaczx*fjaczz*gKSzz
 
-def g21d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def g21d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxz*fjacyy*gKSxy + fjacxz*fjaczy*gKSxz + fjacyy*fjacyz*gKSyy + fjacyz*fjaczy*gKSyz + fjacxy*(fjacxz*gKSxx + fjacyz*gKSyx + fjaczz*gKSzx) + fjacyy*fjaczz*gKSzy + fjaczy*fjaczz*gKSzz
+#     return fjacxz*fjacyy*gKSxy + fjacxz*fjaczy*gKSxz + fjacyy*fjacyz*gKSyy + fjacyz*fjaczy*gKSyz + fjacxy*(fjacxz*gKSxx + fjacyz*gKSyx + fjaczz*gKSzx) + fjacyy*fjaczz*gKSzy + fjaczy*fjaczz*gKSzz
     
-def g22d(patch, r, xi, eta, spin):
-    fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
-    fjacmat = fjac(r, xi, eta)
-    gKSmat = KSCart(r, xi, eta)
+# def g22d(patch, r, xi, eta, spin):
+#     fjac = (globals()["jacob_" + sphere[patch] + "_to_Cart"])
+#     fjacmat = fjac(r, xi, eta)
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
     
-    fjacxx = fjacmat[0,0]
-    fjacxy = fjacmat[0,1]
-    fjacxz = fjacmat[0,2]
+#     fjacxx = fjacmat[0,0]
+#     fjacxy = fjacmat[0,1]
+#     fjacxz = fjacmat[0,2]
         
-    fjacyx = fjacmat[1,0]
-    fjacyy = fjacmat[1,1]
-    fjacyz = fjacmat[1,2]
+#     fjacyx = fjacmat[1,0]
+#     fjacyy = fjacmat[1,1]
+#     fjacyz = fjacmat[1,2]
         
-    fjaczx = fjacmat[2,0]
-    fjaczy = fjacmat[2,1]
-    fjaczz = fjacmat[2,2]
+#     fjaczx = fjacmat[2,0]
+#     fjaczy = fjacmat[2,1]
+#     fjaczz = fjacmat[2,2]
     
-    gKSxx = gKSmat[1,1]
-    gKSxy = gKSmat[1,2]
-    gKSxz = gKSmat[1,3]
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
 
-    gKSyx = gKSmat[2,1]
-    gKSyy = gKSmat[2,2]
-    gKSyz = gKSmat[2,3]
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
     
-    gKSzx = gKSmat[3,1]
-    gKSzy = gKSmat[3,2]
-    gKSzz = gKSmat[3,3]
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
     
-    return fjacxz**2*gKSxx + fjacxz*fjacyz*(gKSxy + gKSyx) + fjacyz**2*gKSyy + fjacxz*fjaczz*(gKSxz + gKSzx) + fjacyz*fjaczz*(gKSyz + gKSzy) + fjaczz**2*gKSzz
+#     return fjacxz**2*gKSxx + fjacxz*fjacyz*(gKSxy + gKSyx) + fjacyz**2*gKSyy + fjacxz*fjaczz*(gKSxz + gKSzx) + fjacyz*fjaczz*(gKSyz + gKSzy) + fjaczz**2*gKSzz
     
+    
+# Lapse and shift vector according to Alcubierres appendix B
+
+# # \beta_i = g_{0t}
+# def betad(patch, r, xi, eta, spin):
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
+    
+#     betaxu = gKSmat[0,1]
+#     betayu = gKSmat[0,2]
+#     betazu = gKSmat[0,3]
+    
+#     return betaxu, betayu, betazu
+
+# # \alpha = (- g_{tt} + \gamma_{ij}\beta^i\beta^j)^{1/2}
+# def alphas(patch, r, xi, eta, spin):
+#     gKSmat = KSCart(patch, r, xi, eta, spin)
+    
+#     betax, betay, betaz = betad(patch, r, xi, eta, spin)
+    
+#     gKStt = gKSmat[0,0]
+    
+#     gKSxx = gKSmat[1,1]
+#     gKSxy = gKSmat[1,2]
+#     gKSxz = gKSmat[1,3]
+
+#     gKSyx = gKSmat[2,1]
+#     gKSyy = gKSmat[2,2]
+#     gKSyz = gKSmat[2,3]
+    
+#     gKSzx = gKSmat[3,1]
+#     gKSzy = gKSmat[3,2]
+#     gKSzz = gKSmat[3,3]
+    
+#     gKSXX = (gKSyz*gKSzy - gKSyy*gKSzz)/(gKSxz*gKSyy*gKSzx - gKSxy*gKSyz*gKSzx - gKSxz*gKSyx*gKSzy + gKSxx*gKSyz*gKSzy + gKSxy*gKSyx*gKSzz - gKSxx*gKSyy*gKSzz)
+#     gKSXY = (gKSxz*gKSzy - gKSxy*gKSzz)/(-(gKSxz*gKSyy*gKSzx) + gKSxy*gKSyz*gKSzx + gKSxz*gKSyx*gKSzy - gKSxx*gKSyz*gKSzy - gKSxy*gKSyx*gKSzz + gKSxx*gKSyy*gKSzz)
+#     gKSXZ = (gKSxz*gKSyy - gKSxy*gKSyz)/(gKSxz*gKSyy*gKSzx - gKSxy*gKSyz*gKSzx - gKSxz*gKSyx*gKSzy + gKSxx*gKSyz*gKSzy + gKSxy*gKSyx*gKSzz - gKSxx*gKSyy*gKSzz)
+    
+#     gKSYX = (gKSyz*gKSzx - gKSyx*gKSzz)/(-(gKSxz*gKSyy*gKSzx) + gKSxy*gKSyz*gKSzx + gKSxz*gKSyx*gKSzy - gKSxx*gKSyz*gKSzy - gKSxy*gKSyx*gKSzz + gKSxx*gKSyy*gKSzz)
+#     gKSYY = (gKSxz*gKSzx - gKSxx*gKSzz)/(gKSxz*gKSyy*gKSzx - gKSxy*gKSyz*gKSzx - gKSxz*gKSyx*gKSzy + gKSxx*gKSyz*gKSzy + gKSxy*gKSyx*gKSzz - gKSxx*gKSyy*gKSzz)
+#     gKSYZ = (gKSxz*gKSyx - gKSxx*gKSyz)/(-(gKSxz*gKSyy*gKSzx) + gKSxy*gKSyz*gKSzx + gKSxz*gKSyx*gKSzy - gKSxx*gKSyz*gKSzy - gKSxy*gKSyx*gKSzz + gKSxx*gKSyy*gKSzz)
+    
+#     gKSZX = (gKSyy*gKSzx - gKSyx*gKSzy)/(gKSxz*gKSyy*gKSzx - gKSxy*gKSyz*gKSzx - gKSxz*gKSyx*gKSzy + gKSxx*gKSyz*gKSzy + gKSxy*gKSyx*gKSzz - gKSxx*gKSyy*gKSzz)
+#     gKSZY = (gKSxy*gKSzx - gKSxx*gKSzy)/(-(gKSxz*gKSyy*gKSzx) + gKSxy*gKSyz*gKSzx + gKSxz*gKSyx*gKSzy - gKSxx*gKSyz*gKSzy - gKSxy*gKSyx*gKSzz + gKSxx*gKSyy*gKSzz)
+#     gKSZZ = (gKSxy*gKSyx - gKSxx*gKSyy)/(gKSxz*gKSyy*gKSzx - gKSxy*gKSyz*gKSzx - gKSxz*gKSyx*gKSzy + gKSxx*gKSyz*gKSzy + gKSxy*gKSyx*gKSzz - gKSxx*gKSyy*gKSzz)
+    
+#     betasq = betax**2*gKSXX + betax*betay*gKSXY + betax*betaz*gKSXZ + betax*betay*gKSYX + betay**2*gKSYY + betay*betaz*gKSYZ + betax*betaz*gKSZX + betay*betaz*gKSZY + betaz**2*gKSZZ
+    
+#     return N.sqrt(- gKStt + betasq)
